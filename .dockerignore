@@ -1,0 +1,11 @@
+.git
+.idea
+
+# Backend
+backend/var
+backend/vendor
+backend/public/bundles
+
+# Frontend
+frontend/.next
+frontend/node_modules

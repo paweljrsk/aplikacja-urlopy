@@ -1,0 +1,39 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+      target: server
+      args:
+        APP_ENV: $APP_ENV
+    ports:
+      - '${DEPLOY_PORT}:80'
+    environment:
+      TZ: 'Europe/Warsaw'
+
+  node:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+      target: frontend
+      args:
+        APP_ENV: $APP_ENV
+
+  php:
+    build:
+      dockerfile: .docker/Dockerfile
+      context: .
+      target: backend
+      args:
+        APP_ENV: $APP_ENV
+
+  supervisor:
+    build:
+      dockerfile: .docker/Dockerfile
+      context: .
+      target: supervisor
+      args:
+        APP_ENV: $APP_ENV
+    depends_on:
+      php:
+        condition: service_started

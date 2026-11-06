@@ -1,0 +1,13 @@
+external_controllers:
+    resource:
+        path: ../src/Controller/External
+        namespace: App\Controller\External
+    type: attribute
+    prefix: /api/v1
+
+internal_controllers:
+    resource:
+        path: ../src/Controller/Internal
+        namespace: App\Controller\Internal
+    type: attribute
+    prefix: /api

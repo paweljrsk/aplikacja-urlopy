@@ -1,0 +1,12 @@
+bind 0.0.0.0
+port ${REDIS_PORT}
+
+requirepass ${REDIS_PASSWORD}
+
+save 900 1
+save 300 10
+save 60 10000
+maxmemory 256mb
+maxmemory-policy volatile-lru
+protected-mode yes
+loglevel notice
