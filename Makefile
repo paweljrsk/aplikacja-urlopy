@@ -1,57 +1,85 @@
 .DEFAULT_GOAL := help
-.PHONY: help
+COMPOSE ?= docker compose
+SERVICE ?=
+WAIT_TIMEOUT ?= 240
 
-help: ## This help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sed -e "s/^Makefile://" | awk 'BEGIN {FS = ": ## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+.PHONY: help env init start stop restart down status logs db-init db-migrate verify test lint check workers delete reset db-delete db-reset confirm-destructive
 
+help: ## List available commands
+	@awk 'BEGIN {FS = ":.*## "; printf "Use make <target> [SERVICE=name]\n\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-init: ## Initialize project
-	@docker pull php:8.3-fpm || true
-	@exec echo "APP_ENV=dev" > backend/.env
-	$(MAKE) -s start
-	$(MAKE) -s db-init || true
-	$(MAKE) -s db-migrate || true
-
-start: ## Start project
-	@docker compose up -d $(filter-out $@,$(MAKECMDGOALS)) --remove-orphans
-
-stop: ## Stop project
-	@docker compose stop $(filter-out $@,$(MAKECMDGOALS))
-
-delete: ## Removed project containers
-	@if [  "" = "$(filter-out $@,$(MAKECMDGOALS))" ]; then\
-		$(MAKE) db-delete || true;\
+env: ## Create local Compose settings without overwriting existing configuration
+	@if [ ! -f .env ]; then \
+		sed -e "s/^LOCAL_UID=.*/LOCAL_UID=$$(id -u)/" \
+		    -e "s/^LOCAL_GID=.*/LOCAL_GID=$$(id -g)/" .env.example > .env; \
 	fi
 
-	@docker compose down -v $(filter-out $@,$(MAKECMDGOALS))
+init: env ## Build, start, wait for healthy services and apply Doctrine migrations
+	$(COMPOSE) config --quiet
+	$(COMPOSE) up -d --build --wait --wait-timeout $(WAIT_TIMEOUT)
+	$(MAKE) db-init
+	$(MAKE) db-migrate
 
-	@if [ "node" = "$(filter-out $@,$(MAKECMDGOALS))" ] || [ "" = "$(filter-out $@,$(MAKECMDGOALS))" ]; then\
-		rm -rf frontend/node_modules frontend/.next;\
-	fi
+start: env ## Start existing services and wait; preserves database volumes
+	$(COMPOSE) up -d --wait --wait-timeout $(WAIT_TIMEOUT) $(SERVICE)
 
-	@if [ "php" = "$(filter-out $@,$(MAKECMDGOALS))" ] || [ "" = "$(filter-out $@,$(MAKECMDGOALS))" ]; then\
-		rm -rf backend/vendor backend/var backend/public/bundles;\
-	fi
+stop: ## Stop containers without deleting data
+	$(COMPOSE) stop $(SERVICE)
 
-reset: ## Reset project
-	$(MAKE) -s delete $(filter-out $@,$(MAKECMDGOALS)) || true
+restart: ## Restart running services without deleting data
+	$(COMPOSE) restart $(SERVICE)
 
-	@if [ -z "$(filter-out $@,$(MAKECMDGOALS))" ]; then\
-		$(MAKE) -s init;\
-	else\
-		$(MAKE) -s start $(filter-out $@,$(MAKECMDGOALS));\
-	fi
+down: ## Remove containers and network; preserve database volumes
+	$(COMPOSE) down --remove-orphans
 
-db-init: ## Initialize database
-	@docker compose exec -it mysql bash -c 'mysql -u notus -ppass1234 -e "CREATE DATABASE IF NOT EXISTS \`calendar\`"'
+status: ## Show service health and state
+	$(COMPOSE) ps -a
 
-db-delete: ## Delete database
-	@docker compose exec -it mysql bash -c 'mysql -u notus -ppass1234 -e "DROP DATABASE \`calendar\`"'
+logs: ## Show logs; optionally SERVICE=php
+	$(COMPOSE) logs --tail=100 $(SERVICE)
 
-db-migrate: ## Migrate database
-	@docker compose exec -it php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration;
+db-init: ## Create the configured database with Doctrine if it does not exist
+	$(COMPOSE) exec -T php php bin/console doctrine:database:create --if-not-exists --no-interaction
 
-db-reset: ## Reset database
-	$(MAKE) -s db-delete || true
-	$(MAKE) -s db-init
-	$(MAKE) -s db-migrate
+db-migrate: ## Apply Doctrine migrations; stage 1 has no business migrations yet
+	$(COMPOSE) exec -T php php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+
+verify: ## Check configuration, Symfony, DB connection and both HTTP endpoints
+	$(COMPOSE) config --quiet
+	$(COMPOSE) exec -T php php bin/console about
+	$(COMPOSE) exec -T php php bin/console doctrine:query:sql 'SELECT 1'
+	$(COMPOSE) exec -T nginx wget -q -O /dev/null http://127.0.0.1/
+	$(COMPOSE) exec -T nginx wget -q -O - http://127.0.0.1/api/health
+
+test: ## Run backend tests
+	$(COMPOSE) exec -T php php bin/phpunit
+
+lint: ## Run backend lint/static analysis and frontend lint/type check
+	$(COMPOSE) exec -T php php bin/console lint:yaml config
+	$(COMPOSE) exec -T php php bin/console lint:container
+	$(COMPOSE) exec -T php vendor/bin/phpstan analyse --no-progress
+	$(COMPOSE) exec -T node npm run lint
+	$(COMPOSE) exec -T node npx --no-install tsc --noEmit
+
+check: verify lint test ## Run the stage 1 verification suite
+
+workers: env ## Start optional Messenger and Scheduler workers
+	$(COMPOSE) --profile workers up -d --build supervisor
+
+confirm-destructive:
+	@test "$(CONFIRM)" = "DELETE_LOCAL_DATA" || { printf '%s\n' 'Refusing to delete data. For a disposable LOCAL database only, set CONFIRM=DELETE_LOCAL_DATA.'; exit 1; }
+
+delete: confirm-destructive ## DESTRUCTIVE: remove local containers and volumes (requires CONFIRM)
+	$(COMPOSE) --profile workers down --volumes --remove-orphans
+
+reset: confirm-destructive ## DESTRUCTIVE: delete local data and initialize again (requires CONFIRM)
+	$(MAKE) delete CONFIRM=DELETE_LOCAL_DATA
+	$(MAKE) init
+
+db-delete: confirm-destructive ## DESTRUCTIVE: drop configured database with Doctrine (requires CONFIRM)
+	$(COMPOSE) exec -T php php bin/console doctrine:database:drop --force --if-exists --no-interaction
+
+db-reset: confirm-destructive ## DESTRUCTIVE: drop/recreate configured database and migrate (requires CONFIRM)
+	$(MAKE) db-delete CONFIRM=DELETE_LOCAL_DATA
+	$(MAKE) db-init
+	$(MAKE) db-migrate

@@ -1,0 +1,95 @@
+name: Baseline checks
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: baseline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Initialize development stack
+        run: make init
+      - name: Verify HTTP and database
+        run: make verify
+      - name: Backend tests
+        run: make test
+      - name: Static checks
+        run: make lint
+      - name: Production frontend build
+        run: docker compose exec -T node npm run build
+      - name: Write synthetic persistence marker outside the application schema
+        run: |
+          docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root' <<'SQL'
+          CREATE DATABASE urlopy_ci_persistence;
+          CREATE TABLE urlopy_ci_persistence.probe (id INT PRIMARY KEY, marker VARCHAR(40) NOT NULL);
+          INSERT INTO urlopy_ci_persistence.probe VALUES (1, 'stage1-stop-start');
+          SQL
+      - name: Restart without deleting data
+        run: |
+          make stop
+          make start
+          make verify
+          marker="$(docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root --batch --skip-column-names -e "SELECT marker FROM urlopy_ci_persistence.probe WHERE id = 1"')"
+          test "$marker" = 'stage1-stop-start'
+      - name: Verify optional Messenger and Scheduler workers
+        run: |
+          make workers
+          docker compose exec -T supervisor python3 - <<'PY'
+          import pathlib
+          import time
+
+          def workers():
+              found = {}
+              for entry in pathlib.Path('/proc').glob('[0-9]*/cmdline'):
+                  try:
+                      args = entry.read_bytes().decode().split('\0')
+                  except (FileNotFoundError, ProcessLookupError):
+                      continue
+                  if 'messenger:consume' in args:
+                      transport = args[args.index('messenger:consume') + 1]
+                      if transport in ('async', 'scheduler_default'):
+                          found[transport] = entry.parent.name
+              return found
+
+          deadline = time.monotonic() + 40
+          previous = {}
+          stable_since = time.monotonic()
+          while time.monotonic() < deadline:
+              current = workers()
+              if current != previous or len(current) != 2:
+                  previous, stable_since = current, time.monotonic()
+              elif time.monotonic() - stable_since >= 12:
+                  print('Both worker processes remain running without a restart:', sorted(current))
+                  break
+              time.sleep(1)
+          else:
+              raise SystemExit('Workers failed to become stable: ' + repr(previous))
+          PY
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          docker compose --profile workers ps --all
+          docker compose --profile workers logs --no-color --tail=150
+      - name: Remove synthetic persistence marker
+        if: always()
+        run: |
+          if docker compose ps --status running --services | grep -qx mysql; then
+            docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root -e "DROP DATABASE IF EXISTS urlopy_ci_persistence"'
+          fi
+      - name: Stop containers and preserve volumes
+        if: always()
+        run: docker compose --profile workers down

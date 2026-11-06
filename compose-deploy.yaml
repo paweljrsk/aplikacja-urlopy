@@ -1,39 +1,51 @@
+# Application services only. Provide existing infrastructure DSNs and finalize
+# VPN, TLS, backups and deployment policy in stage 12; no development credentials.
+x-production-environment: &production-environment
+  APP_ENV: prod
+  APP_DEBUG: '0'
+  APP_SECRET: '${APP_SECRET:?Set APP_SECRET outside the repository}'
+  DATABASE_URL: '${DATABASE_URL:?Set the production MySQL DSN}'
+  REDIS_URL: '${REDIS_URL:?Set the production Redis DSN}'
+  MESSENGER_TRANSPORT_DSN: '${MESSENGER_TRANSPORT_DSN:?Set the production AMQP DSN}'
+  DEFAULT_URI: '${DEFAULT_URI:?Set the production HTTPS URL}'
+  TZ: Europe/Warsaw
+
 services:
   nginx:
     build:
       context: .
       dockerfile: .docker/Dockerfile
       target: server
-      args:
-        APP_ENV: $APP_ENV
     ports:
-      - '${DEPLOY_PORT}:80'
+      - '${BIND_ADDRESS:-127.0.0.1}:${DEPLOY_PORT:-1234}:80'
     environment:
       TZ: 'Europe/Warsaw'
+    depends_on:
+      php:
+        condition: service_started
+      node:
+        condition: service_started
 
   node:
     build:
       context: .
       dockerfile: .docker/Dockerfile
       target: frontend
-      args:
-        APP_ENV: $APP_ENV
 
   php:
     build:
       dockerfile: .docker/Dockerfile
       context: .
       target: backend
-      args:
-        APP_ENV: $APP_ENV
+    environment: *production-environment
 
   supervisor:
+    profiles: [workers]
     build:
       dockerfile: .docker/Dockerfile
       context: .
       target: supervisor
-      args:
-        APP_ENV: $APP_ENV
+    environment: *production-environment
     depends_on:
       php:
         condition: service_started

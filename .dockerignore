@@ -1,5 +1,15 @@
 .git
 .idea
+.env
+.env.local
+.env.*.local
+backend/.env.local
+backend/.env.local.php
+backend/.env.*.local
+!backend/.env
+backups
+*.sql
+*.sql.gz
 
 # Backend
 backend/var
