@@ -131,6 +131,26 @@ wniosków, salda ani innych funkcji biznesowych. Nie wykonano wdrożenia na firm
 serwerze ani odbioru produkcyjnego. Ostateczne wyniki poszczególnych kontroli i status
 etapu pozostają w [TEST_PLAN.md](TEST_PLAN.md) i [TASKS.md](../TASKS.md).
 
+### E05 — kontrola istniejących tabel przed migracją
+
+Pierwszy przebieg etapu 2, [CI #9](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42291369803),
+wykrył wywołanie nieistniejącej w używanym DBAL metody `Schema::getTableNames()`.
+Błąd wystąpił przed wykonaniem DDL. Kontrola kolizji korzysta teraz z `hasTable()`,
+obsługiwanego również przez `LazySchema` z Doctrine Migrations. Katalog migracji
+dodano do PHPStan, aby analiza obejmowała także ten kod. Wynik ponownego wykonania
+migracji i pełnego odbioru zapisujemy w TEST_PLAN; pierwszy przebieg nie jest zaliczeniem.
+
+### E06 — walidacja schematu w teście integracyjnym
+
+[CI #10](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42291936845)
+potwierdził migrację obu baz, zgodność schematu przez CLI, powtórne wykonanie migracji
+i dwukrotne ładowanie demo. Jeden test bezpośredniego `SchemaValidator` zgłosił jednak
+różnicę. Doctrine Migrations aktywuje filtr własnej tabeli metadanych przy zdarzeniu
+`console.command`; bezpośredni walidator nie uruchamiał tego mechanizmu. Test wykonuje
+teraz standardowe polecenie `doctrine:schema:validate` przez aplikację konsolową ze
+zdarzeniami. Nie filtrujemy arbitralnie tabel aplikacji ani nie pomijamy zgodności
+schematu. Pozostałe 77 testów tego przebiegu przeszło, lecz całość nie była zielona.
+
 ## Format kolejnego wpisu
 
 Każdy wpis zawiera datę, identyfikator, decyzję lub problem, uzasadnienie, zakres

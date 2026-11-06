@@ -33,7 +33,9 @@ use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\Tools\SchemaValidator;
 use Doctrine\Persistence\ManagerRegistry;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Console\Tester\ApplicationTester;
 
 /**
  * Runs against a migrated, isolated MySQL database. It never creates or resets schema.
@@ -81,7 +83,17 @@ final class ModelPersistenceTest extends KernelTestCase
     {
         $validator = new SchemaValidator($this->em);
         self::assertSame([], $validator->validateMapping());
-        self::assertTrue($validator->schemaInSyncWithMetadata(), 'Migration schema must match ORM metadata.');
+
+        // The console event enables Doctrine Migrations' own metadata-table filter.
+        self::assertNotNull(self::$kernel);
+        $application = new Application(self::$kernel);
+        $application->setAutoExit(false);
+        $tester = new ApplicationTester($application);
+        $status = $tester->run(
+            ['command' => 'doctrine:schema:validate', '--verbose' => true],
+            ['interactive' => false, 'decorated' => false],
+        );
+        self::assertSame(0, $status, "Migration schema must match ORM metadata.\n".$tester->getDisplay());
     }
 
     public function testUtcTimestampsRoundTripIndependentlyOfPhpDefaultTimezone(): void
