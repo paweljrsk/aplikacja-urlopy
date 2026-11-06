@@ -1,2 +1,8 @@
 /.idea
 .env
+!/backend/.env
+/.env.local
+/.env.*.local
+/backups/
+*.sql
+*.sql.gz

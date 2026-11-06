@@ -1,0 +1,46 @@
+name: Baseline checks
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: baseline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Initialize development stack
+        run: make init
+      - name: Verify HTTP and database
+        run: make verify
+      - name: Backend tests
+        run: make test
+      - name: Static checks
+        run: make lint
+      - name: Production frontend build
+        run: docker compose exec -T node npm run build
+      - name: Restart without deleting data
+        run: |
+          make stop
+          make start
+          make verify
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          docker compose ps --all
+          docker compose logs --no-color --tail=150
+      - name: Stop containers and preserve volumes
+        if: always()
+        run: docker compose down

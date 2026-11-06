@@ -1,113 +1,157 @@
+# Local development only. Production configuration is finalized in stage 12.
+x-backend-environment: &backend-environment
+  APP_ENV: dev
+  APP_DEBUG: '1'
+  APP_SECRET: '${APP_SECRET:-local-development-secret-change-before-use}'
+  DEFAULT_URI: 'http://localhost:${DEPLOY_PORT:-8080}'
+  DATABASE_URL: 'mysql://${MYSQL_USER:-notus}:${MYSQL_PASSWORD:-local-dev-password}@mysql:3306/${MYSQL_DATABASE:-calendar}?serverVersion=8.0.32&charset=utf8mb4'
+  REDIS_URL: 'redis://:${REDIS_PASSWORD:-local-dev-redis}@redis:6378'
+  MESSENGER_TRANSPORT_DSN: 'amqp://${RABBITMQ_DEFAULT_USER:-notus}:${RABBITMQ_DEFAULT_PASS:-local-dev-rabbit}@rabbit:5672/%2f/messages'
+  TZ: Europe/Warsaw
+
+x-backend-build: &backend-build
+  context: .
+  dockerfile: .docker/Dockerfile
+  target: backend-dev
+
 services:
   nginx:
     build:
       context: .
       dockerfile: .docker/Dockerfile
-      target: server
-      args:
-        APP_ENV: '${APP_ENV:-dev}'
+      target: server-dev
     ports:
-      - '${DEPLOY_PORT:-8080}:80'
+      - '${BIND_ADDRESS:-127.0.0.1}:${DEPLOY_PORT:-8080}:80'
     volumes:
-      - ./.docker/config/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./backend:/var/www/html/backend
-      - ./frontend:/var/www/html/frontend
-    environment:
-      TZ: 'Europe/Warsaw'
+      - ./.docker/config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./backend/public:/var/www/html/backend/public:ro
+    depends_on:
+      php:
+        condition: service_healthy
+      node:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
 
   node-npm:
     build:
       context: .
       dockerfile: .docker/Dockerfile
-      target: frontend-build
-      args:
-        APP_ENV: '${APP_ENV:-dev}'
+      target: frontend-dev
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     volumes:
       - ./frontend:/var/www/html/frontend
-    command: npm i
+    command: [npm, ci]
 
   node:
     build:
       context: .
       dockerfile: .docker/Dockerfile
-      target: frontend
-      args:
-        APP_ENV: '${APP_ENV:-dev}'
+      target: frontend-dev
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     volumes:
       - ./frontend:/var/www/html/frontend
-    command: npm run dev
+    command: [npm, run, dev, --, --hostname, 0.0.0.0]
     depends_on:
       node-npm:
         condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, node, -e, 'fetch("http://127.0.0.1:3000").then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))']
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
 
   php-composer:
-    build:
-      dockerfile: .docker/Dockerfile
-      context: .
-      target: backend-build
-      args:
-        APP_ENV: '${APP_ENV:-dev}'
-    user: 1000:1000
+    build: *backend-build
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     volumes:
       - ./backend:/var/www/html/backend
-    command: composer install --no-cache
+    environment: *backend-environment
+    command: [composer, install, --no-interaction, --prefer-dist]
 
   php:
-    build:
-      dockerfile: .docker/Dockerfile
-      context: .
-      target: backend
-      args:
-        APP_ENV: '${APP_ENV:-dev}'
+    build: *backend-build
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     volumes:
       - ./backend:/var/www/html/backend
-    environment:
-      PHP_IDE_CONFIG: "serverName=localhost"
-      XDEBUG_CLIENT: $XDEBUG_CLIENT
+    environment: *backend-environment
     depends_on:
       php-composer:
         condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbit:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, php, -r, '$$socket = @fsockopen("127.0.0.1", 9000); exit($$socket === false ? 1 : 0);']
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
   supervisor:
+    profiles: [workers]
     build:
-      dockerfile: .docker/Dockerfile
       context: .
-      target: supervisor
-      args:
-        APP_ENV: '${APP_ENV:-dev}'
+      dockerfile: .docker/Dockerfile
+      target: supervisor-dev
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     volumes:
-      - ./.docker/config/supervisor:/etc/supervisor/conf.d
       - ./backend:/var/www/html/backend
+    environment: *backend-environment
     depends_on:
       php:
-        condition: service_started
+        condition: service_healthy
 
   redis:
     build:
-      dockerfile: .docker/Dockerfile
       context: .
+      dockerfile: .docker/Dockerfile
       target: redis
     environment:
-      REDIS_PORT: 6378
-      REDIS_PASSWORD: pass1234
+      REDIS_PORT: '6378'
+      REDIS_PASSWORD: '${REDIS_PASSWORD:-local-dev-redis}'
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli -p "$$REDIS_PORT" ping | grep -q PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
   rabbit:
-    image: rabbitmq:4.0
+    image: rabbitmq:4.0@sha256:abd4261d92e76837fe82201196e77076d7f3ff08c92282e5b7bce8828ee20283
     volumes:
       - rabbit:/var/lib/rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: notus
-      RABBITMQ_DEFAULT_PASS: pass1234
+      RABBITMQ_DEFAULT_USER: '${RABBITMQ_DEFAULT_USER:-notus}'
+      RABBITMQ_DEFAULT_PASS: '${RABBITMQ_DEFAULT_PASS:-local-dev-rabbit}'
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
 
   mysql:
-    image: mysql:8.0.32
+    image: mysql:8.0.32@sha256:f496c25da703053a6e0717f1d52092205775304ea57535cc9fcaa6f35867800b
     environment:
-      MYSQL_DATABASE: calendar
-      MYSQL_USER: notus
-      MYSQL_PASSWORD: pass1234
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: '${MYSQL_DATABASE:-calendar}'
+      MYSQL_USER: '${MYSQL_USER:-notus}'
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD:-local-dev-password}'
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD:-local-dev-root}'
     volumes:
       - mysql:/var/lib/mysql
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql -h 127.0.0.1 -u "$$MYSQL_USER" "$$MYSQL_DATABASE" -e "SELECT 1" > /dev/null']
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 30s
 
 volumes:
   rabbit:
