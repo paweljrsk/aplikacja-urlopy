@@ -2,7 +2,8 @@
 
 Aktualizacja: 6 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacja — zakończony**.
 **Etap 2 — model danych i migracje — zakończony**.
-Bieżący: **etap 3 — logowanie lokalne i kontrola dostępu — w trakcie**.
+**Etap 3 — logowanie lokalne i kontrola dostępu — zakończony**.
+Następny: etap 4, po kolejnym poleceniu użytkownika i doprecyzowaniu jego zakresu.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
 Statusy: `[ ]` do zrobienia, `[-]` w trakcie, `[x]` wykonane i zweryfikowane.
@@ -41,20 +42,20 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Uruchomić adekwatne kontrole jakości i zapisać faktyczne wyniki.
 - [x] Uzupełnić opis modelu, README, decyzje techniczne i raport odbioru etapu 2.
 
-## Etap 3 — bieżąca praca
+## Etap 3 — ukończony
 
 - [x] Odczytać wymagania, prompt 3, aktualny kod i stan PR #2.
 - [x] Wdrożyć logowanie, sesje, CSRF, limity prób i unieważnianie dostępu.
-- [-] Wdrożyć hasła tymczasowe, zmianę hasła, reset administratora i bootstrap; zakończyć test CLI na MySQL.
+- [x] Wdrożyć hasła tymczasowe, zmianę hasła, reset administratora, bootstrap i recovery; sprawdzić CLI na MySQL.
 - [x] Wdrożyć aktualną kontrolę ról, zespołów i profili w API.
-- [-] Przygotować podstawowe ekrany logowania, zmiany hasła i chronionej aplikacji; zakończyć test przeglądarkowy.
-- [-] Przetestować API i UI, migracje oraz zachowanie istniejących danych.
-- [-] Uzupełnić dokumentację i rzeczywisty raport odbioru.
+- [x] Przygotować i sprawdzić w Chrome podstawowe ekrany logowania, zmiany hasła i chronionej aplikacji.
+- [x] Przetestować API i UI, migracje, rzeczywiste Nginx/PHP-FPM oraz zachowanie istniejących danych.
+- [x] Uzupełnić dokumentację i rzeczywisty raport odbioru.
 
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
-- [-] Etap 3 — logowanie lokalne i kontrola dostępu w API.
+- [x] Etap 3 — logowanie lokalne i kontrola dostępu w API.
 - [ ] Etap 4 — administracja użytkownikami, zespołami i słownikami.
 - [ ] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
 - [ ] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
@@ -84,12 +85,23 @@ Oba pozostają niescalone. Zapisano odpowiedzi B18–B21, model w DATA_MODEL ora
 polecenia odbioru w README. Po pobraniu gałęzi: `make init`, `make verify`,
 `make db-validate`, `make test`; `make demo` jest opcjonalne na pustej bazie dev.
 
-Punkt dalszej pracy: **etap 3 — logowanie lokalne i kontrola dostępu w API**.
-Przed rozpoczęciem przeczytać prompt 3, wymagania i aktualne otwarte pytania.
-Model nie udostępnia jeszcze interfejsów biznesowych ani pełnych usług rozliczeń.
+Etap 3 odebrano na commicie `2f039b7c1a02bf9b888f2a01cc1fa5e24054d0f2`:
+[CI #14](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42305357024) **SUCCESS**,
+156 testów / 3061 asercji, rzeczywiste CLI administratora, Chrome ze sztucznym API,
+logowanie przez Nginx/PHP-FPM, migracja danych etapu 2, lint/build, restart i workery.
+[PR #3](https://github.com/paweljrsk/aplikacja-urlopy/pull/3) na gałęzi
+`codex/etap-3-logowanie-uprawnienia` bazuje na PR #2. PR-y pozostają niescalone.
+Szczegóły oraz granice testów są w TEST_PLAN; API i obsługa administratora w AUTHENTICATION.
+
+Punkt dalszej pracy: **etap 4 — administracja użytkownikami, zespołami i słownikami**.
+Przed rozpoczęciem przeczytać prompt 4, wymagania i aktualne otwarte pytania.
+Logowanie i bieżące profile są dostępne; wnioski, kalendarz i pełne rozliczenia
+pozostają zakresem kolejnych etapów. Aktualizacja: `make stop`, pobranie gałęzi,
+`make init`, `make verify`, `make db-validate`; pierwszego administratora inicjalizuje
+interaktywne `app:admin:bootstrap`, bez stałego hasła demonstracyjnego.
 
 Q1 jest zamknięte. Q5 nadal wymaga ustalenia widoczności historii i obsługi otwartych
 lub już złożonych przyszłych wniosków przy zmianie zespołu/formy zatrudnienia.
 Q8 nadal wymaga procedury korekt sprzed granicy ewidencji. Pozostałe pytania są otwarte;
 nie wolno rozstrzygać ich domyślnie w modelu ani implementować zależnych operacji.
-Etap 3 rozpoczęto na polecenie użytkownika. Nie rozpoczynać etapu 4 bez kolejnego polecenia.
+Etap 3 zakończono na polecenie użytkownika. Nie rozpoczynać etapu 4 bez kolejnego polecenia.

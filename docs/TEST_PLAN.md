@@ -189,32 +189,48 @@ docelowe PHP 8.3, Node 22 i MySQL 8.0.32 sprawdza osobny przebieg CI.
 | `php bin/phpunit tests/Unit` | PASS: 102 testy / 325 asercji. Obejmuje model oraz politykę bieżących uprawnień, porównanie tożsamości, limity czasu sesji, politykę haseł i odmowy operacji CLI. Nie potwierdza jeszcze przepływu HTTP z MySQL. |
 | `php vendor/bin/phpstan analyse --no-progress` | PASS; poziom 6 w pełnym skonfigurowanym zakresie backendu, także migracje i nowe testy. |
 | Symfony `lint:container` | PASS; zgodność usług i zależności. |
-| `php bin/console doctrine:schema:validate --skip-sync` | PASS mapowania; zgodność z żywą bazą oczekuje CI. |
+| `php bin/console doctrine:schema:validate --skip-sync` | PASS mapowania; zgodność z żywą bazą potwierdza osobny CI poniżej. |
 | `php vendor/bin/php-cs-fixer fix --dry-run --diff` | PASS; kontrola stylu backendu. |
 | Frontend `npm run lint`, `npx --no-install tsc --noEmit`, `npm run build` | PASS; ESLint, typowanie i produkcyjny build. Nie zastępuje przeglądarkowego wykonania logowania. |
 
-### Testy HTTP i przeglądarkowe — oczekują wyniku CI
+### Kontrole Docker, HTTP i przeglądarki — CI #14
 
-[PR #3](https://github.com/paweljrsk/aplikacja-urlopy/pull/3) uruchomił **CI #13**.
-W chwili wpisu wynik końcowy pozostaje niepotwierdzony. Nie oznaczamy poniższych
-kontroli jako PASS na podstawie samego istnienia kodu testów.
+Pełny [CI #14](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42305357024)
+na commicie `2f039b7c1a02bf9b888f2a01cc1fa5e24054d0f2` zakończył się **SUCCESS**.
+Środowisko: kontenery projektu na GitHub Actions Ubuntu 24.04, PHP 8.3.36,
+Node 22.13, MySQL 8.0.32 oraz Chrome na hoście CI.
 
-<!-- STAGE3_CI_FINAL_RESULT: wpisać dokładny commit, link, wynik i liczby po zakończeniu CI. -->
+Poprzedni [CI #13](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42304653446)
+zaliczył backend, migrację, lint i build, ale zatrzymał się na pierwszej asercji
+adresu w skrypcie przeglądarkowym. Skrypt oczekiwał `/login`, podczas gdy aplikacja
+przekierowała na `/login?expired=1`. Poprawka sprawdza dokładny origin i ścieżkę,
+a dla udanej zmiany hasła nadal wymaga parametru `changed=1`. Nie wyłączono kontroli
+przekierowań ani pozostałych asercji. Cały poprawiony przebieg jest zaliczony w CI #14.
 
-| Kontrola przygotowana do wykonania | Zakres i status |
+| Kontrola | Wynik i zakres |
 |---|---|
-| `tests/Functional/AuthTest.php` — 42 przypadki HTTP | OCZEKUJE MySQL w CI. Rzeczywisty kernel Symfony, cookie sesji i tokeny CSRF: poprawne/błędne logowanie, nieznane i nieaktywne konto, wygaśnięte hasło, wymuszona zmiana, logout, reset, podmiana ID profilu i izolacja zespołów. |
-| Unieważnianie i limity w testach HTTP | OCZEKUJE CI. Stare sesje po zmianie/resetowaniu hasła, zmianie uprawnień i dezaktywacji, również po późniejszym ponownym uaktywnieniu konta; wygaśnięcie hasła tymczasowego w zalogowanej sesji; limity bezczynności/czasu całkowitego oraz prób logowania i potwierdzenia hasła. |
-| Migracja etapu 2 → 3 na istniejących danych | OCZEKUJE CI. Workflow tworzy syntetyczne konto w schemacie etapu 2, wykonuje migrację etapu 3 i sprawdza zachowanie danych oraz bezpieczne wartości nowych kolumn. |
-| `.github/scripts/auth-ui-check.cjs` | OCZEKUJE CI. Przeglądarka z syntetycznymi odpowiedziami `/api`: przekierowania, komunikaty, wymuszona zmiana, reset i czyszczenie sekretu, nagłówki CSRF, brak zapisu sekretów w browser storage, szerokości desktop/mobile, błędy JavaScript. |
-| Pełny zestaw kontenerowy | OCZEKUJE CI. Start, HTTP, migracje, schema validate, demo, wszystkie testy backendu, lint, build, stop/start z zachowaniem danych i start workerów. |
+| Start, HTTP, migracje, zgodność schematu, dwukrotne demo | PASS; rzeczywisty Docker i MySQL, bez resetu bazy. |
+| Migracja etapu 2 → 3 | PASS; syntetyczne konto zapisane przed migracją zachowało imię, nazwisko i brak hasła; nowe kolumny mają bezpieczne wartości domyślne. |
+| `make test` | PASS: **156 testów / 3061 asercji** — 102 jednostkowe, 10 integracyjnych modelu, 42 funkcjonalne uwierzytelniania oraz 2 dotychczasowe testy kernela/health. |
+| `tests/Functional/AuthTest.php` | PASS: rzeczywisty kernel Symfony i MySQL, bez skrótu `loginUser()`; wszystkie role, izolacja zespołów i profili, logowanie, CSRF, wymuszona zmiana, logout, reset, wygaśnięcie i unieważnianie sesji oraz limity prób. Dezaktywacja i ponowna aktywacja przed użyciem starego cookie nie przywracają sesji. |
+| `tests/Support/credentials-cli-check.php` | PASS na oddzielnej bazie `_test`: rzeczywiste interaktywne komendy bootstrap i recovery, odmowa powtórnego bootstrapu, nowe hasło i wersja poświadczeń, ważność 24 h, odmowa bez potwierdzenia/dla pracownika oraz audyt bez haseł i ich skrótów. |
+| `.github/scripts/auth-ui-check.cjs` | PASS w Chrome: przekierowania, błędy i czyszczenie haseł, wymuszona zmiana, walidacja powtórzenia, reset administratora, zamknięcie jednorazowego sekretu, CSRF, brak zapisu w browser storage, szerokości desktop/mobile i brak wyjątków JavaScript. API jest tu jawnie symulowane. |
+| `.github/scripts/auth-http-check.cjs` | PASS przez rzeczywisty Nginx/PHP-FPM: bootstrap syntetycznego administratora, CSRF i cookie, zachowanie sesji między żądaniami, blokada funkcji przed zmianą hasła, zmiana, odrzucenie starego cookie, ponowne logowanie, profil/lista admina i logout. |
+| `make lint`, produkcyjny build frontendu | PASS: YAML, kontener Symfony, PHPStan, ESLint, TypeScript i build Next.js. |
+| Stop/start, ponowne verify/demo, marker MySQL | PASS; dane zachowane po restarcie. |
+| Messenger/Scheduler | PASS; oba procesy stabilne przez co najmniej 12 s. |
 
-Testy HTTP używają syntetycznych rekordów w bazie `_test` i nie zastępują testów
-przeglądarkowych. Skrypt przeglądarkowy **symuluje odpowiedzi API**; nawet jego
-pozytywny wynik nie jest pełnym E2E interfejsu z rzeczywistym uwierzytelnianiem PHP.
-Testy jednostkowe korzystają z kontrolowanego zegara; nie przestawiamy zegara serwera,
-aby przyspieszyć wygaśnięcie hasła lub sesji. Produkcja, TLS/VPN i odtworzenie kopii
-pozostają poza tym odbiorem.
+Testy używają wyłącznie danych syntetycznych. Skrypt CLI odmawia zapisu poza bazą
+`_test` i w bazie z już zainicjalizowanym administratorem. Test przez Nginx wymaga
+`CI=true`, lokalnego adresu i środowiska `dev`; działa po ostatnim sprawdzeniu demo.
+Nie resetują danych i nie wypisują wygenerowanych haseł ani odpowiedzi z sekretami.
+
+Skrypt przeglądarkowy symuluje API, a rzeczywisty serwer jest sprawdzany osobnym
+klientem HTTP. Nie przedstawiamy tego jako jednego pełnego testu E2E przeglądarki
+z backendem. Lokalna próba Chrome została zablokowana przez `socket() EPERM`;
+wykonanie przeglądarkowe potwierdza wskazany CI. Produkcja, TLS/VPN, komputer
+użytkownika i odtworzenie kopii pozostają poza tym odbiorem. Testy jednostkowe
+używają kontrolowanego zegara bez przestawiania zegara serwera.
 
 ### Ręczny odbiór logowania i dostępu
 
