@@ -44,12 +44,12 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 ## Etap 3 — bieżąca praca
 
 - [x] Odczytać wymagania, prompt 3, aktualny kod i stan PR #2.
-- [-] Wdrożyć logowanie, sesje, CSRF, limity prób i unieważnianie dostępu.
-- [ ] Wdrożyć hasła tymczasowe, zmianę hasła, reset administratora i bootstrap.
-- [ ] Wdrożyć aktualną kontrolę ról, zespołów i profili w API.
-- [ ] Przygotować podstawowe ekrany logowania, zmiany hasła i chronionej aplikacji.
-- [ ] Przetestować API i UI, migracje oraz zachowanie istniejących danych.
-- [ ] Uzupełnić dokumentację i rzeczywisty raport odbioru.
+- [x] Wdrożyć logowanie, sesje, CSRF, limity prób i unieważnianie dostępu.
+- [-] Wdrożyć hasła tymczasowe, zmianę hasła, reset administratora i bootstrap; zakończyć test CLI na MySQL.
+- [x] Wdrożyć aktualną kontrolę ról, zespołów i profili w API.
+- [-] Przygotować podstawowe ekrany logowania, zmiany hasła i chronionej aplikacji; zakończyć test przeglądarkowy.
+- [-] Przetestować API i UI, migracje oraz zachowanie istniejących danych.
+- [-] Uzupełnić dokumentację i rzeczywisty raport odbioru.
 
 ## Kolejne etapy
 

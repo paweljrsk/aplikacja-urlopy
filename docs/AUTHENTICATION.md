@@ -84,7 +84,9 @@ odświeża konto z bazy przy obsłudze sesji. Porównanie tożsamości uwzględn
 uprawnienie administratora, `credentialVersion`, wersję przypisań oraz aktualne
 przypisanie zespołu i roli według daty w `Europe/Warsaw`. Dezaktywacja, zmiana hasła
 lub zmiana tych uprawnień odbiera dostęp przy następnym żądaniu, również ze starego
-cookie. Sesja nie zawiera skrótu hasła ani serializowanej encji Doctrine.
+cookie. Dezaktywacja zwiększa też `credentialVersion`, więc późniejsze ponowne
+uaktywnienie nie przywraca sesji sprzed blokady. Sesja nie zawiera skrótu hasła
+ani serializowanej encji Doctrine.
 
 Limity logowania wynoszą 5 prób na minutę dla pary konto+IP i 25 na minutę dla IP.
 Potwierdzanie obecnego hasła przy zmianie lub resecie ma wspólny limit 5 prób na

@@ -1,6 +1,6 @@
 # Plan testów i odbioru
 
-Wersja 1.1 • 6 listopada 2026 r.
+Wersja 1.2 • 6 listopada 2026 r.
 
 Poniższe scenariusze są kryteriami przyszłej implementacji. Ich obecność w tym
 pliku nie oznacza wykonania ani zaliczenia testu. Testy dodajemy wraz z funkcją;
@@ -170,10 +170,95 @@ W razie błędu startu lub migracji zachowaj dane i logi. Nie używaj resetu baz
 `down -v` ani cofania migracji do usunięcia historii. Nie wykonano odbioru na
 firmowym serwerze/VPN ani próby odtworzenia backupu; te prace pozostają w etapie 12.
 
+## Wyniki etapu 3
+
+Zakres opisuje [AUTHENTICATION.md](AUTHENTICATION.md): lokalne logowanie i sesja,
+CSRF, hasła tymczasowe, wymuszona zmiana, reset przez administratora, bootstrap
+i odzyskanie dostępu przez CLI oraz kontrola bieżących profili w API. Polityka
+własnej decyzji kierownika/zastępcy jest podstawą autoryzacji; etap nie implementuje
+API wykonywania decyzji urlopowych ani historycznej widoczności po przeniesieniu
+(pozostała część Q5). Nie jest to odbiór całego procesu T12/T13/T19.
+
+### Kontrole lokalne — 6 listopada 2026 r.
+
+Środowisko pomocnicze: PHP 8.4.27 i Node 24.22.1. Nie ma lokalnego demona Docker;
+docelowe PHP 8.3, Node 22 i MySQL 8.0.32 sprawdza osobny przebieg CI.
+
+| Kontrola | Wynik i ograniczenie |
+|---|---|
+| `php bin/phpunit tests/Unit` | PASS: 102 testy / 325 asercji. Obejmuje model oraz politykę bieżących uprawnień, porównanie tożsamości, limity czasu sesji, politykę haseł i odmowy operacji CLI. Nie potwierdza jeszcze przepływu HTTP z MySQL. |
+| `php vendor/bin/phpstan analyse --no-progress` | PASS; poziom 6 w pełnym skonfigurowanym zakresie backendu, także migracje i nowe testy. |
+| Symfony `lint:container` | PASS; zgodność usług i zależności. |
+| `php bin/console doctrine:schema:validate --skip-sync` | PASS mapowania; zgodność z żywą bazą oczekuje CI. |
+| `php vendor/bin/php-cs-fixer fix --dry-run --diff` | PASS; kontrola stylu backendu. |
+| Frontend `npm run lint`, `npx --no-install tsc --noEmit`, `npm run build` | PASS; ESLint, typowanie i produkcyjny build. Nie zastępuje przeglądarkowego wykonania logowania. |
+
+### Testy HTTP i przeglądarkowe — oczekują wyniku CI
+
+[PR #3](https://github.com/paweljrsk/aplikacja-urlopy/pull/3) uruchomił **CI #13**.
+W chwili wpisu wynik końcowy pozostaje niepotwierdzony. Nie oznaczamy poniższych
+kontroli jako PASS na podstawie samego istnienia kodu testów.
+
+<!-- STAGE3_CI_FINAL_RESULT: wpisać dokładny commit, link, wynik i liczby po zakończeniu CI. -->
+
+| Kontrola przygotowana do wykonania | Zakres i status |
+|---|---|
+| `tests/Functional/AuthTest.php` — 42 przypadki HTTP | OCZEKUJE MySQL w CI. Rzeczywisty kernel Symfony, cookie sesji i tokeny CSRF: poprawne/błędne logowanie, nieznane i nieaktywne konto, wygaśnięte hasło, wymuszona zmiana, logout, reset, podmiana ID profilu i izolacja zespołów. |
+| Unieważnianie i limity w testach HTTP | OCZEKUJE CI. Stare sesje po zmianie/resetowaniu hasła, zmianie uprawnień i dezaktywacji, również po późniejszym ponownym uaktywnieniu konta; wygaśnięcie hasła tymczasowego w zalogowanej sesji; limity bezczynności/czasu całkowitego oraz prób logowania i potwierdzenia hasła. |
+| Migracja etapu 2 → 3 na istniejących danych | OCZEKUJE CI. Workflow tworzy syntetyczne konto w schemacie etapu 2, wykonuje migrację etapu 3 i sprawdza zachowanie danych oraz bezpieczne wartości nowych kolumn. |
+| `.github/scripts/auth-ui-check.cjs` | OCZEKUJE CI. Przeglądarka z syntetycznymi odpowiedziami `/api`: przekierowania, komunikaty, wymuszona zmiana, reset i czyszczenie sekretu, nagłówki CSRF, brak zapisu sekretów w browser storage, szerokości desktop/mobile, błędy JavaScript. |
+| Pełny zestaw kontenerowy | OCZEKUJE CI. Start, HTTP, migracje, schema validate, demo, wszystkie testy backendu, lint, build, stop/start z zachowaniem danych i start workerów. |
+
+Testy HTTP używają syntetycznych rekordów w bazie `_test` i nie zastępują testów
+przeglądarkowych. Skrypt przeglądarkowy **symuluje odpowiedzi API**; nawet jego
+pozytywny wynik nie jest pełnym E2E interfejsu z rzeczywistym uwierzytelnianiem PHP.
+Testy jednostkowe korzystają z kontrolowanego zegara; nie przestawiamy zegara serwera,
+aby przyspieszyć wygaśnięcie hasła lub sesji. Produkcja, TLS/VPN i odtworzenie kopii
+pozostają poza tym odbiorem.
+
+### Ręczny odbiór logowania i dostępu
+
+Poniższe kroki są instrukcją dla lokalnego środowiska z danymi syntetycznymi,
+nie zapisem już wykonanego testu na komputerze użytkownika.
+
+1. Przy aktualizacji zatrzymaj projekt przez `make stop`, wybierz gałąź etapu 3
+   i wykonaj `make init`, `make verify`, `make db-validate`. Zachowaj `.env` i wolumeny.
+2. Jeśli potrzebujesz kont wszystkich ról i dwóch zespołów, przed utworzeniem
+   administratora załaduj `make demo` wyłącznie do pustych tabel aplikacji.
+   Istniejącego zestawu nie resetuj. Konta demo nie mają wspólnych haseł.
+3. Wykonaj interaktywnie `docker compose exec php php bin/console app:admin:bootstrap`.
+   Utwórz administratora albo potwierdź inicjalizację istniejącego administratora demo
+   bez hasła. Oczekiwane: losowe hasło tymczasowe na 24 h, bez wpisywania go w argumentach.
+4. Otwórz `/login`. Sprawdź błędne hasło, potem poprawne tymczasowe. Oczekiwane:
+   ogólny komunikat błędu, a po zalogowaniu obowiązkowa zmiana hasła; zwykły ekran
+   i API profilu są zablokowane do jej zakończenia. Ustaw własne hasło 15–128 znaków
+   i zaloguj się ponownie. Sprawdź, że poprzednie hasło już nie działa.
+5. Otwórz konto w dwóch odrębnych profilach przeglądarki. Zmiana hasła w jednym
+   kończy jego sesję oraz odbiera dostęp drugiemu przy następnym żądaniu. Oddzielnie
+   sprawdź zwykły logout: wylogowany profil otrzymuje 401 przy `/api/auth/me`, a sam
+   przycisk „Wstecz” nie przywraca uprawnień. Zwykły logout kończy bieżącą sesję.
+6. Jako administrator wybierz inne aktywne konto i wykonaj reset. Błędne własne
+   hasło ma zablokować operację; poprawne zwraca nowe hasło tymczasowe i jego ważność.
+   Zamknięcie panelu lub przejście do innej karty usuwa sekret z widoku. Stare sesje
+   pracownika tracą dostęp, a nowe hasło wymusza zmianę. Własne hasło administrator
+   zmienia formularzem profilu, nie przyciskiem resetu konta.
+7. Na kontach syntetycznych sprawdź `GET /api/users/{id}/profile` bezpośrednio
+   w przeglądarce lub narzędziu API z daną sesją: pracownik własny profil 200,
+   cudzy 403; kierownik/zastępca profil własnego zespołu 200, innego 403;
+   administrator profil innego zespołu 200. Lista `/api/admin/users` i reset kont
+   są niedostępne pozostałym rolom. Identyfikatory weź z lokalnych danych, nie zakładaj stałych ID.
+8. Ponowny bootstrap nie powinien nadpisywać administratora. Odzyskanie jego dostępu
+   sprawdź na koncie testowym przez `app:admin:recover`: jawne potwierdzenie, nowe hasło
+   tymczasowe i utrata starych sesji. Komenda nie tworzy ani nie aktywuje konta.
+9. Uruchom `make test` i `make lint`. Kontrole dezaktywacji, zmiany roli/przypisania
+   oraz granic czasowych wykonują testy na izolowanych danych; panel tych zmian
+   powstaje w etapie 4. Hasła z odbioru nie mogą trafić do raportu, repozytorium ani logów.
+
 ## Najważniejsze scenariusze odbioru
 
-**T01–T23 pozostają kryteriami odbioru przyszłych procesów.** Częściowe pokrycie
-reguł modelu w etapie 2 nie oznacza zaliczenia któregokolwiek pełnego scenariusza.
+**T01–T23 stanowią kryteria odbioru całych procesów.** Faktycznie wykonane podzbiory
+i granice kontroli opisano przy poszczególnych etapach; sam test modelu lub profilu
+użytkownika nie zalicza całego scenariusza wniosków, kalendarza czy rozliczeń.
 
 | ID | Scenariusz | Oczekiwany rezultat |
 |---|---|---|

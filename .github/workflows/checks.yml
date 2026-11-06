@@ -40,6 +40,8 @@ jobs:
           docker compose exec -T -e APP_ENV=test php php bin/console doctrine:database:create --if-not-exists --no-interaction
           docker compose exec -T -e APP_ENV=test php php bin/console doctrine:migrations:migrate 'DoctrineMigrations\Version20261106210000' --no-interaction
           docker compose exec -T -e APP_ENV=test php php bin/console doctrine:query:sql "INSERT INTO app_user (first_name,last_name,email,active,is_administrator,must_change_password,version,assignment_revision) VALUES ('Synthetic','Upgrade','stage3-upgrade@example.test',1,0,1,1,0)"
+          make test-prepare
+          docker compose exec -T -e APP_ENV=test php php tests/Support/credentials-cli-check.php
           make test
           docker compose exec -T -e APP_ENV=test php php <<'PHP'
           <?php
@@ -81,6 +83,8 @@ jobs:
           make demo
           marker="$(docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root --batch --skip-column-names -e "SELECT marker FROM urlopy_ci_persistence.probe WHERE id = 1"')"
           test "$marker" = 'stage1-stop-start'
+      - name: Real HTTP authentication through Nginx and PHP-FPM
+        run: BASE_URL=http://localhost:8080 node .github/scripts/auth-http-check.cjs
       - name: Verify optional Messenger and Scheduler workers
         run: |
           make workers

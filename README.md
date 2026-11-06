@@ -4,7 +4,7 @@ Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje
 
 **Bieżący zakres: etap 3 — lokalne logowanie i kontrola dostępu.** Dostępne są ekrany logowania, zmiany hasła i chronionego profilu oraz reset haseł przez administratora. Backend korzysta z modelu etapu 2 (19 tabel) i dodatkowej migracji danych uwierzytelniania. Składanie wniosków, kalendarz i pełne rozliczenia powstaną w kolejnych etapach. `GET /api/health` zwraca `{"status":"ok"}` i sprawdza uruchomienie aplikacji oraz routingu, nie dostępność bazy. Zakres i ograniczenia opisuje [model danych](docs/DATA_MODEL.md).
 
-Kod etapu 3 znajduje się w gałęzi `codex/etap-3-logowanie-uprawnienia`, opartej na etapie 2 z [PR #2](https://github.com/paweljrsk/aplikacja-urlopy/pull/2). Poprzednie PR pozostają niescalone.
+Kod etapu 3 jest w [PR #3](https://github.com/paweljrsk/aplikacja-urlopy/pull/3), w gałęzi `codex/etap-3-logowanie-uprawnienia`, opartej na etapie 2 z [PR #2](https://github.com/paweljrsk/aplikacja-urlopy/pull/2). Poprzednie PR pozostają niescalone.
 
 ## Technologie
 
@@ -122,7 +122,7 @@ make lint
 - `db-migrate`: migracje Doctrine, bez resetowania bazy i bez ręcznego instalatora schematu.
 - `db-validate`: zgodność mapowania Doctrine z bieżącym schematem bazy.
 - `test-prepare`: przygotowanie oddzielnej bazy `_test`; można wykonać samodzielnie do diagnostyki.
-- `test`: automatycznie wykonuje `test-prepare`, a następnie PHPUnit: testy modelu, testy integracyjne zapisu i ograniczeń MySQL oraz dotychczasowe testy kernela i endpointu diagnostycznego. Używa danych syntetycznych.
+- `test`: automatycznie wykonuje `test-prepare`, a następnie PHPUnit: testy modelu, testy integracyjne zapisu i ograniczeń MySQL, rzeczywiste żądania logowania i autoryzacji API oraz testy kernela i endpointu diagnostycznego. Używa danych syntetycznych.
 - `lint`: walidacja YAML i kontenera Symfony, PHPStan z rozszerzeniem Doctrine, ESLint i TypeScript.
 
 ## Dane demonstracyjne
@@ -145,7 +145,7 @@ Build frontendu:
 docker compose exec -T node npm run build
 ```
 
-GitHub Actions w `.github/workflows/checks.yml` definiuje kontrole startu, API, bazy, powtórzenia migracji, zgodności schematu, ponownego ładowania demo, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli.
+GitHub Actions w `.github/workflows/checks.yml` definiuje kontrole startu, API, bazy, powtórzenia migracji, zgodności schematu, ponownego ładowania demo, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli. Scenariusz przeglądarkowy w Chrome używa jawnie syntetycznych odpowiedzi API i sprawdza zachowanie ekranów; prawdziwy backend jest sprawdzany osobnymi testami HTTP z MySQL. Narzędzie `playwright-core@1.62.1` jest instalowane tylko na czas kontroli CI, poza zależnościami aplikacji.
 
 Opcjonalne procesy Messenger/Scheduler uruchamia `make workers`. Używają transportów `async` i `scheduler_default`; nie wykonują jeszcze zadań urlopowych. Biblioteka `symfony/amqp-messenger` zapewnia obsługę istniejącego transportu RabbitMQ. Zwykły start aplikacji nie wymaga uruchamiania workerów.
 
