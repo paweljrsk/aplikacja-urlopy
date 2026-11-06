@@ -11,3 +11,19 @@ internal_controllers:
         namespace: App\Controller\Internal
     type: attribute
     prefix: /api
+
+auth_controllers:
+    resource:
+        path: ../src/Controller/Auth
+        namespace: App\Controller\Auth
+    type: attribute
+
+access_controllers:
+    resource:
+        path: ../src/Controller/Access
+        namespace: App\Controller\Access
+    type: attribute
+
+password_controller:
+    resource: ../src/Controller/PasswordController.php
+    type: attribute
