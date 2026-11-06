@@ -40,15 +40,64 @@ Odpowiedzi do pytań Q1–Q9 nie zostały jeszcze udzielone.
 
 ## Decyzje techniczne etapu 1
 
-Do uzupełnienia na podstawie rzeczywistych zmian i wyników audytu. Opis planowanego
-rozwiązania nie jest dowodem implementacji. Zmiany technologii i bibliotek należy
-uzasadnić, zachowując zakres etapu 1.
+Data wpisów: 6 listopada 2026 r. Zmiany dotyczą uruchomienia istniejącego szkieletu,
+bez implementacji funkcji urlopowych. Podstawą porównania jest commit
+`3793ba36dca14a7c0fd977a1c8e5b88013891141`.
+
+| ID | Decyzja i uzasadnienie | Zakres zmiany |
+|---|---|---|
+| DT01 | Zachowujemy istniejący stack oraz osobne warianty development i produkcja. Start lokalny nie wymaga wcześniejszego produkcyjnego builda aplikacji. | Osobne targety `frontend-dev`, `backend-dev`, `server-dev` i `supervisor-dev`; runtime produkcyjny pozostaje oddzielony w Dockerfile. |
+| DT02 | Zależności instalujemy z lockfile, a podstawowe obrazy Docker przypinamy do digestów. Aktualizacja jest świadomą zmianą wymagającą ponownej weryfikacji, nie skutkiem przesunięcia znacznika `latest`. | `npm ci`, Composer install, digests obrazów Node/PHP/Composer/Nginx/Redis/RabbitMQ/MySQL oraz wersje rozszerzeń PECL. Digesty nie zastępują późniejszych aktualizacji bezpieczeństwa. |
+| DT03 | Zwykły start, stop i restart zachowują wolumeny. Inicjalizacja ma przerwać się po błędzie i poczekać na gotowość usług przed operacjami bazy. | Makefile bez ignorowania błędów `init`; healthchecki i zależności Compose; `db-init` oraz migracje przez Doctrine. Usuwanie lokalnych danych wymaga jawnego `CONFIRM=DELETE_LOCAL_DATA`. |
+| DT04 | Ustawienia lokalne są jawnie oddzielone od produkcyjnych. Zachowujemy pierwotne przykładowe hasła development, aby nie zerwać połączenia z już istniejącymi wolumenami. | `.env.example`, domyślne wartości Compose i `backend/.env` pozostają wyłącznie lokalne. Zmiana zmiennej nie zmienia hasła zapisanego w istniejącym wolumenie MySQL/RabbitMQ. Produkcyjny Compose wymaga osobnych sekretów i DSN. |
+| DT05 | Pliki tworzone w bind mountach mają należeć do użytkownika Linux/WSL, a lokalna aplikacja domyślnie nasłuchuje tylko na loopback. | `LOCAL_UID`/`LOCAL_GID` ustawiane przez `make env`, `BIND_ADDRESS=127.0.0.1`; sekrety lokalne i kopie SQL są wyłączone z Git oraz kontekstu builda. |
+| DT06 | Konfiguracja Doctrine odpowiada MySQL, a baza testowa otrzymuje jeden sufiks `_test`. | Usunięto nieadekwatną preferencję identyfikatorów PostgreSQL; wersja MySQL pochodzi z DSN. `.env.test` wskazuje nazwę bazową, a `dbname_suffix` dodaje sufiks. |
+| DT07 | Dodajemy minimalny endpoint diagnostyczny do sprawdzenia kernela i routingu, bez ujawniania konfiguracji. | `GET /api/health` zwraca tylko `{"status":"ok"}`; test funkcjonalny obejmuje GET oraz odrzucenie POST. Endpoint nie deklaruje gotowości bazy ani wszystkich usług; `make verify` osobno wykonuje `SELECT 1`. |
+| DT08 | Konfigurację ESLint wyrównujemy do zainstalowanego Next.js. | `eslint-config-next` zmieniono z gałęzi 15 na dokładne `16.4.5`, aktualizując lockfile. Wersje `next` i React oraz kod interfejsu pozostają zgodne z dotychczasowym szkieletem. |
+| DT09 | Skonfigurowany transport AMQP wymaga właściwego mostka Symfony; samo rozszerzenie PHP AMQP nie zapewnia transportu Messenger. | Dodano `symfony/amqp-messenger` w linii `7.4.*`; lockfile wskazuje `v7.4.23`, licencja MIT. Ograniczona aktualizacja Composer doinstalowała jeden pakiet, bez aktualizacji i usuwania innych; nie zgłosiła advisories. To uzupełnienie istniejącego transportu, nie nowy mechanizm rozliczeń. |
+| DT10 | Workery są opcjonalnym profilem i korzystają z nazw transportów faktycznie skonfigurowanych w aplikacji. | Profil `workers`, transporty `async` i `scheduler_default`, logi stdout/stderr, limit czasu/pamięci oraz poprawne zatrzymywanie procesów. Poprawiono entrypoint Redis, zachowując inicjalizację i obniżenie uprawnień z oficjalnego obrazu. |
+| DT11 | Pełną weryfikację Docker wykonujemy na runnerze GitHub Actions, ponieważ lokalne środowisko wykonawcy nie ma działającego demona Docker. | Workflow `Baseline checks` uruchamia init, kontrolę HTTP/bazy, PHPUnit, analizę statyczną, frontend build i stop/start. Zapisane kroki workflow są planem kontroli; ich wykonanie oceniamy po konkretnym przebiegu. |
+| DT12 | Testy muszą wymuszać `APP_ENV=test` także w rzeczywistych zmiennych środowiska procesu. | W `phpunit.dist.xml` pozostawiono wpis `server` i dodano `<env name="APP_ENV" value="test" force="true" />`, aby środowisko `dev` przekazane przez Compose nie uruchamiało testów na kernelu developerskim. |
+| DT13 | Bootstrap testów odpowiada zainstalowanemu Symfony 7.4. | Usunięto historyczne sprawdzanie `method_exists(Dotenv::class, 'bootEnv')`; metoda istnieje w wymaganej wersji, a PHPStan 2.3.5 wykrył warunek zawsze prawdziwy. Bez wyciszania reguły analizy. |
+
+Produkcja nadal wymaga prac etapu 12: konfiguracji TLS/VPN, sekretów, polityki kopii
+i odtworzenia oraz operacyjnego odbioru. Zmiany w `compose-deploy.yaml` zapewniają
+jawne wymaganie ustawień, ale nie potwierdzają gotowości produkcyjnej.
 
 ## Problemy i ograniczenia
 
-Do uzupełnienia potwierdzonym wynikiem kontroli. Ryzyka z odczytu szkieletu są
-w [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), w sekcji uwag do bazowego repozytorium.
-Nie należy oznaczać ich jako błędów wykonania bez sprawdzenia.
+### E01 — środowisko testowe PHPUnit w Compose
+
+W pierwszym [przebiegu CI](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42246247884)
+inicjalizacja kontenerów i `make verify` zakończyły się powodzeniem na PHP 8.3.36.
+Krok PHPUnit nie przeszedł: rzeczywiste `APP_ENV=dev` z Compose nie zostało zastąpione
+przez dotychczasowy wpis PHPUnit ustawiający wyłącznie zmienną serwera. Poprawkę
+opisuje DT12. Jej wynik oraz wynik całego przebiegu po poprawce należy odczytać
+z ponownej weryfikacji zapisanej w [TEST_PLAN.md](TEST_PLAN.md); pierwszy przebieg
+nie jest dowodem zaliczenia całej kontroli etapu 1.
+
+### E02 — ograniczenie lokalnej weryfikacji Docker
+
+Lokalne środowisko wykonawcy nie ma działającego demona Docker. Walidacja plików
+i testy uruchomione poza kontenerami nie zastępują testu startu całego zestawu usług.
+Dlatego dowodem działania Compose jest konkretny przebieg CI na rzeczywistych
+kontenerach. Nie należy przypisywać lokalnym kontrolom wyników z innego środowiska.
+
+### E03 — zgodność istniejących danych lokalnych
+
+MySQL i RabbitMQ inicjalizują użytkowników/hasła przy tworzeniu danych; zmiana `.env`
+nie przestawia istniejących kont. Przywrócono oryginalne lokalne wartości przykładowe
+`pass1234`/`root` w konfiguracji development, aby aktualizacja szkieletu nie wymagała
+kasowania dotychczasowych wolumenów. Dla istniejących własnych wartości należy
+zachować odpowiednią konfigurację lub wykonać świadomą zmianę hasła w usłudze.
+Wartości przykładowe nie są konfiguracją produkcyjną.
+
+### E04 — granice etapu 1
+
+Endpoint diagnostyczny i testy uruchomienia nie implementują logowania, kontroli ról,
+wniosków, salda ani innych funkcji biznesowych. Nie wykonano wdrożenia na firmowym
+serwerze ani odbioru produkcyjnego. Ostateczne wyniki poszczególnych kontroli i status
+etapu pozostają w [TEST_PLAN.md](TEST_PLAN.md) i [TASKS.md](../TASKS.md).
 
 ## Format kolejnego wpisu
 
