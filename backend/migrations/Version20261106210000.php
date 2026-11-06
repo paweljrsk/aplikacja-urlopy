@@ -26,7 +26,7 @@ final class Version20261106210000 extends AbstractMigration
         $this->abortIf(!$this->connection->getDatabasePlatform() instanceof AbstractMySQLPlatform, 'This migration targets MySQL 8.0.32 or compatible newer MySQL.');
         // Fail before touching an existing/partially migrated application schema.
         $ownedTables = ['absence_type', 'absence_type_version', 'absence_type_availability', 'audit_event', 'daily_occupancy', 'employment_type', 'holiday', 'hour_pool', 'leave_account', 'leave_request', 'ledger_entry', 'opening_balance', 'opening_carry', 'request_day', 'request_decision', 'request_revision', 'staff_assignment', 'team', 'app_user'];
-        $existing = array_intersect($ownedTables, $schema->getTableNames());
+        $existing = array_filter($ownedTables, $schema->hasTable(...));
         $this->abortIf([] !== $existing, 'Application tables already exist: '.implode(', ', $existing).'. Inspect the database; do not reset or overwrite data.');
         $this->addSql('CREATE TABLE absence_type (id INT AUTO_INCREMENT NOT NULL, code VARCHAR(64) NOT NULL, active TINYINT NOT NULL, latest_revision INT NOT NULL, version INT DEFAULT 1 NOT NULL, UNIQUE INDEX UNIQ_FBCF99B677153098 (code), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('CREATE TABLE absence_type_version (id INT AUTO_INCREMENT NOT NULL, revision INT NOT NULL, name VARCHAR(255) NOT NULL, deducts_balance TINYINT NOT NULL, type_id INT NOT NULL, UNIQUE INDEX uniq_absence_type_revision (type_id, revision), INDEX IDX_7EC7135CC54C8C93 (type_id), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
