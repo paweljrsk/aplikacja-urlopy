@@ -22,18 +22,61 @@ współbieżności dla MySQL nie zastępuje wyłącznie test na innym silniku ba
 
 ## Wyniki etapu 1
 
-Raport wykonania należy uzupełnić po przeprowadzeniu kontroli. Na etapie tworzenia
-tej dokumentacji nie zapisano tu wyników uruchomienia aplikacji.
+### Kontrole lokalne — 6 listopada 2026 r.
 
-| Kontrola | Dowód / wynik |
+Środowisko pomocnicze: Linux, PHP 8.4.27, Composer 2.11.1, Node 24.22.1,
+npm 11.9.0. Docelowe PHP 8.3 i Node 22 są sprawdzane osobno w kontenerach CI.
+
+| Kontrola | Wynik i ograniczenie |
 |---|---|
-| Instalacja zależności z lockfile | Do uzupełnienia po wykonaniu |
-| Start backendu i odpowiedź HTTP | Do uzupełnienia po wykonaniu |
-| Start frontendu i odpowiedź HTTP | Do uzupełnienia po wykonaniu |
-| Stan usług Compose | Do uzupełnienia po wykonaniu |
-| Kontrole jakości dostępne w repozytorium | Do uzupełnienia po wykonaniu |
-| Start/stop/restart bez utraty danych | Do uzupełnienia po wykonaniu |
-| Zgodność dokumentacji z uzgodnionym planem | Do uzupełnienia po sprawdzeniu |
+| `composer validate --no-check-publish` | PASS; manifest i lockfile zgodne |
+| `composer install` | PASS z lockfile, wraz z cache clear i assets install; lokalnie użyto źródeł Git z powodu ograniczeń pobierania archiwów. Po wyczerpaniu miejsca w lokalnym cache przeniesiono go na dysk roboczy i ponowiono instalację. CI sprawdza standardowe `--prefer-dist`. |
+| `APP_ENV=dev php bin/phpunit` | PASS: 2 testy, 4 asercje; wymuszenie środowiska `test` działa pomimo odziedziczonego `dev` |
+| `php vendor/bin/phpstan analyse --no-progress` | PASS, poziom 6; usunięto zawsze prawdziwy warunek w bootstrapie testów |
+| Symfony `lint:yaml config`, `lint:container` | PASS, środowisko `test`; 9 plików YAML, zgodne typy usług |
+| `php vendor/bin/php-cs-fixer fix --dry-run --diff` | PASS, 0 plików wymagających poprawy; wykonano na PHP 8.4, bez modyfikacji kodu |
+| `npm ci`, `npm run lint`, `npm run build` | PASS; instalacja z lockfile, ESLint, TypeScript i prerendering |
+| Frontend `next dev` oraz `next start` po buildzie | PASS; w obu trybach `GET /` zwrócił HTTP 200 |
+| Compose config development i produkcji | PASS walidacji składni; produkcja z wartościami syntetycznymi, bez wdrożenia |
+| Makefile: tworzenie `.env`, przerwanie po błędzie init, blokada komend destrukcyjnych | PASS kontroli w izolowanym środowisku ze sztucznym wykonawcą Compose; istniejący `.env` zachowany, 4 komendy destrukcyjne odrzucone bez potwierdzenia |
+| Dokumentacja | PASS porównania z planem: 12 etapów i promptów, Q1–Q9, T01–T23, macierz uprawnień, zachowane instrukcje frontendu |
+
+PHP MD jest zainstalowany w szkielecie, ale repozytorium nie ma uzgodnionego zestawu
+jego reguł; nie przedstawiamy go jako wykonanej bramki jakości. Nie wykonywano
+jeszcze testów biznesowych T01–T23 — odpowiadają przyszłym etapom.
+
+### Kontrole Docker w CI
+
+Pełny [przebieg CI #6](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42247971165)
+na commicie `589386e8c27de3ef938abad7b79078a2c2089f15` zakończył się **SUCCESS**.
+Środowisko: GitHub Actions Ubuntu 24.04, rzeczywiste kontenery z Dockerfile,
+PHP 8.3.36, Node 22.13, MySQL 8.0.32. Raport i status zadań dopisano po weryfikacji.
+
+| Kontrola | Wynik |
+|---|---|
+| `make init` | PASS; build obrazów, instalacje z lockfile, zdrowe usługi, Doctrine create-if-missing i migrate bez migracji biznesowych |
+| `make verify` | PASS; Symfony uruchomiony, `SELECT 1`, odpowiedzi HTTP frontendu i `/api/health` |
+| `make test` | PASS; PHPUnit 12.5.43, 2 testy / 4 asercje na PHP 8.3.36 |
+| `make lint` | PASS; YAML, kontener Symfony, PHPStan, ESLint i TypeScript |
+| `npm run build` w kontenerze Node | PASS; produkcyjny build Next.js 16.4.5 |
+| `make stop`, `make start`, ponowne `make verify` | PASS; usługi i HTTP ponownie dostępne |
+| Zachowanie danych MySQL | PASS; marker zapisany w osobnej syntetycznej bazie przed stop/start odczytano z identyczną wartością po starcie; baza kontrolna usunięta |
+| `make workers` | PASS; procesy `async` i `scheduler_default` stabilne przez co najmniej 12 s bez restartu |
+| Zakończenie kontroli | PASS; kontenery zatrzymane, standardowy cleanup bez `down -v` |
+
+Pierwszy przebieg CI wykrył konflikt `APP_ENV`; drugi został zastąpiony nowym po
+poprawce PHPStan. Nie stanowią odbioru. Powyższy pełny przebieg obejmuje obie poprawki.
+Test workerów sprawdza ich start, a nie obsługę przyszłych wiadomości biznesowych.
+Test zachowania danych dotyczy stop/start, nie odtwarzania backupu — backup/restore
+pozostają w etapie 12. Nie wykonano wdrożenia ani testu na firmowym serwerze/VPN.
+
+### Ręczny odbiór szkieletu
+
+1. W katalogu projektu uruchom `make init`, następnie `make verify`.
+2. Otwórz `http://localhost:8080/`: oczekiwany jest ekran startowy Next.js.
+3. Otwórz `http://localhost:8080/api/health`: oczekiwane `{"status":"ok"}`.
+4. Uruchom `make test` oraz `make lint`.
+5. Wykonaj `make stop`, `make start`, `make verify`; aplikacja powinna odpowiadać ponownie.
 
 ## 7. Najważniejsze scenariusze odbioru
 

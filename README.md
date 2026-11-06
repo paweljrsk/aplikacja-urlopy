@@ -85,7 +85,7 @@ Build frontendu:
 docker compose exec -T node npm run build
 ```
 
-GitHub Actions w `.github/workflows/checks.yml` wykonuje kontenerowe sprawdzenie startu, API, bazy, testów, lintowania, builda oraz stop/start. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli.
+GitHub Actions w `.github/workflows/checks.yml` wykonuje kontenerowe sprawdzenie startu, API, bazy, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli.
 
 Opcjonalne procesy Messenger/Scheduler uruchamia `make workers`. Używają transportów `async` i `scheduler_default`; w etapie 1 nie wykonują jeszcze zadań urlopowych. Biblioteka `symfony/amqp-messenger` zapewnia obsługę istniejącego transportu RabbitMQ. Zwykły start aplikacji nie wymaga uruchamiania workerów.
 
