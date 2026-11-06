@@ -4,9 +4,9 @@ x-backend-environment: &backend-environment
   APP_DEBUG: '1'
   APP_SECRET: '${APP_SECRET:-local-development-secret-change-before-use}'
   DEFAULT_URI: 'http://localhost:${DEPLOY_PORT:-8080}'
-  DATABASE_URL: 'mysql://${MYSQL_USER:-notus}:${MYSQL_PASSWORD:-local-dev-password}@mysql:3306/${MYSQL_DATABASE:-calendar}?serverVersion=8.0.32&charset=utf8mb4'
-  REDIS_URL: 'redis://:${REDIS_PASSWORD:-local-dev-redis}@redis:6378'
-  MESSENGER_TRANSPORT_DSN: 'amqp://${RABBITMQ_DEFAULT_USER:-notus}:${RABBITMQ_DEFAULT_PASS:-local-dev-rabbit}@rabbit:5672/%2f/messages'
+  DATABASE_URL: 'mysql://${MYSQL_USER:-notus}:${MYSQL_PASSWORD:-pass1234}@mysql:3306/${MYSQL_DATABASE:-calendar}?serverVersion=8.0.32&charset=utf8mb4'
+  REDIS_URL: 'redis://:${REDIS_PASSWORD:-pass1234}@redis:6378'
+  MESSENGER_TRANSPORT_DSN: 'amqp://${RABBITMQ_DEFAULT_USER:-notus}:${RABBITMQ_DEFAULT_PASS:-pass1234}@rabbit:5672/%2f/messages'
   TZ: Europe/Warsaw
 
 x-backend-build: &backend-build
@@ -116,7 +116,7 @@ services:
       target: redis
     environment:
       REDIS_PORT: '6378'
-      REDIS_PASSWORD: '${REDIS_PASSWORD:-local-dev-redis}'
+      REDIS_PASSWORD: '${REDIS_PASSWORD:-pass1234}'
     healthcheck:
       test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli -p "$$REDIS_PORT" ping | grep -q PONG']
       interval: 10s
@@ -129,7 +129,7 @@ services:
       - rabbit:/var/lib/rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: '${RABBITMQ_DEFAULT_USER:-notus}'
-      RABBITMQ_DEFAULT_PASS: '${RABBITMQ_DEFAULT_PASS:-local-dev-rabbit}'
+      RABBITMQ_DEFAULT_PASS: '${RABBITMQ_DEFAULT_PASS:-pass1234}'
     healthcheck:
       test: [CMD, rabbitmq-diagnostics, -q, ping]
       interval: 10s
@@ -142,8 +142,8 @@ services:
     environment:
       MYSQL_DATABASE: '${MYSQL_DATABASE:-calendar}'
       MYSQL_USER: '${MYSQL_USER:-notus}'
-      MYSQL_PASSWORD: '${MYSQL_PASSWORD:-local-dev-password}'
-      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD:-local-dev-root}'
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD:-pass1234}'
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD:-root}'
     volumes:
       - mysql:/var/lib/mysql
     healthcheck:
