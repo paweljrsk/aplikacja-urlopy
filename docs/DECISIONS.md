@@ -96,6 +96,24 @@ zapisu; wyniki uruchomienia testów pozostają w TEST_PLAN.
 | DT21 | Dane demonstracyjne są osobnym, jawnym poleceniem na pustej bazie development/test. | `app:demo:load --confirm-demo` odrzuca produkcję, nie tworzy haseł i nie uruchamia się automatycznie. Zestaw ma 5 kont, wszystkie role, UoP/B2B i 2 zespoły. Powtórzenie rozpoznanego zestawu nie dubluje ani nie nadpisuje danych. |
 | DT22 | Dodajemy rozszerzenie analizy statycznej rozumiejące mapowania Doctrine zamiast wyciszać poprawne właściwości utrwalane przez ORM. | Nowa zależność tylko developerska: `phpstan/phpstan-doctrine` 2.1.2, licencja MIT. Porównanie lockfile potwierdza jeden dodany pakiet, bez usunięć i zmian wersji pozostałych pakietów. Nie dodaje zależności do runtime produkcyjnego. |
 
+## Decyzje techniczne etapu 3 — 6 listopada 2026 r.
+
+Prompt 3 zleca zaprojektowanie sposobu uwierzytelniania i zabezpieczeń. Poniższe
+wartości są decyzjami technicznymi wykonawcy, nie nowymi odpowiedziami biznesowymi
+użytkownika. Zakres opisuje [AUTHENTICATION.md](AUTHENTICATION.md); faktyczne wyniki
+testów pozostają w TEST_PLAN. Sam wpis nie oznacza zaliczenia odbioru.
+
+| ID | Decyzja i uzasadnienie | Zakres i granice |
+|---|---|---|
+| DT23 | Używamy mechanizmów Symfony Security i osobnej tożsamości sesyjnej powiązanej z `User.id`. | Provider odczytuje konto z bazy. Sesja nie serializuje grafu encji ani skrótu hasła. Lokalne uwierzytelnianie jest oddzielone od polityki dostępu, co pozwala później dołączyć inny provider; integracja M365 nie powstaje w tym etapie. |
+| DT24 | Frontend i API korzystają ze wspólnego origin oraz sesji serwerowej. | Cookie sesji: `HttpOnly`, `SameSite=Lax`, `Secure` na produkcji. Operacje zmieniające stan wymagają tokenu CSRF powiązanego z sesją w nagłówku `X-CSRF-Token`. Nie przechowujemy tokenu sesji ani haseł w localStorage. |
+| DT25 | Sesja wygasa po 60 minutach bezczynności albo po 8 godzinach od logowania. | Odświeżana tożsamość uwzględnia aktywność, administratora, `credentialVersion`, zmianę przypisań i przypisanie obowiązujące dzisiaj w Europe/Warsaw. Zmiana hasła/reset unieważnia wcześniejsze sesje przy kolejnym żądaniu; zmiana własnego hasła kończy też sesję bieżącą. |
+| DT26 | Ograniczamy próby logowania i potwierdzania hasła do operacji wrażliwych. | Logowanie: 5 prób/min dla pary konto+IP i 25 prób/min dla IP. Potwierdzanie obecnego hasła: 5 prób/min na zalogowanego użytkownika, wspólnie dla zmiany hasła i resetów różnych kont. Po przekroczeniu limitu API zwraca 429. |
+| DT27 | Nowe hasło ma 15–128 znaków; dopuszczamy spacje bez narzuconego zestawu symboli. | Hasła tymczasowe są losowe, ważne 24 h i wymagają zmiany przed dostępem do funkcji aplikacji. Nie zapisujemy wartości haseł ani ich skrótów w audycie. |
+| DT28 | Pierwszego administratora inicjalizuje jawna, interaktywna komenda na serwerze. | Brak stałego hasła i parametru CLI zawierającego hasło. Bootstrap może zachować dane aktywnego administratora demo bez hasła. Osobna komenda odzyskania dostępu dotyczy tylko istniejącego, aktywnego administratora z wcześniej ustawionym hasłem; nie aktywuje kont ani nie nadaje uprawnień. Reset przez API wymaga administratora i jego obecnego hasła; własne hasło zmienia zwykłym formularzem. |
+| DT29 | W etapie 3 API uprawnień obejmuje bieżące profile, a nie historię nieobecności po przeniesieniu. | Pracownik czyta własny profil; kierownik i zastępca także profile bieżącego zespołu; administrator wszystkie. Polityka decyzji zachowuje wyjątek kierownika i zakaz własnej akceptacji zastępcy, lecz nie wykonuje decyzji urlopowych. Historyczny zakres dostępu i przenoszenie otwartych wniosków pozostają w Q5. |
+| DT30 | Dodajemy komponenty bezpieczeństwa zgodne z linią Symfony 7.4. | Bezpośrednie zależności: `security-bundle`, `security-csrf`, `rate-limiter`, `lock`. Lockfile dodaje łącznie 10 pakietów MIT, bez zmiany wersji lub usunięcia pozostałych. Instalacja nie zgłosiła advisories. Dokładne wersje i przeznaczenie są w AUTHENTICATION. |
+
 ## Problemy i ograniczenia
 
 ### E01 — środowisko testowe PHPUnit w Compose
@@ -150,6 +168,26 @@ różnicę. Doctrine Migrations aktywuje filtr własnej tabeli metadanych przy z
 teraz standardowe polecenie `doctrine:schema:validate` przez aplikację konsolową ze
 zdarzeniami. Nie filtrujemy arbitralnie tabel aplikacji ani nie pomijamy zgodności
 schematu. Pozostałe 77 testów tego przebiegu przeszło, lecz całość nie była zielona.
+
+### E07 — lokalny frontend nie osiągał stanu healthy
+
+Po etapie 2 użytkownik zgłosił `node: unhealthy`. Logi wykazały odpowiedzi HTTP 500
+podczas przetwarzania CSS i brak możliwości załadowania
+`@tailwindcss/turbopack/dist/index.js`. Projekt znajdował się w katalogu Linuksa WSL;
+sam komunikat nie wskazywał na opóźnienia dysku Windows ani na brak Node.
+
+Użytkownik potwierdził „Jest OK” po zatrzymaniu frontendu i instalatora, ponownym
+`npm ci --include=dev`, sprawdzeniu `require.resolve`, usunięciu wyłącznie
+wygenerowanego `.next`, uruchomieniu Node/Nginx z `--no-deps` i dokończeniu migracji.
+Nie resetowano bazy, wolumenów ani lockfile i nie aktualizowano zależności.
+
+W logach były trzy zakończone instalacje npm. Ponowne `npm ci` współdzielące
+`node_modules` z uruchomionym Next jest możliwą przyczyną; brak znaczników czasu
+nie pozwala potwierdzić tego mechanizmu dla tej awarii. Nie opisujemy hipotezy
+jako ustalonej przyczyny. Przy aktualizacji przez `make init` należy najpierw
+wykonać `make stop`, aby instalatory nie zmieniały zależności działających procesów.
+Potwierdzenie użytkownika dotyczy lokalnego odzyskania działania, nie odbioru
+produkcji ani nowego wyniku testów automatycznych.
 
 ## Format kolejnego wpisu
 

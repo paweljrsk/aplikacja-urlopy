@@ -2,7 +2,7 @@
 
 Aktualizacja: 6 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacja — zakończony**.
 **Etap 2 — model danych i migracje — zakończony**.
-Następny: etap 3, oczekuje na polecenie użytkownika.
+Bieżący: **etap 3 — logowanie lokalne i kontrola dostępu — w trakcie**.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
 Statusy: `[ ]` do zrobienia, `[-]` w trakcie, `[x]` wykonane i zweryfikowane.
@@ -41,10 +41,20 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Uruchomić adekwatne kontrole jakości i zapisać faktyczne wyniki.
 - [x] Uzupełnić opis modelu, README, decyzje techniczne i raport odbioru etapu 2.
 
+## Etap 3 — bieżąca praca
+
+- [x] Odczytać wymagania, prompt 3, aktualny kod i stan PR #2.
+- [-] Wdrożyć logowanie, sesje, CSRF, limity prób i unieważnianie dostępu.
+- [ ] Wdrożyć hasła tymczasowe, zmianę hasła, reset administratora i bootstrap.
+- [ ] Wdrożyć aktualną kontrolę ról, zespołów i profili w API.
+- [ ] Przygotować podstawowe ekrany logowania, zmiany hasła i chronionej aplikacji.
+- [ ] Przetestować API i UI, migracje oraz zachowanie istniejących danych.
+- [ ] Uzupełnić dokumentację i rzeczywisty raport odbioru.
+
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
-- [ ] Etap 3 — logowanie lokalne i kontrola dostępu w API.
+- [-] Etap 3 — logowanie lokalne i kontrola dostępu w API.
 - [ ] Etap 4 — administracja użytkownikami, zespołami i słownikami.
 - [ ] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
 - [ ] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
@@ -82,4 +92,4 @@ Q1 jest zamknięte. Q5 nadal wymaga ustalenia widoczności historii i obsługi o
 lub już złożonych przyszłych wniosków przy zmianie zespołu/formy zatrudnienia.
 Q8 nadal wymaga procedury korekt sprzed granicy ewidencji. Pozostałe pytania są otwarte;
 nie wolno rozstrzygać ich domyślnie w modelu ani implementować zależnych operacji.
-Nie rozpoczynać etapu 3 bez kolejnego polecenia użytkownika.
+Etap 3 rozpoczęto na polecenie użytkownika. Nie rozpoczynać etapu 4 bez kolejnego polecenia.

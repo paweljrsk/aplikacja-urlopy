@@ -1,0 +1,32 @@
+security:
+    password_hashers:
+        App\Security\SecurityIdentity: 'auto'
+    providers:
+        application_users:
+            id: App\Security\IdentityProvider
+    firewalls:
+        main:
+            pattern: ^/api/
+            lazy: true
+            provider: application_users
+            custom_authenticators:
+                - App\Security\JsonLoginAuthenticator
+            entry_point: App\Security\JsonLoginAuthenticator
+            login_throttling:
+                max_attempts: 5
+                interval: '1 minute'
+                cache_pool: cache.app
+    access_control:
+        - { path: ^/api/health$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/(csrf|login)$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin/, roles: ROLE_ADMIN }
+        - { path: ^/api/, roles: ROLE_USER }
+
+when@test:
+    security:
+        password_hashers:
+            App\Security\SecurityIdentity:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10

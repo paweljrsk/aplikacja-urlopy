@@ -34,11 +34,38 @@ jobs:
           make demo
           make demo
       - name: Backend tests
-        run: make test
+        run: |
+          # Exercise upgrading a populated stage 2 schema before the test suite.
+          docker compose exec -T mysql sh -s < .docker/scripts/prepare-test-database.sh
+          docker compose exec -T -e APP_ENV=test php php bin/console doctrine:database:create --if-not-exists --no-interaction
+          docker compose exec -T -e APP_ENV=test php php bin/console doctrine:migrations:migrate 'DoctrineMigrations\Version20261106210000' --no-interaction
+          docker compose exec -T -e APP_ENV=test php php bin/console doctrine:query:sql "INSERT INTO app_user (first_name,last_name,email,active,is_administrator,must_change_password,version,assignment_revision) VALUES ('Synthetic','Upgrade','stage3-upgrade@example.test',1,0,1,1,0)"
+          make test
+          docker compose exec -T -e APP_ENV=test php php <<'PHP'
+          <?php
+          require 'vendor/autoload.php';
+          (new Symfony\Component\Dotenv\Dotenv())->bootEnv('.env');
+          $kernel = new App\Kernel('test', true);
+          $kernel->boot();
+          $row = $kernel->getContainer()->get('doctrine')->getConnection()->fetchAssociative(
+              'SELECT first_name,last_name,password_hash,credential_version,temporary_password_expires_at FROM app_user WHERE email = ?',
+              ['stage3-upgrade@example.test'],
+          );
+          if (!$row || $row['first_name'] !== 'Synthetic' || $row['last_name'] !== 'Upgrade'
+              || $row['password_hash'] !== null || (int) $row['credential_version'] !== 1
+              || $row['temporary_password_expires_at'] !== null) {
+              throw new RuntimeException('Stage 2 account was not preserved by the credential migration.');
+          }
+          echo "Stage 2 account preserved, with safe credential defaults.\n";
+          PHP
       - name: Static checks
         run: make lint
       - name: Production frontend build
         run: docker compose exec -T node npm run build
+      - name: Browser auth screens with synthetic API responses
+        run: |
+          npm install --prefix /tmp/urlopy-ui --no-package-lock --ignore-scripts playwright-core@1.62.1
+          NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/auth-ui-check.cjs
       - name: Write synthetic persistence marker outside the application schema
         run: |
           docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root' <<'SQL'

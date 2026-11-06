@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Model\DateValue;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -35,6 +36,12 @@ class User
 
     #[ORM\Column]
     private bool $mustChangePassword = true;
+
+    #[ORM\Column(options: ['default' => 1])]
+    private int $credentialVersion = 1;
+
+    #[ORM\Column(type: 'utc_datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $temporaryPasswordExpiresAt = null;
 
     #[ORM\Version]
     #[ORM\Column(type: 'integer')]
@@ -103,6 +110,32 @@ class User
         return $this->mustChangePassword;
     }
 
+    public function getCredentialVersion(): int
+    {
+        return $this->credentialVersion;
+    }
+
+    public function getTemporaryPasswordExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->temporaryPasswordExpiresAt;
+    }
+
+    /** Replace only an encoded password; the application service owns plaintext validation and audit. */
+    public function replacePasswordHash(string $hash, bool $mustChangePassword, ?\DateTimeImmutable $expiresAt): void
+    {
+        if (strlen($hash) > 255 || 'unknown' === password_get_info($hash)['algoName']) {
+            throw new \InvalidArgumentException('An encoded supported password hash is required.');
+        }
+        if ($mustChangePassword !== (null !== $expiresAt)) {
+            throw new \InvalidArgumentException('Only a temporary password has a required expiry time.');
+        }
+        $expiresAt = null === $expiresAt ? null : DateValue::utc($expiresAt);
+        $this->advanceCredentialVersion();
+        $this->passwordHash = $hash;
+        $this->mustChangePassword = $mustChangePassword;
+        $this->temporaryPasswordExpiresAt = $expiresAt;
+    }
+
     public function getVersion(): int
     {
         return $this->version;
@@ -163,7 +196,19 @@ class User
 
     public function deactivate(): void
     {
+        if (!$this->active) {
+            return;
+        }
+        $this->advanceCredentialVersion();
         $this->active = false;
+    }
+
+    private function advanceCredentialVersion(): void
+    {
+        if ($this->credentialVersion >= 2147483647) {
+            throw new \OverflowException('Credential version exhausted.');
+        }
+        ++$this->credentialVersion;
     }
 
     private static function validateName(string $name): string

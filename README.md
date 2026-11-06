@@ -2,9 +2,9 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 2 — model danych, migracja i syntetyczne dane demonstracyjne.** Backend zawiera model pracowników, przypisań, nieobecności, wniosków, rozliczeń i audytu oraz migrację tworzącą 19 tabel. Nie ma jeszcze logowania, ekranów biznesowych ani API obsługującego wnioski i saldo. Strona główna to ekran startowy Next.js. `GET /api/health` zwraca `{"status":"ok"}` i sprawdza uruchomienie aplikacji oraz routingu, nie dostępność bazy. Zakres i ograniczenia opisuje [model danych](docs/DATA_MODEL.md).
+**Bieżący zakres: etap 3 — lokalne logowanie i kontrola dostępu.** Dostępne są ekrany logowania, zmiany hasła i chronionego profilu oraz reset haseł przez administratora. Backend korzysta z modelu etapu 2 (19 tabel) i dodatkowej migracji danych uwierzytelniania. Składanie wniosków, kalendarz i pełne rozliczenia powstaną w kolejnych etapach. `GET /api/health` zwraca `{"status":"ok"}` i sprawdza uruchomienie aplikacji oraz routingu, nie dostępność bazy. Zakres i ograniczenia opisuje [model danych](docs/DATA_MODEL.md).
 
-Kod etapu 2 znajduje się w gałęzi `codex/etap-2-model-danych`: [PR #2](https://github.com/paweljrsk/aplikacja-urlopy/pull/2) bazuje na [PR #1](https://github.com/paweljrsk/aplikacja-urlopy/pull/1), który dostarcza szkielet etapu 1.
+Kod etapu 3 znajduje się w gałęzi `codex/etap-3-logowanie-uprawnienia`, opartej na etapie 2 z [PR #2](https://github.com/paweljrsk/aplikacja-urlopy/pull/2). Poprzednie PR pozostają niescalone.
 
 ## Technologie
 
@@ -23,7 +23,7 @@ Wersje pakietów zapisane są w `backend/composer.lock` i `frontend/package-lock
 - Docker Engine / Docker Desktop z pluginem Compose v2 obsługującym `--wait`.
 - Git i GNU Make.
 - Na Windows używaj terminala WSL, np. w PHPStorm, z działającym Dockerem w tej dystrybucji. Polecenia wykonuj w katalogu głównym projektu.
-- Dostęp do rejestrów obrazów i pakietów podczas pierwszego budowania. `next/font/google` pobiera font podczas builda, a aplikacja podaje go później lokalnie.
+- Dostęp do rejestrów obrazów i pakietów podczas pierwszego budowania. Interfejs używa fontów systemowych i nie pobiera fontów Google przy starcie ani buildzie.
 
 Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem projektu są kontenery.
 
@@ -32,7 +32,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/etap-2-model-danych
+git switch codex/etap-3-logowanie-uprawnienia
 make init
 make verify
 make db-validate
@@ -40,7 +40,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy przejściu z etapu 1 po pobraniu i wybraniu gałęzi etapu 2 również wykonaj `make init`, `make verify` i `make db-validate`. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 3, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracja etapu 3 zachowuje istniejące konta; nie nadaje im automatycznie haseł. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 
@@ -48,6 +48,42 @@ Po uruchomieniu:
 - Backend: http://localhost:8080/api/health
 
 Domyślny port i adres nasłuchiwania są konfigurowalne w głównym `.env`. Domyślnie HTTP jest dostępne tylko na `127.0.0.1`. Wartości przykładowe służą wyłącznie lokalnemu developmentowi. Zachowano domyślne hasła pierwotnego szkieletu, aby nie odciąć dostępu do istniejących lokalnych wolumenów. Przy własnych dotychczasowych hasłach ustaw je w `.env` przed startem; zmiana zmiennej nie zmienia automatycznie użytkownika w istniejącej bazie lub RabbitMQ.
+
+## Pierwszy administrator i logowanie
+
+Po migracji opcjonalnie załaduj demo poleceniem `make demo` (tylko przy pustych tabelach),
+a następnie uruchom interaktywnie:
+
+```bash
+docker compose exec php php bin/console app:admin:bootstrap
+```
+
+Podaj e-mail oraz dane administratora. Polecenie tworzy pierwsze konto albo — po
+jawnym potwierdzeniu — inicjalizuje istniejącego aktywnego administratora demo bez hasła.
+Hasło tymczasowe pokaże raz; jest ważne 24 h. Otwórz `http://localhost:8080/login`,
+zaloguj się i zmień hasło (15–128 znaków, można używać spacji). Zmiana hasła kończy
+wszystkie sesje, także bieżącą, więc zaloguj się ponownie nowym hasłem.
+
+Po zalogowaniu administrator zobaczy listę kont i reset hasła. Reset wymaga jego
+obecnego hasła; nowe hasło tymczasowe pracownika jest pokazywane tylko raz.
+Zakładanie kolejnych kont i pełna administracja to etap 4. Po inicjalizacji haseł
+nie uruchamiaj ponownie `make demo` jako sposobu aktualizacji danych.
+
+Gdy administrator utraci hasło lub jego pierwsze hasło wygaśnie, operator mający
+dostęp do terminala serwera może uruchomić:
+
+```bash
+docker compose exec php php bin/console app:admin:recover
+```
+
+Polecenie wymaga wskazania istniejącego aktywnego administratora i potwierdzenia;
+nie reaktywuje kont i nie zmienia pracownika w administratora. Żadne polecenie
+nie przyjmuje hasła w argumentach. Nie zapisuj haseł w repozytorium ani logach.
+
+Sesja wygasa po 60 minutach bezczynności lub 8 godzinach od logowania. Dezaktywacja,
+zmiana danych uwierzytelniania lub uprawnień unieważniają dostęp przy następnym żądaniu.
+Szczegóły API, granice kontroli dostępu i założenia techniczne:
+[uwierzytelnianie](docs/AUTHENTICATION.md).
 
 ## Codzienna praca
 
@@ -119,6 +155,7 @@ Faktyczne wyniki i ograniczenia środowiska opisano w [planie testów](docs/TEST
 
 - [Wymagania i macierz uprawnień](docs/REQUIREMENTS.md)
 - [Model danych i granice etapu 2](docs/DATA_MODEL.md)
+- [Logowanie, API i obsługa haseł](docs/AUTHENTICATION.md)
 - [Etapy i prompty developmentu](docs/DEVELOPMENT_PLAN.md)
 - [Lista zadań i punkt wznowienia](TASKS.md)
 - [Otwarte pytania](docs/OPEN_QUESTIONS.md)
