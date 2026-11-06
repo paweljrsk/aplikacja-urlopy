@@ -2,7 +2,7 @@ name: Baseline checks
 
 on:
   push:
-    branches: [main, 'codex/**']
+    branches: [main]
   pull_request:
 
 permissions:
@@ -25,6 +25,14 @@ jobs:
         run: make init
       - name: Verify HTTP and database
         run: make verify
+      - name: Repeat migration and validate schema
+        run: |
+          make db-migrate
+          make db-validate
+      - name: Load synthetic fixture twice without duplication
+        run: |
+          make demo
+          make demo
       - name: Backend tests
         run: make test
       - name: Static checks
@@ -43,6 +51,7 @@ jobs:
           make stop
           make start
           make verify
+          make demo
           marker="$(docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root --batch --skip-column-names -e "SELECT marker FROM urlopy_ci_persistence.probe WHERE id = 1"')"
           test "$marker" = 'stage1-stop-start'
       - name: Verify optional Messenger and Scheduler workers

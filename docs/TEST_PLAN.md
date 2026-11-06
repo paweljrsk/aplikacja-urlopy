@@ -1,6 +1,6 @@
 # Plan testów i odbioru
 
-Wersja 1.0 • 6 listopada 2026 r.
+Wersja 1.1 • 6 listopada 2026 r.
 
 Poniższe scenariusze są kryteriami przyszłej implementacji. Ich obecność w tym
 pliku nie oznacza wykonania ani zaliczenia testu. Testy dodajemy wraz z funkcją;
@@ -78,7 +78,102 @@ pozostają w etapie 12. Nie wykonano wdrożenia ani testu na firmowym serwerze/V
 4. Uruchom `make test` oraz `make lint`.
 5. Wykonaj `make stop`, `make start`, `make verify`; aplikacja powinna odpowiadać ponownie.
 
-## 7. Najważniejsze scenariusze odbioru
+## Wyniki etapu 2
+
+Etap obejmuje podstawy [modelu danych](DATA_MODEL.md), migrację i zestaw
+demonstracyjny. Testy encji i trwałości nie są odbiorem pełnych procesów T01–T23:
+nie ma jeszcze logowania, autoryzacji, API wniosków ani usług wykonujących całe
+rozliczenie w jednej transakcji. Poniższe wyniki odnoszą się do wskazanego zakresu
+i środowiska, a nie do gotowości całego systemu.
+
+### Kontrole lokalne — 6 listopada 2026 r.
+
+Środowisko pomocnicze: PHP 8.4.27. Lokalnie nie ma działającego Dockera;
+kontrole MySQL i docelowego zestawu kontenerów zapisano osobno poniżej.
+
+| Kontrola | Wynik i ograniczenie |
+|---|---|
+| PHPUnit — testy jednostkowe modelu | PASS: 69 testów / 191 asercji; walidacja godzin, dat, wersji zasad i wniosków, stanu początkowego, zapisów rozliczenia, audytu i zajętości dnia. Bez potwierdzenia zapisu do MySQL. |
+| PHPUnit — dodatkowy `MigrationPreflightTest` | PASS: 3 testy / 12 asercji; kolizja tabeli aplikacji przerywa migrację przed zakolejkowaniem SQL, pusty `LazySchema` dopuszcza DDL, obca tabela nie zmienia planu migracji. Te 3 testy są już uwzględnione w powyższej sumie 69; nie wykonują DDL na MySQL. |
+| `php vendor/bin/phpstan analyse --no-progress` | PASS: poziom 6, pełny skonfigurowany zakres, w tym migracje; rozszerzenie `phpstan/phpstan-doctrine`. |
+| `composer validate --no-check-publish` | PASS; manifest i lockfile zgodne. |
+| `php bin/console doctrine:schema:validate --skip-sync` | PASS mapowania Doctrine; `--skip-sync` nie sprawdza zgodności z rzeczywistą bazą. |
+| Symfony `lint:container` | PASS; zgodne definicje i typy usług. |
+| `php vendor/bin/php-cs-fixer fix --dry-run --diff` | PASS; kontrola stylu bez modyfikowania kodu. |
+| `git diff --check` | PASS; brak błędów formatowania zmian. |
+
+### Kontrole Docker w CI — przebiegi etapu 2
+
+Kontrole uruchomiono w GitHub Actions na rzeczywistym zestawie kontenerów projektu
+z PHP 8.3 i MySQL 8.0.32. Bazę developerską i bazę z sufiksem `_test` przygotowują
+oddzielne migracje; testy używają wyłącznie syntetycznych danych.
+
+| Przebieg | Wynik i zakres potwierdzony |
+|---|---|
+| [CI #9](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42291369803) | FAIL przed DDL: preflight migracji wywoływał niedostępną metodę DBAL. Poprawka używa `hasTable()` i obejmuje migracje analizą PHPStan; opis E05 w [DECISIONS](DECISIONS.md#e05--kontrola-istniejących-tabel-przed-migracją). Ten przebieg nie zalicza migracji. |
+| [CI #10](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42291936845), commit `575be…` | FAIL całego przebiegu. PASS: `make init`, migracje obu baz, ponowienie migracji, walidacja schematu przez CLI i dwukrotne ładowanie demo. PHPUnit wykonał 78 testów / 384 asercje: 77 testów przeszło, 1 nie przeszedł. |
+| [CI #11](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42292576627), commit `2917abae9a06ee92b3185062f667f2460cdd801c` | **SUCCESS**. Pełny przebieg: 81 testów / 397 asercji na PHP 8.3.36, migracje, schemat, demo, lint, build, zachowanie danych po restarcie i start workerów. |
+
+Pełny odbiór kodu etapu 2 potwierdza **CI #11** na powyższym commicie.
+
+| Kontrola | Wynik |
+|---|---|
+| `make init`, `make verify` | PASS; usługi zdrowe, odpowiedzi HTTP oraz połączenie MySQL. |
+| Migracje w bazach development/test | PASS; po jednej migracji, 77 poleceń DDL, bez resetu danych. |
+| Ponowne `make db-migrate`, `make db-validate` | PASS; brak migracji do wykonania, schemat zgodny z mapowaniem. |
+| `make demo` dwukrotnie | PASS; pierwszy przebieg tworzy 5 użytkowników / 2 zespoły / 2 wnioski, drugi pozostawia istniejący zestaw bez zmian. |
+| `make test` | PASS: 81 testów / 397 asercji, w tym 69 jednostkowych, 10 integracyjnych na MySQL oraz 2 dotychczasowe testy kernela/API. |
+| `make lint` | PASS; YAML, kontener Symfony, PHPStan 6 wraz z migracjami, ESLint i TypeScript. |
+| Produkcyjny build frontendu | PASS w kontenerze Node 22.13. |
+| Stop/start i ponowne `verify`/`demo` | PASS; marker kontrolny oraz zestaw demonstracyjny zachowane. |
+| `make workers` | PASS; oba procesy stabilne przez co najmniej 12 s. |
+| Zakończenie kontroli | PASS; standardowe zatrzymanie kontenerów bez usuwania wolumenów. |
+
+Jedyną porażką PHPUnit w CI #10 był test bezpośredniego `SchemaValidator`, który
+uwzględniał tabelę metadanych migracji. Standardowe CLI uruchamia filtr tej tabeli
+przez zdarzenie `console.command`; bezpośrednie wywołanie walidatora omijało to
+zdarzenie. Test po poprawce korzysta ze standardowego polecenia konsoli. Szczegóły
+zapisano w [E06](DECISIONS.md#e06--walidacja-schematu-w-teście-integracyjnym).
+Poprawiony test przeszedł w pełnym CI #11.
+
+Testy integracyjne potwierdzone również w pełnym CI #11 sprawdziły zapis i odczyt historii przypisań,
+wersji zasad oraz decyzji, UTC niezależnie od strefy procesu PHP, początek ewidencji
+i lata pochodzenia pul, a także ograniczenia unikalności, klucze obce i `CHECK`.
+Sprawdziły również konkurujące zapisy przypisań, kont/pul, decyzji i zajętości dnia
+oraz wycofanie przegrywającej transakcji. To dowód działania mechanizmów modelu
+i blokad optymistycznych w tych przypadkach; nie potwierdza jeszcze autoryzacji,
+pełnej idempotencji API, wyboru najstarszej puli ani całych scenariuszy T02/T03/T23.
+
+### Ręczny odbiór modelu, migracji i demo
+
+Poniższa procedura jest instrukcją odbioru, a nie zapisem dodatkowego wykonanego
+testu na komputerze użytkownika lub firmowym serwerze.
+
+1. Po pobraniu gałęzi etapu 2 zachowaj istniejący `.env` i wolumeny. Wykonaj
+   `make init`, `make verify` i `make db-validate`. Oczekiwane: usługi gotowe,
+   migracja ukończona i zgodność mapowania ze schematem.
+2. Wykonaj ponownie `make db-migrate`, następnie `make db-validate`.
+   Oczekiwane: brak kolejnej migracji do wykonania i brak zmiany istniejących danych.
+3. Wykonaj `make test`. Polecenie automatycznie uruchamia `make test-prepare`,
+   przygotowując oddzielną bazę `_test` przez migracje, bez resetu. Oczekiwany jest
+   poprawny wynik całego PHPUnit; błąd wymaga sprawdzenia raportu.
+4. Opcjonalnie, na bazie `dev` z pustymi tabelami aplikacji, wykonaj `make demo`
+   dwa razy. Pierwszy przebieg powinien dodać zestaw syntetyczny, drugi rozpoznać go
+   i pozostawić dane bez zmian. Nie usuwaj istniejących danych, aby umożliwić demo.
+   Polecenie wymaga flagi `--confirm-demo` przekazywanej przez Makefile i działa
+   tylko w `dev`/`test`. Nie tworzy haseł logowania.
+5. Otwórz `http://localhost:8080/` i `http://localhost:8080/api/health`.
+   Oczekiwane są nadal ekran startowy Next.js i `{"status":"ok"}`. Ekranów
+   pracowników, wniosków i salda nie odbieramy w tym etapie.
+
+W razie błędu startu lub migracji zachowaj dane i logi. Nie używaj resetu bazy,
+`down -v` ani cofania migracji do usunięcia historii. Nie wykonano odbioru na
+firmowym serwerze/VPN ani próby odtworzenia backupu; te prace pozostają w etapie 12.
+
+## Najważniejsze scenariusze odbioru
+
+**T01–T23 pozostają kryteriami odbioru przyszłych procesów.** Częściowe pokrycie
+reguł modelu w etapie 2 nie oznacza zaliczenia któregokolwiek pełnego scenariusza.
 
 | ID | Scenariusz | Oczekiwany rezultat |
 |---|---|---|

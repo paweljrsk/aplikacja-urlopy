@@ -1,11 +1,12 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.0 • stan uzgodnień z 6 listopada 2026 r.
+Wersja 1.1 • stan uzgodnień z 6 listopada 2026 r., po odpowiedziach przed etapem 2.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
-[decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy pytaniach
-Q1–Q9 nie są zatwierdzonymi odpowiedziami. Kolejne odpowiedzi aktualizują ten plik
-oraz rejestr decyzji przed implementacją zależnego zachowania.
+[decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
+pytaniach nie są zatwierdzonymi odpowiedziami. Q1 oraz podstawowe
+ustalenia Q5 i Q8 potwierdzono przed etapem 2 i zapisano poniżej. Kolejne odpowiedzi
+aktualizują ten plik oraz rejestr decyzji przed implementacją zależnego zachowania.
 
 Opis funkcji poniżej określa cel MVP, a nie aktualnie zaimplementowane możliwości.
 Stan realizacji znajduje się w [TASKS.md](../TASKS.md).
@@ -37,6 +38,8 @@ Konta zakłada administrator. Użytkownik loguje się służbowym adresem e-mail
 
 Kartoteka zawiera imię, nazwisko, e-mail, formę zatrudnienia, zespół, rolę, aktywność oraz dane limitów. Dodatkowo system przechowuje identyfikatory techniczne, skrót hasła i historię operacji. Nie zbieramy dokumentów, diagnoz ani opisów medycznych.
 
+Administrator może zmienić zespół lub formę zatrudnienia osoby mającej historię urlopów. Zmiana obowiązuje od wskazanej daty; wcześniejsze dane i rozliczenia pozostają zachowane. Widoczność historii po przeniesieniu oraz sposób obsługi otwartych i już złożonych przyszłych wniosków wymagają doprecyzowania pozostałej części Q5 przed wdrożeniem operacji administracyjnych.
+
 | Czynność | Pracownik | Kierownik | Zastępca | Administrator |
 |---|---|---|---|---|
 | Kalendarz zespołu | Własny zespół | Własny zespół | Własny zespół | Wszystkie zespoły |
@@ -61,19 +64,27 @@ W kalendarzu współpracowników pokazujemy imię i nazwisko, daty, status oraz 
 
 Nazewnictwo pierwszych dwóch pozycji może zależeć od formy zatrudnienia. Administrator zarządza nazwą, dostępnością dla form zatrudnienia, wpływem na saldo i aktywnością rodzaju. W MVP nie ma oddzielnych limitów dla dodatkowych rodzajów. Nieaktywny rodzaj nie jest dostępny dla nowych wniosków, lecz pozostaje czytelny w historii.
 
+Zmiana ustawienia rodzaju „pomniejsza saldo” dotyczy tylko nowych wniosków. Wnioski już złożone zachowują dotychczasowe zasady wpływu na saldo; zmiana słownika nie przelicza ich automatycznie.
+
 ### 1.5. Dni i godziny
 
 - Dzień pracy ma 8 godzin. Dni pracy to poniedziałek–piątek z wyłączeniem polskich świąt i skonfigurowanych dni wolnych.
 - Formularz domyślnie wskazuje cały dzień, czyli 8 godzin. Użytkownik może zmniejszyć wymiar i podać liczbę godzin.
 - Obsługujemy pełne godziny. Nie przyjmujemy 0, wartości ujemnych, ułamków ani ponad 8 godzin nieobecności w jednym dniu.
 - Wniosek godzinowy podaje ilość godzin, bez godzin zegarowych „od–do”. Kalendarz nie może sugerować, że zna porę tej nieobecności.
-- Możliwy jest zakres pełnych dni. Znaczenie mniejszej liczby godzin dla zakresu wielodniowego trzeba doprecyzować przed jego obsługą; zobacz Q1.
+- Jeden wniosek obejmuje albo zakres pełnych dni, albo pojedynczy dzień na 1–7 godzin. MVP nie obsługuje częściowego wymiaru godzinowego dla zakresu wielodniowego (Q1 rozstrzygnięte).
 - Łączna liczba godzin aktywnych nieobecności jednej osoby danego dnia nie może przekroczyć 8, niezależnie od tego, czy rodzaj obciąża saldo.
 - Daty nieobecności są datami lokalnymi. Granice dni i lat określa strefa `Europe/Warsaw`.
 
 ### 1.6. Limity i saldo
 
-Administrator albo kierownik ustawia pracownikowi limit na konkretny rok. Przy uruchomieniu podaje się oddzielnie limit roczny, wykorzystanie sprzed uruchomienia oraz pozostałość z wcześniejszych lat. Dane początkowe nie mogą zostać policzone ponownie przez późniejsze wprowadzenie historycznych wniosków. Datę odniesienia tych wartości i przypisanie wykorzystania do pul ustalamy w Q8; sam agregat godzin nie pozwala rozpoznać, które historyczne wnioski już uwzględniono.
+Administrator albo kierownik ustawia pracownikowi limit na konkretny rok. Dla pracownika określa się datę rozpoczęcia ewidencji w aplikacji. Na ten dzień dane początkowe obejmują:
+
+- limit bieżącego roku;
+- godziny wykorzystane **z bieżącej rocznej puli** do dnia poprzedzającego rozpoczęcie ewidencji;
+- pozostałe godziny z wcześniejszych lat, osobno według roku ich pochodzenia.
+
+Pozostałość starszych pul oznacza stan na dzień rozpoczęcia ewidencji, a nie pierwotną wielkość przeniesienia na początek roku. Nie odejmujemy od niej ponownie wcześniejszego wykorzystania. Wcześniejsze nieobecności są już uwzględnione w danych początkowych; późniejsze wprowadzenie historycznego wniosku nie może drugi raz pomniejszyć salda. Szczegółowa procedura korekty danych lub wniosków sprzed tej granicy pozostaje do rozstrzygnięcia w Q8 przed etapem 5; sam agregat godzin nie odtwarza historii pojedynczych nieobecności.
 
 Limit można wprowadzać w dniach, przeliczanych po 8 godzin. Obliczenia wykorzystują pełne godziny. Saldo pokazujemy w godzinach oraz w przeliczeniu na dni i godziny, np. **68 h = 8 dni i 4 h**. Do zachowania reszty godzinowej przy danych początkowych i korektach potrzebne są pola godzinowe.
 

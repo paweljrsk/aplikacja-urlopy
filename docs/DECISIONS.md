@@ -4,7 +4,8 @@ Stan początkowy: 6 listopada 2026 r.
 
 Decyzje biznesowe poniżej wynikają z uzgodnień użytkownika zapisanych w planie
 wersji 1.0. Szczegółowe wymagania są w [REQUIREMENTS.md](REQUIREMENTS.md).
-Odpowiedzi do pytań Q1–Q9 nie zostały jeszcze udzielone.
+Przed etapem 2 użytkownik potwierdził Q1 oraz podstawowe ustalenia Q5 i Q8.
+Pozostałe kwestie i nierozstrzygnięte części tych pytań są w OPEN_QUESTIONS.
 
 ## Uzgodnione decyzje biznesowe
 
@@ -15,9 +16,9 @@ Odpowiedzi do pytań Q1–Q9 nie zostały jeszcze udzielone.
 | B03 | Lokalny login e-mail/hasło, konta administratora, wymuszona zmiana hasła tymczasowego | Brak samodzielnej rejestracji; M365 poza MVP |
 | B04 | Slack poza MVP | Brak zależności procesu decyzji od notyfikacji Slack |
 | B05 | Trzy rodzaje: płatne dni wolne, bezpłatne dni wolne, inna nieobecność | Tylko pierwszy obciąża wspólny limit; wszystkie wymagają akceptacji |
-| B06 | Administrator zarządza słownikiem rodzajów i dostępnością dla form zatrudnienia | Bez osobnych limitów dla dodatkowych rodzajów; wpływ zmian na historię wymaga Q5 |
+| B06 | Administrator zarządza słownikiem rodzajów i dostępnością dla form zatrudnienia | Bez osobnych limitów dla dodatkowych rodzajów; zmiana wpływu na saldo dotyczy nowych wniosków (B20) |
 | B07 | 8 h dziennie, poniedziałek–piątek, polskie dni wolne | Rozliczenia w pełnych godzinach, lokalne daty Europe/Warsaw |
-| B08 | Domyślnie cały dzień, możliwość zmniejszenia liczby godzin | Bez połówek jako osobnego trybu, bez godzin od–do; zakres wielodniowy wymaga Q1 |
+| B08 | Domyślnie cały dzień, możliwość zmniejszenia liczby godzin | Bez połówek jako osobnego trybu, bez godzin od–do; pełne dni lub jeden dzień na 1–7 h (B18) |
 | B09 | Administrator i kierownik ustawiają limity na konkretny rok | Osobno limit, wykorzystanie początkowe i zaległość; własny limit kierownika wymaga Q6 |
 | B10 | Oczekujący wniosek rezerwuje saldo; brak salda blokuje wniosek obciążający limit | Akceptacja nie potrąca godzin drugi raz, odrzucenie/wycofanie zwalnia rezerwację |
 | B11 | Niewykorzystane dni UoP przechodzą i wykorzystujemy najstarsze najpierw | Bez automatycznego wygaszenia; pozostałe formy nie przenoszą dni |
@@ -27,6 +28,19 @@ Odpowiedzi do pytań Q1–Q9 nie zostały jeszcze udzielone.
 | B15 | Współpracownik widzi nazwisko, daty, status i godziny, bez cudzego salda i rodzaju | API ogranicza udostępniane pola; własne i uprawnione szczegóły osobno |
 | B16 | Kalendarz jest ekranem głównym; stylistyka Notus, komputer i telefon | Responsywna aplikacja webowa; PWA opcjonalnie później |
 | B17 | Własny serwer Docker, dostęp VPN; repozytorium może pozostać publiczne | Sekrety, rzeczywiste dane i backupy poza repozytorium |
+
+## Doprecyzowania przed etapem 2 — 6 listopada 2026 r.
+
+Użytkownik zaakceptował wszystkie cztery przedstawione propozycje odpowiedziami
+„1. Tak, 2. OK, 3. Tak, 4. Tak”. Poniższe decyzje obowiązują przed implementacją
+zależnego modelu. Nie rozstrzygają niewymienionych procedur z późniejszych etapów.
+
+| ID | Pytanie | Potwierdzona decyzja | Konsekwencja dla modelu i granice ustalenia |
+|---|---|---|---|
+| B18 | Q1 | Jeden wniosek obejmuje zakres pełnych dni albo pojedynczy dzień na 1–7 pełnych godzin. | Model rozróżnia oba warianty. Nie wprowadzamy częściowych godzin dla wielu dni ani godzin zegarowych od–do. |
+| B19 | Q5 — dane pracownika | Administrator może zmienić zespół lub formę zatrudnienia osoby z historią, od wskazanej daty. | Zachowujemy wcześniejsze dane i rozliczenia. Widoczność historii oraz obsługę otwartych i już złożonych przyszłych wniosków trzeba ustalić przed etapem 4. |
+| B20 | Q5 — wpływ rodzaju na saldo | Zmiana ustawienia „pomniejsza saldo” obowiązuje tylko nowe wnioski; już złożone zachowują dotychczasowe zasady. | Wniosek zachowuje zasady z momentu złożenia. Edycja słownika nie zmienia automatycznie dotychczasowych rozliczeń. |
+| B21 | Q8 — stan początkowy | Dla pracownika ustalamy datę rozpoczęcia ewidencji, limit bieżącego roku, wykorzystanie z bieżącej rocznej puli do dnia poprzedniego oraz pozostałość wcześniejszych pul osobno według roku pochodzenia. | Starsze nieobecności są już uwzględnione w stanie początkowym i nie mogą pomniejszyć salda drugi raz. Pozostałości starszych pul nie pomniejszamy ponownie o historyczne wykorzystanie. Szczegółowa procedura korekt sprzed daty granicznej pozostaje w Q8. |
 
 ## Ustalony sposób realizacji
 
@@ -64,6 +78,24 @@ Produkcja nadal wymaga prac etapu 12: konfiguracji TLS/VPN, sekretów, polityki 
 i odtworzenia oraz operacyjnego odbioru. Zmiany w `compose-deploy.yaml` zapewniają
 jawne wymaganie ustawień, ale nie potwierdzają gotowości produkcyjnej.
 
+## Decyzje techniczne etapu 2 — 6 listopada 2026 r.
+
+Szczegółowy opis encji, ograniczeń i granic implementacji znajduje się w
+[DATA_MODEL.md](DATA_MODEL.md). Poniższe wpisy dokumentują kod i przyjęty sposób
+zapisu; wyniki uruchomienia testów pozostają w TEST_PLAN.
+
+| ID | Decyzja i uzasadnienie | Zakres i granice |
+|---|---|---|
+| DT14 | Tożsamość pracownika oddzielamy od okresów przypisania do zespołu, umowy i roli. Administrator jest uprawnieniem globalnym użytkownika. | `staff_assignment` stosuje przedziały z wyłącznym końcem; historyczne dni wniosku wskazują zapisane przypisanie. Nie ustala to jeszcze widoczności historii po przeniesieniu (Q5). |
+| DT15 | Zasady rodzaju i treść propozycji wniosku zachowujemy w osobnych wersjach. | Nowe zasady dotyczą nowych wniosków; dotychczasowy wniosek zachowuje wersję danego rodzaju. Dni propozycji są niezmienne w interfejsie modelu. Jedna decyzja kończy propozycję; ostatnia zatwierdzona wersja pozostaje obowiązująca do akceptacji zmiany/anulowania. |
+| DT16 | Stan początkowy zachowujemy osobno od dalszych zapisów rozliczeniowych. | Data startu i wykorzystanie bieżącej puli są oddzielone od pozostałości starszych lat. `opening_used` nie tworzy fikcyjnego dnia wniosku i nie obciąża ponownie pozostałości dawnych pul. Procedura korekt sprzed granicy pozostaje w Q8. |
+| DT17 | Źródłem salda są zapisy zmian przydziału, rezerwacji i obciążenia z odniesieniem do zdarzenia oraz puli. | Rozdzielono rok nieobecności (`leave_account`) i rok pochodzenia (`hour_pool`). Klucz operacji audytu i para zdarzenie/numer linii są unikalne. To podstawa idempotencji, nie gotowa obsługa ponowień API. Najstarsza pula, przejście roku i blokada braku salda należą do późniejszych usług. |
+| DT18 | Zmiana obiektu potomnego aktualizuje również wersjonowany agregat; zajętość dnia ma własną wersję. | Liczniki zmian aktywują optimistic locking Doctrine dla użytkownika, rodzaju, wniosku, konta i puli. Dotknięcie puli chroni zapisy dotyczące różnych lat. `daily_occupancy` obejmuje wszystkie rodzaje. Usługi muszą zapisywać powiązane obiekty w jednej transakcji i obsługiwać konflikt. |
+| DT19 | Audyt ma jawny cel także dla operacji globalnych, a czasy operacji są normalizowane do UTC. | Pracownik zdarzenia może być pusty, lecz `target_type`/`target_reference` muszą określać cel. Kopia JSON odłącza zagnieżdżone obiekty wejściowe. Typ DBAL UTC zapisuje/odczytuje sekundy; daty nieobecności pozostają `DATE` według Europe/Warsaw. |
+| DT20 | Pierwsza migracja dodaje 19 tabel i odmawia nadpisania kolidującego schematu. | Klucze obce `RESTRICT`, unikalności i `CHECK` uzupełniają walidację konstruktorów. MySQL DDL nie jest transakcyjne, więc migracja tego nie deklaruje. `down()` jest celowo nieodwracalne, aby nie usuwać historii. Nie ma instalatora zastępującego Doctrine Migrations. |
+| DT21 | Dane demonstracyjne są osobnym, jawnym poleceniem na pustej bazie development/test. | `app:demo:load --confirm-demo` odrzuca produkcję, nie tworzy haseł i nie uruchamia się automatycznie. Zestaw ma 5 kont, wszystkie role, UoP/B2B i 2 zespoły. Powtórzenie rozpoznanego zestawu nie dubluje ani nie nadpisuje danych. |
+| DT22 | Dodajemy rozszerzenie analizy statycznej rozumiejące mapowania Doctrine zamiast wyciszać poprawne właściwości utrwalane przez ORM. | Nowa zależność tylko developerska: `phpstan/phpstan-doctrine` 2.1.2, licencja MIT. Porównanie lockfile potwierdza jeden dodany pakiet, bez usunięć i zmian wersji pozostałych pakietów. Nie dodaje zależności do runtime produkcyjnego. |
+
 ## Problemy i ograniczenia
 
 ### E01 — środowisko testowe PHPUnit w Compose
@@ -98,6 +130,26 @@ Endpoint diagnostyczny i testy uruchomienia nie implementują logowania, kontrol
 wniosków, salda ani innych funkcji biznesowych. Nie wykonano wdrożenia na firmowym
 serwerze ani odbioru produkcyjnego. Ostateczne wyniki poszczególnych kontroli i status
 etapu pozostają w [TEST_PLAN.md](TEST_PLAN.md) i [TASKS.md](../TASKS.md).
+
+### E05 — kontrola istniejących tabel przed migracją
+
+Pierwszy przebieg etapu 2, [CI #9](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42291369803),
+wykrył wywołanie nieistniejącej w używanym DBAL metody `Schema::getTableNames()`.
+Błąd wystąpił przed wykonaniem DDL. Kontrola kolizji korzysta teraz z `hasTable()`,
+obsługiwanego również przez `LazySchema` z Doctrine Migrations. Katalog migracji
+dodano do PHPStan, aby analiza obejmowała także ten kod. Wynik ponownego wykonania
+migracji i pełnego odbioru zapisujemy w TEST_PLAN; pierwszy przebieg nie jest zaliczeniem.
+
+### E06 — walidacja schematu w teście integracyjnym
+
+[CI #10](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42291936845)
+potwierdził migrację obu baz, zgodność schematu przez CLI, powtórne wykonanie migracji
+i dwukrotne ładowanie demo. Jeden test bezpośredniego `SchemaValidator` zgłosił jednak
+różnicę. Doctrine Migrations aktywuje filtr własnej tabeli metadanych przy zdarzeniu
+`console.command`; bezpośredni walidator nie uruchamiał tego mechanizmu. Test wykonuje
+teraz standardowe polecenie `doctrine:schema:validate` przez aplikację konsolową ze
+zdarzeniami. Nie filtrujemy arbitralnie tabel aplikacji ani nie pomijamy zgodności
+schematu. Pozostałe 77 testów tego przebiegu przeszło, lecz całość nie była zielona.
 
 ## Format kolejnego wpisu
 

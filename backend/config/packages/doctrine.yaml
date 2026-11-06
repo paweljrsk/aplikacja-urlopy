@@ -1,6 +1,8 @@
 doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
+        types:
+            utc_datetime_immutable: App\Doctrine\UtcDateTimeImmutableType
 
         # The MySQL server version is supplied in DATABASE_URL.
 

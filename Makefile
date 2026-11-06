@@ -3,7 +3,7 @@ COMPOSE ?= docker compose
 SERVICE ?=
 WAIT_TIMEOUT ?= 240
 
-.PHONY: help env init start stop restart down status logs db-init db-migrate verify test lint check workers delete reset db-delete db-reset confirm-destructive
+.PHONY: help env init start stop restart down status logs db-init db-migrate db-validate test-prepare demo verify test lint check workers delete reset db-delete db-reset confirm-destructive
 
 help: ## List available commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Use make <target> [SERVICE=name]\n\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -41,7 +41,7 @@ logs: ## Show logs; optionally SERVICE=php
 db-init: ## Create the configured database with Doctrine if it does not exist
 	$(COMPOSE) exec -T php php bin/console doctrine:database:create --if-not-exists --no-interaction
 
-db-migrate: ## Apply Doctrine migrations; stage 1 has no business migrations yet
+db-migrate: ## Apply Doctrine migrations without resetting data
 	$(COMPOSE) exec -T php php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 
 verify: ## Check configuration, Symfony, DB connection and both HTTP endpoints
@@ -51,8 +51,19 @@ verify: ## Check configuration, Symfony, DB connection and both HTTP endpoints
 	$(COMPOSE) exec -T nginx wget -q -O /dev/null http://127.0.0.1/
 	$(COMPOSE) exec -T nginx wget -q -O - http://127.0.0.1/api/health
 
-test: ## Run backend tests
+db-validate: ## Check Doctrine mapping and database schema synchronization
+	$(COMPOSE) exec -T php php bin/console doctrine:schema:validate
+
+test-prepare: ## Grant/create/migrate the dedicated test database; never resets it
+	$(COMPOSE) exec -T mysql sh -s < .docker/scripts/prepare-test-database.sh
+	$(COMPOSE) exec -T -e APP_ENV=test php php bin/console doctrine:database:create --if-not-exists --no-interaction
+	$(COMPOSE) exec -T -e APP_ENV=test php php bin/console doctrine:migrations:migrate --no-interaction
+
+test: test-prepare ## Run backend tests on the dedicated test database
 	$(COMPOSE) exec -T php php bin/phpunit
+
+demo: ## Explicitly load synthetic data into an empty development database (no passwords)
+	$(COMPOSE) exec -T php php bin/console app:demo:load --confirm-demo
 
 lint: ## Run backend lint/static analysis and frontend lint/type check
 	$(COMPOSE) exec -T php php bin/console lint:yaml config
@@ -61,7 +72,7 @@ lint: ## Run backend lint/static analysis and frontend lint/type check
 	$(COMPOSE) exec -T node npm run lint
 	$(COMPOSE) exec -T node npx --no-install tsc --noEmit
 
-check: verify lint test ## Run the stage 1 verification suite
+check: verify db-validate lint test ## Run the application verification suite
 
 workers: env ## Start optional Messenger and Scheduler workers
 	$(COMPOSE) --profile workers up -d --build supervisor
