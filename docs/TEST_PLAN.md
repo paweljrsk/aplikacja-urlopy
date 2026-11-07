@@ -580,7 +580,7 @@ kontach i danych użytkowych.
 bibliotek i migracji. Frontend bez zmian; formularz i stylistyka Notus pozostają
 w etapie 8. Pełny lokalny PHPUnit po końcowych poprawkach: **391 testów / 15 091 asercji — PASS**.
 PHPStan, lint YAML i kontenera Symfony oraz składnia skryptu HTTP — PASS.
-Wynik pełnego Docker CI zostanie wpisany po wykonaniu.
+Pełny odbiór Docker CI #24 zakończył się sukcesem; szczegóły poniżej.
 
 Wykonane kontrole lokalne: PHP 8.4.24, MySQL 8.0.32, domyślne UTC i kontrolowany
 czas Europe/Warsaw. Pierwsza grupa rozliczeń i workflow: 67 testów / 3047 asercji PASS;
@@ -599,6 +599,29 @@ zmiany, skrócenie 16→8 h i zwrot po decyzji, anulowanie z jednokrotnym zwrote
 podgląd bez zapisu oraz bezpośrednią korektę historyczną z jawnym niedoborem
 administratora, ponowienie i anulowanie korekty. To nie zastępuje Nginx/PHP-FPM
 w Docker CI. Skrypt używa wyłącznie syntetycznych danych w jednorazowej bazie.
+
+### Końcowy odbiór Docker i regresji Chrome etapu 7 — CI #24
+
+7 listopada 2026 r., kod `c08755da94e587c10e2ba9b7b5c5dd528e8f5bf9`,
+[CI #24 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42401371870).
+Docelowy PHP **8.3.36**, MySQL **8.0.32**. Wszystkie wymagane kroki zakończone sukcesem.
+
+| Kontrola | Wynik |
+|---|---|
+| Inicjalizacja, HTTP, powtórzenie migracji i zgodność schematu Doctrine | PASS; bez nowej migracji etapu 7 |
+| Dwukrotne demo, aktualizacja wcześniejszych danych i CLI administratora | PASS; dane i historia zachowane |
+| Pełny PHPUnit, w tym współbieżność na rzeczywistych procesach i MySQL | PASS; **391 testów / 15 091 asercji** |
+| PHPStan, lint Symfony, ESLint/TypeScript i produkcyjny build | PASS |
+| Chrome: logowanie, administracja, saldo i kalendarz firmowy | PASS; syntetyczne odpowiedzi API, regresja desktop/mobile |
+| Rzeczywiste API przez Nginx/PHP-FPM | PASS; propozycje, decyzje, przesunięte rezerwacje, zwroty, anulowanie, podgląd i korekta historyczna z niedoborem, ponowienia i izolacja |
+| Stop/start z kontrolą znacznika zachowania danych | PASS; dane zachowane |
+| Messenger i Scheduler | PASS; oba procesy stabilne |
+
+Formularz wniosków i stylistyka Notus pozostają w etapie 8; testy Chrome obejmują
+dotychczasowe ekrany. Nowe operacje sprawdzono przez rzeczywiste API i testy
+funkcjonalne/integracyjne. Zrzuty są artefaktem `synthetic-ui-screenshots` przebiegu
+CI (retencja 7 dni). Nie weryfikowano środowiska produkcyjnego ani uruchomienia
+na komputerze użytkownika. Późniejszy zapis tego raportu zmienia tylko dokumentację.
 
 ### Ręczny odbiór API etapu 7
 

@@ -2,7 +2,7 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 7 — zmiany, anulowania i korekty wniosków (weryfikacja).**
+**Bieżący zakres: etap 7 — zmiany, anulowania i korekty wniosków — ukończony.**
 Dostępne są logowanie, panel administracji `/admin`, limity i saldo `/balances`
 oraz zarządzanie firmowymi dniami wolnymi `/calendar-settings`. Rozliczenia
 obejmują dane początkowe, rezerwacje, obciążenia, korekty i wspólne pule zaległości.
@@ -12,8 +12,13 @@ urlopu oraz bezpośrednie korekty przeszłości po podglądzie i potwierdzeniu. 
 jest dostępny przez API; formularz i
 pełna stylistyka Notus powstaną w etapie 8, główny kalendarz zespołu w etapie 9.
 
-Gałąź etapu 7: `codex/etap-7-zmiany-anulowania-korekty`, oparta na etapie 6.
-Wyniki końcowej weryfikacji zostaną zapisane w planie testów.
+Etap 7 ukończony w [PR #7](https://github.com/paweljrsk/aplikacja-urlopy/pull/7).
+Gałąź `codex/etap-7-zmiany-anulowania-korekty` jest oparta na etapie 6; PR pozostaje niescalony.
+[CI #24 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42401371870)
+dla kodu `c08755da94e587c10e2ba9b7b5c5dd528e8f5bf9`: **391 testów / 15 091 asercji**
+na PHP 8.3.36 i MySQL 8.0.32, migracje i schemat, kontrole statyczne, build,
+regresja Chrome, rzeczywisty HTTP nowych operacji przez Nginx/PHP-FPM, restart
+z zachowaniem danych i workery. Szczegóły oraz ręczny odbiór: [plan testów](docs/TEST_PLAN.md).
 
 Etap 6 ukończony w [PR #6](https://github.com/paweljrsk/aplikacja-urlopy/pull/6).
 Gałąź `codex/etap-6-wnioski-decyzje` jest oparta na ukończonym etapie 5.
@@ -206,7 +211,7 @@ Build frontendu:
 docker compose exec -T node npm run build
 ```
 
-GitHub Actions w `.github/workflows/checks.yml` definiuje kontrole startu, API, bazy, powtórzenia migracji, zgodności schematu, ponownego ładowania demo, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli. Scenariusze przeglądarkowe logowania, administracji, salda i kalendarza firmowego w Chrome używają jawnie syntetycznych odpowiedzi API i sprawdzają zachowanie ekranów; prawdziwy backend jest sprawdzany osobnymi testami HTTP z MySQL. Dodatkowy przebieg logowania przez Nginx i PHP-FPM potwierdza działanie cookie, CSRF, wymuszonej zmiany hasła, tworzenia słowników/kont, konfliktów wersji, danych początkowych, korekt, niedoboru, zmiany kalendarza, izolacji pracownika i wylogowania w uruchomionym stosie. Narzędzie `playwright-core@1.62.1` jest instalowane tylko na czas kontroli CI, poza zależnościami aplikacji.
+GitHub Actions w `.github/workflows/checks.yml` definiuje kontrole startu, API, bazy, powtórzenia migracji, zgodności schematu, ponownego ładowania demo, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli. Scenariusze przeglądarkowe logowania, administracji, salda i kalendarza firmowego w Chrome używają jawnie syntetycznych odpowiedzi API i sprawdzają zachowanie ekranów; prawdziwy backend jest sprawdzany osobnymi testami HTTP z MySQL. Dodatkowy przebieg przez Nginx i PHP-FPM potwierdza działanie cookie, CSRF, wymuszonej zmiany hasła, tworzenia słowników/kont, konfliktów wersji, danych początkowych, korekt, niedoboru, zmiany kalendarza, izolacji pracownika i wylogowania. Obejmuje również składanie i decyzje wniosków, zmiany zatwierdzonych urlopów, anulowanie, różnicowe rezerwacje, terminy zwrotów oraz potwierdzone korekty historyczne z niedoborem administratora i idempotencją. Narzędzie `playwright-core@1.62.1` jest instalowane tylko na czas kontroli CI, poza zależnościami aplikacji.
 
 Opcjonalne procesy Messenger/Scheduler uruchamia `make workers`. Używają transportów `async` i `scheduler_default`; nie wykonują jeszcze zadań urlopowych. Biblioteka `symfony/amqp-messenger` zapewnia obsługę istniejącego transportu RabbitMQ. Zwykły start aplikacji nie wymaga uruchamiania workerów.
 

@@ -6,7 +6,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 4 — administracja — zakończony.** Q5 rozstrzygnięto w B22–B24.
 **Etap 5 — kalendarz roboczy, limity i saldo — zakończony.**
 **Etap 6 — wnioski, rezerwacje i decyzje — zakończony.** Q2 o dzisiaj i Q10 zatwierdzone jako B30–B31.
-**Etap 7 — implementacja i lokalne testy gotowe; oczekuje na odbiór Docker CI.** Q2/Q4: B32–B33.
+**Etap 7 — zmiany, anulowania i korekty — zakończony.** Q2/Q4: B32–B33.
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -87,7 +87,7 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Sprawdzić scenariusze ról, przełomu roku, współbieżnych wniosków i decyzji oraz zachowanie dotychczasowych danych. CI #22: 337 testów / 10 662 asercje, SUCCESS.
 - [x] Uzupełnić kontrakt API, README, plan testów i rzeczywisty raport odbioru; opublikować PR #6 i zweryfikować pełny CI.
 
-## Etap 7 — końcowa weryfikacja
+## Etap 7 — ukończony
 
 - [x] Odczytać aktualny prompt 7, wymagania, decyzje, otwarte pytania, PR #6 i podstawowe usługi wniosków/rozliczeń.
 - [x] Rozstrzygnąć Q2/Q4 i zapisać odpowiedź „Tak” jako B32–B33 przed zależną implementacją.
@@ -95,7 +95,7 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Sprawdzić dodatkowe rezerwacje per rok/pula, ochronę obu terminów i maksymalną zajętość dnia bez podwójnego sumowania wersji.
 - [x] Wdrożyć uzgodnione korekty historyczne z kontrolą uprawnień, podglądem wpływu, audytem i zachowaniem danych początkowych.
 - [x] Sprawdzić zmiany rodzaju i roku, transfery, niedobór, zwroty, ponowienia i rzeczywistą współbieżność na MySQL.
-- [-] Uzupełnić kontrakt API, dokumentację i faktyczne wyniki odbioru; lokalnie 391 testów / 15 091 asercji i rzeczywiste HTTP PASS. Oczekuje publikacja PR i końcowy Docker CI.
+- [x] Uzupełnić kontrakt API, dokumentację i faktyczne wyniki odbioru; lokalnie i w Docker CI #24: 391 testów / 15 091 asercji, rzeczywisty HTTP i pozostałe kontrole PASS. Opublikowano PR #7.
 
 ## Kolejne etapy
 
@@ -104,7 +104,7 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Etap 4 — administracja użytkownikami, zespołami i słownikami.
 - [x] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
 - [x] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
-- [-] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
+- [x] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
 - [ ] Etap 8 — formularz i widoki pracownika w stylistyce Notus.
 - [ ] Etap 9 — główny kalendarz zespołu i lista nieobecności.
 - [ ] Etap 10 — widoki przełożonego/administratora, salda i historia.
@@ -239,17 +239,26 @@ dokumentacji wykonano przez GitHub; nie uruchomiono nowych testów i nie zmienio
 kodu aplikacji. Dalsza weryfikacja wymaga działającego środowiska lub właściwego CI
 na nowym kodzie. Etap 8 pozostaje nierozpoczęty.
 
-### Aktualizacja punktu wznowienia — odpowiedź przed implementacją etapu 7
+### Historyczna aktualizacja — odpowiedź przed implementacją etapu 7
 
 Użytkownik potwierdził obie propozycje. B32–B33 i REQUIREMENTS 1.5 są obowiązujące.
 Środowisko wykonawcze odzyskało dostęp; gałąź pobrano lokalnie bez zmian kodu etapu 6.
 Wznowić implementację i testy etapu 7 na tej gałęzi. Wcześniejsza blokada pytań i
 niedostępność środowiska opisują stan historyczny, nie aktualne przeszkody.
 
-### Bieżący punkt wznowienia — odbiór etapu 7
+### Bieżący punkt wznowienia — po ukończeniu etapu 7
 
-Implementacja i dokumentacja są gotowe. Lokalne 391 testów / 15 091 asercji,
-PHPStan/lint i rzeczywiste HTTP przeszły. Poprawiono ujawnienie uzasadnienia starego
-zespołu (E10), sprawdzono granicę ewidencji i flagi działań po korekcie do przyszłości.
-Opublikować PR oparty na PR #6 i wykonać pełny Docker CI. Nie oznaczać odbioru CI
-jako zaliczonego bez wyniku. Etap 8 uruchomić dopiero na kolejne polecenie użytkownika.
+Etap 7 odebrano na kodzie `c08755da94e587c10e2ba9b7b5c5dd528e8f5bf9`:
+[CI #24 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42401371870),
+PHP 8.3.36 + MySQL 8.0.32, **391 testów / 15 091 asercji**. Zaliczone migracje
+i schemat, aktualizacja wcześniejszych danych, PHPStan/lint/build, regresja Chrome,
+rzeczywisty HTTP zmian/anulowania/korekt przez Nginx/PHP-FPM, restart z zachowaniem
+danych i workery. Lokalne kontrole również PASS; szczegóły i ręczny odbiór w TEST_PLAN.
+
+Kod i dokumentacja są w [PR #7](https://github.com/paweljrsk/aplikacja-urlopy/pull/7),
+gałąź `codex/etap-7-zmiany-anulowania-korekty`, oparta na PR #6. Bez nowych bibliotek
+ani migracji. Zachować B32–B33, rozliczenie różnic per rok i dozwolona pula, ochronę
+obu terminów, granicę ewidencji i prywatność historii. Kontrakt: REQUESTS_API.
+
+Etap 8 — formularz i widoki pracownika w stylistyce Notus — uruchomić dopiero na
+kolejne polecenie użytkownika. PR-y pozostają niescalone; nie scalać automatycznie.
