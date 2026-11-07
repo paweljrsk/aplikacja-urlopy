@@ -42,6 +42,8 @@ function CorrectionForm({ request, user, onClose, onSaved }: Props) {
   const [closing, setClosing] = useState(false);
   const [checking, setChecking] = useState(false);
   const pending = useRef(false);
+  const activity = useRef<"preview" | "save" | "reload" | null>(null);
+  const readSequence = useRef(0);
   const operation = useRef<CorrectionConfirmation | null>(null);
   const alive = useRef(true);
   const uncertainWrite = useRef(false);
@@ -65,6 +67,14 @@ function CorrectionForm({ request, user, onClose, onSaved }: Props) {
 
   useEffect(() => {
     let active = true;
+    function cancelRead() {
+      // A read-only preview can finish after access changes. Its response must
+      // never restore data cleared by a newer authorization check.
+      ++readSequence.current;
+      if (activity.current === "preview" || activity.current === "reload") {
+        activity.current = null; pending.current = false; setBusy(null);
+      }
+    }
     function clearDisplayedData() {
       setBase(null); setPreview(null); setConfirmed(false); setAllowDeficit(false);
       operation.current = null;
@@ -72,12 +82,14 @@ function CorrectionForm({ request, user, onClose, onSaved }: Props) {
     }
     function hide() {
       // A started mutation and its uncertain retry must keep the original payload.
-      if (pending.current || uncertainWrite.current) return;
+      if (activity.current === "save" || uncertainWrite.current) return;
+      cancelRead();
       ++freshnessSequence.current; refreshing.current = false;
       clearDisplayedData(); setChecking(true);
     }
     async function refresh() {
-      if (!active || pending.current || uncertainWrite.current || refreshing.current || document.visibilityState === "hidden") return;
+      if (!active || activity.current === "save" || uncertainWrite.current || refreshing.current || document.visibilityState === "hidden") return;
+      cancelRead();
       const sequence = ++freshnessSequence.current;
       refreshing.current = true; clearDisplayedData(); setChecking(true); setError("");
       try {
@@ -166,27 +178,29 @@ function CorrectionForm({ request, user, onClose, onSaved }: Props) {
 
   async function showPreview() {
     if (pending.current || refreshing.current || uncertain || conflict || !valid || !base) return;
-    pending.current = true; setBusy("preview"); setError(""); invalidate();
+    const sequence = ++readSequence.current;
+    activity.current = "preview"; pending.current = true; setBusy("preview"); setError(""); invalidate();
     try {
       const result = await previewCorrection(base.id, application);
-      if (alive.current) setPreview({ fingerprint, value: result.preview });
-    } catch (failure) { if (alive.current) failed(failure); }
-    finally { pending.current = false; if (alive.current) setBusy(null); }
+      if (alive.current && sequence === readSequence.current) setPreview({ fingerprint, value: result.preview });
+    } catch (failure) { if (alive.current && sequence === readSequence.current) failed(failure); }
+    finally { if (sequence === readSequence.current) { activity.current = null; pending.current = false; if (alive.current) setBusy(null); } }
   }
 
   async function reload() {
     if (pending.current || refreshing.current || uncertain) return;
-    pending.current = true; setBusy("reload"); setError(""); setBase(null); invalidate();
+    const sequence = ++readSequence.current;
+    activity.current = "reload"; pending.current = true; setBusy("reload"); setError(""); setBase(null); invalidate();
     try {
       const [fresh, freshOptions] = await Promise.all([getRequest(request.id), getRequestOptions()]);
-      if (!alive.current) return;
+      if (!alive.current || sequence !== readSequence.current) return;
       if (fresh.request.id !== request.id) throw new ApiError(0, "INVALID_RESPONSE");
       setOptions(freshOptions); setOptionsError("");
       if (!canCorrect(fresh.request)) { setError("Ten wniosek nie pozwala już na korektę. Zamknij okno i sprawdź jego aktualny stan."); return; }
       draftVersion.current = fresh.request.version;
       setBase(fresh.request); setFields(initialFields(fresh.request)); setConflict(false); setDirty(false);
-    } catch (failure) { if (alive.current) failed(failure); }
-    finally { pending.current = false; if (alive.current) setBusy(null); }
+    } catch (failure) { if (alive.current && sequence === readSequence.current) failed(failure); }
+    finally { if (sequence === readSequence.current) { activity.current = null; pending.current = false; if (alive.current) setBusy(null); } }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -200,7 +214,7 @@ function CorrectionForm({ request, user, onClose, onSaved }: Props) {
     }
     const body = operation.current;
     if (!body) return;
-    pending.current = true; setBusy("save"); setError("");
+    activity.current = "save"; pending.current = true; setBusy("save"); setError("");
     try {
       await saveCorrection(base.id, body);
       if (alive.current) onSaved();
@@ -210,7 +224,7 @@ function CorrectionForm({ request, user, onClose, onSaved }: Props) {
         uncertainWrite.current = true; setUncertain(true);
         setError("Nie otrzymaliśmy potwierdzenia zapisu. Ponów tę samą korektę — zachowamy jej dane i rozpoznamy wcześniejszy zapis.");
       } else { uncertainWrite.current = false; setUncertain(false); failed(failure); }
-    } finally { pending.current = false; if (alive.current) setBusy(null); }
+    } finally { activity.current = null; pending.current = false; if (alive.current) setBusy(null); }
   }
 
   return <RequestModal title="Korekta nieobecności" eyebrow="Obsługa zespołu" description="Zmień wcześniejszy wniosek po sprawdzeniu skutków. Uzasadnienie zostanie zapisane w historii." onClose={close} closeDisabled={busy !== null || checking} closeLabel="Zamknij korektę">

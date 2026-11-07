@@ -44,8 +44,9 @@ export function RequestDecisionDialog({ request: initialRequest, action, onClose
     let active = true;
     const invalidate = () => { ++reauthorization.current; };
     const refresh = async () => {
-      if (busy || previewBusy || uncertain || sending.current) return;
+      if (busy || uncertain || sending.current) return;
       const current = ++reauthorization.current;
+      ++sequence.current; setPreviewBusy(false);
       setBase(null); setPreview(null); setRevalidating(true); setError("");
       try {
         const result = await getRequest(initialRequest.id);
@@ -59,14 +60,14 @@ export function RequestDecisionDialog({ request: initialRequest, action, onClose
       } finally { if (active && current === reauthorization.current) setRevalidating(false); }
     };
     const hide = () => {
-      if (busy || previewBusy || uncertain || sending.current) return;
-      invalidate(); setBase(null); setPreview(null); setRevalidating(true);
+      if (busy || uncertain || sending.current) return;
+      invalidate(); ++sequence.current; setPreviewBusy(false); setBase(null); setPreview(null); setRevalidating(true);
     };
     const onFocus = () => { void refresh(); };
     const visibility = () => { if (document.visibilityState === "visible") onFocus(); else hide(); };
     window.addEventListener("focus", onFocus); document.addEventListener("visibilitychange", visibility);
     return () => { active = false; invalidate(); window.removeEventListener("focus", onFocus); document.removeEventListener("visibilitychange", visibility); };
-  }, [initialRequest.id, initialRequest.version, action, busy, previewBusy, uncertain]);
+  }, [initialRequest.id, initialRequest.version, action, busy, uncertain]);
   function payload(): DecisionApplication {
     return { expectedVersion: request.version!, action, ...(action === "reject" ? { reason: reason.trim() } : {}) };
   }

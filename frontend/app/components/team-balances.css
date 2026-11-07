@@ -2,7 +2,8 @@
 .balance-view-tabs button[aria-pressed="true"] { background: #f8eaf1; border-color: #ecd1dd; color: #9f1e53; }
 .team-balances-panel { width: 100%; min-width: 0; max-width: 100%; background: white; border: 1px solid #e0e4eb; border-radius: 14px; padding: 24px; }
 .team-balances-panel > .admin-section-heading > div { min-width: 0; }
-.team-balances-panel > .accounting-table-scroll { display: block; width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; }
+/* Keep absolutely positioned screen-reader labels inside this scrollport. */
+.team-balances-panel > .accounting-table-scroll { position: relative; display: block; width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; }
 .team-balance-filters { display: grid; grid-template-columns: 140px minmax(0, 1fr) auto; min-width: 0; gap: 16px; align-items: end; margin: 20px 0 24px; }
 .team-balance-filters > .button { margin: 0; }
 .team-balances-table { min-width: 800px; }

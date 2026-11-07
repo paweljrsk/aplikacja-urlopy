@@ -70,6 +70,7 @@ let step = 'launch';
     ].map(value => [value.id, value]));
     const writes = []; const previews = []; const reads = []; const receipts = new Map(); const errors = [];
     let loseResponseId = 101; let malformedReceiptId = 104; let deniedDetailId = null; let conflictId = null; let staleCorrection = false; let deficit = false; let paginate = false;
+    let decisionPreviewGate = null; let correctionPreviewGate = null; let heldPreviews = 0;
     const canRead = value => value.id !== deniedDetailId && (session.isAdministrator || (session.role !== 'employee' && value.teamId === session.team?.id) || value.user.id === session.id);
     const canDecide = value => canRead(value) && (session.isAdministrator || session.role === 'manager' || session.role === 'deputy' && value.user.id !== session.id);
     function dto(value) {
@@ -116,6 +117,8 @@ let step = 'launch';
       if (action.endsWith('preview')) {
         assert.equal('operationKey' in body, false); previews.push({ path, body: copy(body) });
         if (body.expectedVersion !== value.version) return error(409, 'CONFLICT');
+        const gate = action === 'decision-preview' ? decisionPreviewGate : correctionPreviewGate;
+        if (gate) { ++heldPreviews; await gate; }
         if (action === 'decision-preview') {
           assert.ok(['approve', 'reject'].includes(body.action));
           if (body.action === 'reject') assert.ok(body.reason.trim());
@@ -296,6 +299,25 @@ let step = 'launch';
     await page.locator('.requests-detail .message-error').waitFor();
     deniedDetailId = null;
 
+    step = 'pending decision preview cannot restore details after revoked access';
+    await open(103); dialog = await decision('approve');
+    let releaseDecisionPreview;
+    decisionPreviewGate = new Promise(resolve => { releaseDecisionPreview = resolve; });
+    const heldBeforeDecision = heldPreviews;
+    const delayedDecisionResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/requests/103/decision-preview');
+    await dialog.getByRole('button', { name: 'Sprawdź wpływ', exact: true }).click();
+    await until(() => heldPreviews > heldBeforeDecision, 'Hold the in-flight decision preview before changing access.');
+    deniedDetailId = 103; await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.locator('.managed-detail').waitFor({ state: 'detached' });
+    await dialog.getByRole('alert').waitFor();
+    releaseDecisionPreview(); await (await delayedDecisionResponse).finished(); decisionPreviewGate = null;
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await dialog.locator('.managed-decision-person, .requests-revisions, .managed-decision-preview').count(), 0, 'A previously authorized preview response cannot revive revoked private decision data.');
+    assert.equal(await dialog.getByRole('button', { name: 'Potwierdź akceptację', exact: true }).count(), 0);
+    assert.equal(mutationCount(103), 0);
+    await dialog.getByRole('button', { name: 'Wróć', exact: true }).click(); await dialog.waitFor({ state: 'detached' });
+    await page.locator('.requests-detail .message-error').waitFor(); deniedDetailId = null;
+
     step = 'deputy may decide another employee request, never own';
     session = deputy; await open(103);
     await until(() => reads.filter(path => path === '/api/requests/103').length > 0, 'Deputy own details should load.');
@@ -307,6 +329,27 @@ let step = 'launch';
     await dialog.getByRole('button', { name: 'Potwierdź akceptację', exact: true }).click(); await dialog.waitFor({ state: 'detached' });
     assert.equal(requests.get(108).current.decision.actorName, 'Ewa Zastępczyni');
     assert.equal(mutationCount(103), 0);
+
+    step = 'pending correction preview cannot restore a revoked form';
+    session = manager; await open(106); dialog = await correction();
+    await dialog.getByLabel('Liczba godzin', { exact: true }).selectOption('4');
+    await dialog.getByLabel('Uzasadnienie korekty', { exact: true }).fill('Syntetyczny podgląd przed odebraniem dostępu');
+    let releaseCorrectionPreview;
+    correctionPreviewGate = new Promise(resolve => { releaseCorrectionPreview = resolve; });
+    const heldBeforeCorrection = heldPreviews;
+    const delayedCorrectionResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/requests/106/correction-preview');
+    await dialog.getByRole('button', { name: 'Sprawdź skutki korekty', exact: true }).click();
+    await until(() => heldPreviews > heldBeforeCorrection, 'Hold the in-flight correction preview before changing access.');
+    deniedDetailId = 106; await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.locator('.managed-detail').waitFor({ state: 'detached' });
+    await dialog.getByRole('alert').waitFor();
+    releaseCorrectionPreview(); await (await delayedCorrectionResponse).finished(); correctionPreviewGate = null;
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await dialog.locator('.correction-person, .correction-preview, .correction-confirmations').count(), 0, 'A late successful correction preview cannot reveal revoked private data or confirmation controls.');
+    assert.equal(await dialog.getByRole('button', { name: 'Zapisz korektę', exact: true }).count(), 0);
+    assert.equal(mutationCount(106), 0);
+    await dialog.getByRole('button', { name: 'Wróć do wniosku', exact: true }).click(); await dialog.waitFor({ state: 'detached' });
+    await page.locator('.requests-detail .message-error').waitFor(); deniedDetailId = null;
 
     step = 'historical correction preview, invalidation, stale token, unchanged retry';
     session = manager; await open(106); dialog = await correction();
@@ -381,7 +424,7 @@ let step = 'launch';
     assert.equal(await page.getByText(debugMessage, { exact: true }).count(), 0);
     assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
     assert.deepEqual(errors, [], 'No unhandled browser exceptions.');
-    console.log('PASS Chrome managed UI: combined awaiting queue, manager own approval, deputy scope, admin other team, server decision preview, required rejection reason, effective/proposed comparison, cancellation, audit actors, conflict reload, guarded historical correction and deficit, stale preview, idle reauthorization, malformed receipt and lost-response idempotency, duplicate-click prevention, empty cursor page, keyboard, mobile and role revocation. API responses are synthetic.');
+    console.log('PASS Chrome managed UI: combined awaiting queue, manager own approval, deputy scope, admin other team, server decision preview, required rejection reason, effective/proposed comparison, cancellation, audit actors, conflict reload, guarded historical correction and deficit, stale preview, idle and in-flight preview reauthorization, malformed receipt and lost-response idempotency, duplicate-click prevention, empty cursor page, keyboard, mobile and role revocation. API responses are synthetic.');
 
     await context.close();
   } catch (error) {

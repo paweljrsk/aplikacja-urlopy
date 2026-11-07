@@ -238,6 +238,25 @@ Q7 dotyczy konfiguracji przed produkcją. Zachowujemy B22–B33.
 
 ## Problemy i ograniczenia
 
+### E17 — spóźniony podgląd po zmianie dostępu
+
+Przegląd etapu 10 wykrył, że pominięcie odświeżenia dostępu podczas trwającego
+podglądu mogło przywrócić stare szczegóły po utracie uprawnień. Podgląd jest
+odczytem: ukrycie lub ponowne aktywowanie strony unieważnia jego odpowiedź,
+usuwa szczegóły i wymaga ponownej autoryzacji. Robocze pola pozostają zachowane
+dla tej samej wersji. Ochrona niepewnego faktycznego zapisu nadal zachowuje dokładną
+treść i klucz ponowienia. Osobne regresje opóźniają odpowiedź podglądu oraz
+odbierają dostęp przed jej dostarczeniem. Wynik odbioru jest w TEST_PLAN.
+
+### E16 — ukryta etykieta poza przewijaną tabelą sald
+
+CI #34–35 wykryły poziome przepełnienie strony przy mobilnym zestawieniu zespołu.
+Samo ograniczenie szerokości panelu nie wystarczyło. Diagnostyka CI #35 wskazała
+absolutnie pozycjonowaną etykietę `.sr-only` ostatniej kolumny, której położenie
+wykraczało poza przewijany kontener. Ustawienie `position: relative` na kontenerze
+obejmuje także etykiety dostępności. Tabela zachowuje własne przewijanie i pełną
+treść; asercja szerokości strony pozostaje bez zmian. Wynik odbioru jest w TEST_PLAN.
+
 ### E15 — równoległe przekierowania wygasłej sesji w teście
 
 CI #33, po dokumentacji etapu 9, zakończył się `net::ERR_ABORTED` podczas oczekiwania
