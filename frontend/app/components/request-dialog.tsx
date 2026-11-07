@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { redirectForAuthError } from "@/lib/auth-api";
 import { hoursLabel } from "@/lib/balance-api";
 import {
@@ -29,7 +29,26 @@ export function RequestModal({ title, description, children, onClose, closeDisab
       if (trigger?.isConnected) trigger.focus();
     };
   }, []);
+  function keepTabInside(event: KeyboardEvent<HTMLDialogElement>) {
+    if (event.key !== "Tab") return;
+    // Recompute after loading/saving: :disabled also includes controls disabled by a fieldset.
+    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("button, a[href], input, select, textarea, [tabindex], [contenteditable=true]"))
+      .filter(element => element.tabIndex >= 0 && !element.matches(":disabled") && !element.closest("[inert]")
+        && element.getClientRects().length > 0 && !["hidden", "collapse"].includes(getComputedStyle(element).visibility));
+    if (!controls.length) {
+      event.preventDefault(); heading.current?.focus(); return;
+    }
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    const active = document.activeElement;
+    const outsideTabOrder = !controls.some(element => element === active);
+    if ((event.shiftKey && (active === first || outsideTabOrder)) || (!event.shiftKey && (active === last || outsideTabOrder))) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    }
+  }
   return <dialog ref={dialog} className="requests-dialog" aria-labelledby={`${id}-title`} aria-describedby={description ? `${id}-description` : undefined}
+    onKeyDown={keepTabInside}
     onCancel={event => { event.preventDefault(); if (!closeDisabled) onClose(); }}>
     <div className="requests-dialog-heading">
       <div><span className="requests-eyebrow">Twoje nieobecności</span><h2 ref={heading} tabIndex={-1} id={`${id}-title`}>{title}</h2>{description && <p id={`${id}-description`}>{description}</p>}</div>

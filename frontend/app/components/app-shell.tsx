@@ -67,7 +67,7 @@ export function AppHeader({ user, active, onNewRequest, onLogout, logoutBusy = f
             <Link href="/balances" prefetch={false} aria-current={active === "balances" ? "page" : undefined}>Moje saldo</Link>
           </nav>
           <div className="app-header-actions">
-            {onNewRequest ? <button type="button" className="button button-primary new-request-button" onClick={onNewRequest}><span aria-hidden="true">＋</span>Złóż wniosek</button> : <Link href="/requests?new=1" prefetch={false} className="button button-primary new-request-button"><span aria-hidden="true">＋</span>Złóż wniosek</Link>}
+            {onNewRequest ? <button type="button" className="button button-primary new-request-button" onClick={onNewRequest}><span aria-hidden="true">+</span>Złóż wniosek</button> : <Link href="/requests?new=1" prefetch={false} className="button button-primary new-request-button"><span aria-hidden="true">+</span>Złóż wniosek</Link>}
             <details className="account-menu">
               <summary aria-label="Menu konta"><span className="account-initials" aria-hidden="true">{user.firstName.slice(0, 1)}{user.lastName.slice(0, 1)}</span><span className="account-menu-name">{user.firstName}<span aria-hidden="true">⌄</span></span></summary>
               <div className="account-menu-panel">

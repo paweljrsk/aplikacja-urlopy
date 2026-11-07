@@ -213,6 +213,14 @@ testów pozostają w TEST_PLAN. Sam wpis nie oznacza zaliczenia odbioru.
 
 ## Problemy i ograniczenia
 
+### E12 — nawigacja klawiaturą w dialogu
+
+CI #27 wykrył wyjście fokusu z dialogu przy Shift+Tab. Samo natywne `showModal()`
+zapewnia nieaktywne tło, ale w Chrome nie gwarantowało oczekiwanego zawinięcia
+klawiatury. Dodano jawne zawijanie Tab/Shift+Tab między widocznymi aktywnymi
+kontrolkami, z obsługą początkowego nagłówka i wyłączonych fieldsetów. Zachowano
+natywne Escape, nieaktywne tło i przywrócenie fokusu; asercja pozostaje bez zmian.
+
 ### E11 — wyścig syntetycznej sesji w regresji Chrome
 
 [CI #25](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42402053433),
