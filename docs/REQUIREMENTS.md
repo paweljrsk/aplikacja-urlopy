@@ -1,6 +1,6 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.6 • stan uzgodnień z 7 listopada 2026 r., po doprecyzowaniu ekranu głównego przed etapem 8.
+Wersja 1.7 • stan uzgodnień z 7 listopada 2026 r., po zleceniu etapu 9.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
 [decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
@@ -165,6 +165,13 @@ pod nim listę nadchodzących nieobecności na około dwa miesiące oraz wyraźn
 Podstawowy kalendarz przeniesiono z etapu 9 do 8 zgodnie z poleceniem użytkownika.
 Przedział jednego lub dwóch tygodni i sposób otwierania krótkiego formularza
 pozostawiono ocenie wykonawcy; nie zmienia to zasad uprawnień i rozliczeń.
+
+Etap 9 rozwija ten ekran o filtrowanie osoby i statusu, czytelną prezentację
+obowiązującego urlopu wraz z propozycją zmiany oraz szczegóły dla uprawnionych osób.
+Użytkownik zlecił etap po przedstawieniu tego zakresu. Główny widok pozostaje
+jedno/dwutygodniowy; widok miesiąca jest opcjonalnym późniejszym dodatkiem.
+Filtry kalendarza i listy nie rozszerzają zakresu danych przyznanego przez API.
+Szczegóły ponownie sprawdzają uprawnienia, także po zmianie zespołu.
 
 Potrzebne widoki: logowanie i zmiana hasła, kalendarz, formularz, moje wnioski i szczegóły, moje saldo, kolejka decyzji przełożonego, salda zespołu oraz administracja. Widoki mają działać na telefonie i komputerze. Dane z innych zespołów lub prywatne dane kolegów nie mogą trafiać do nieuprawnionego klienta przez API.
 

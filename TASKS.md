@@ -8,6 +8,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 6 — wnioski, rezerwacje i decyzje — zakończony.** Q2 o dzisiaj i Q10 zatwierdzone jako B30–B31.
 **Etap 7 — zmiany, anulowania i korekty — zakończony.** Q2/Q4: B32–B33.
 **Etap 8 — formularz, widoki pracownika i podstawowy kalendarz Notus — ukończony.** B34; CI #29 SUCCESS.
+**Etap 9 — filtry i dopracowanie kalendarza — ukończony.** CI #32 SUCCESS.
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -107,6 +108,14 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Sprawdzić backend, dostęp, formularze, telefon/desktop, klawiaturę, błędy i ponowienia.
 - [x] Zweryfikować w CI #29 (420 testów / 18 015 asercji, Chrome i real E2E), obejrzeć zrzuty, uzupełnić dokumentację i instrukcję odbioru.
 
+## Etap 9 — ukończony
+
+- [x] Dodać wspólne filtry osoby/statusu dla kalendarza i listy, reset i czytelny pusty wynik.
+- [x] Powiązać wersję obowiązującą z propozycją bez sumowania ich jako dwóch urlopów.
+- [x] Udostępnić szczegóły kalendarza osobom uprawnionym przez istniejące API.
+- [x] Sprawdzić dostęp, cofnięcie uprawnień, transfery i scenariusze UI desktop/mobile.
+- [x] Uzupełnić dokumentację i ukończyć odbiór CI oraz zrzutów.
+
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
@@ -116,7 +125,7 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
 - [x] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
 - [x] Etap 8 — formularz i widoki pracownika w stylistyce Notus, podstawowy kalendarz i lista według B34.
-- [ ] Etap 9 — dalsze doskonalenie kalendarza zespołu i listy nieobecności; podstawowy ekran już w etapie 8.
+- [x] Etap 9 — dalsze doskonalenie kalendarza zespołu i listy nieobecności; podstawowy ekran już w etapie 8.
 - [ ] Etap 10 — widoki przełożonego/administratora, salda i historia.
 - [ ] Etap 11 — weryfikacja pełnych procesów, bezpieczeństwa i wydajności.
 - [ ] Etap 12 — przygotowanie produkcji, backup/restore i pilotaż.
@@ -282,7 +291,7 @@ ujawnił wyścig syntetycznej sesji w teście Chrome salda. Odtworzono i poprawi
 synchronizację bez zmiany produkcyjnego CSRF i bez osłabienia asercji.
 Implementację i odbiór zakończono zgodnie z poniższym aktualnym punktem wznowienia.
 
-### Bieżący punkt wznowienia — po ukończeniu etapu 8
+### Historyczny punkt wznowienia — po ukończeniu etapu 8
 
 Kod `95bf3874336b5d47e978d6756f248ecdf25e7fb7`:
 [CI #29 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42409969383),
@@ -299,3 +308,24 @@ kalendarz udostępnia wyłącznie dozwolone dni i ograniczone metadane.
 
 Kolejny punkt to odbiór użytkownika, następnie etap 9 wyłącznie na osobne polecenie.
 Panel decyzji i korekt przełożonego pozostaje w etapie 10. Nie scalać PR automatycznie.
+
+### Bieżący punkt wznowienia — po ukończeniu etapu 9
+
+Użytkownik zlecił etap 9 po przedstawieniu zakresu filtrów, czytelności zmian,
+szczegółów dla uprawnionych osób i odbioru. Zachować widok 1/2 tygodnie; miesiąc
+pozostaje opcjonalnym późniejszym dodatkiem. Gałąź `codex/etap-9-kalendarz-filtry`
+bazuje na końcowym etapie 8 `531d418d833aaa336adeb8427e241849ff499a57`, CI #30 SUCCESS.
+Nie zmieniać rozliczeń ani reguł dostępu, nie rozpoczynać etapu 10 i nie scalać PR.
+
+
+Kod `345eab527d808cf57f31994e3aac3d552e2c1e0c`:
+[CI #32 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42412836879),
+PHP 8.3.36 + MySQL 8.0.32, **422 testy / 18 350 asercji**, kontrole statyczne,
+build, wszystkie regresje Chrome (w tym nowy kalendarz), rzeczywisty HTTP/E2E,
+restart z zachowaniem danych i workery. Odbiór zrzutów desktop/mobile PASS.
+[PR #9](https://github.com/paweljrsk/aplikacja-urlopy/pull/9) bazuje na niescalonym PR #8.
+
+DT51–DT53 opisują filtry, grupowanie i modal. Backend ponownie sprawdza każdą wersję;
+wskazówka `canViewDetails` nie zastępuje autoryzacji. Naprawiono wyścig błędów
+pobrania kalendarza/opcji (E14). Ręczny odbiór zapisano w TEST_PLAN.
+Następny punkt: odbiór użytkownika, potem etap 10 wyłącznie na jego polecenie.

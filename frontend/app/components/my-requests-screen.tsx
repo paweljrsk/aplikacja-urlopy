@@ -2,24 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { redirectForAuthError, type CurrentUser } from "@/lib/auth-api";
-import { hoursLabel } from "@/lib/balance-api";
 import {
-  getMyRequests, getRequest, requestAction, requestConflict, requestError, requestRange, requestStatusLabel, requestTimestamp, unconfirmedRequest,
-  type RequestDetail, type RequestFormMode, type RequestRevision, type RequestStatus, type RequestsPage,
+  getMyRequests, getRequest, requestAction, requestConflict, requestError, requestRange, requestStatusLabel, unconfirmedRequest,
+  type RequestDetail, type RequestFormMode, type RequestStatus, type RequestsPage,
 } from "@/lib/request-api";
 import { AppShell, useWorkspaceUser } from "./app-shell";
 import { RequestDialog, RequestModal } from "./request-dialog";
+import { RequestHistory, RequestRevisionDetails, RequestStatusBadge } from "./request-details";
 import "./requests.css";
-
-export function RequestStatusBadge({ status }: { status: RequestStatus | null }) {
-  return <span className={`requests-status requests-status-${status ?? "history"}`}><span aria-hidden="true">{status === "approved" ? "✓" : status?.includes("pending") ? "◷" : "−"}</span>{requestStatusLabel(status)}</span>;
-}
-
-function RevisionCard({ revision, title, tone = "" }: { revision: RequestRevision; title: string; tone?: string }) {
-  return <section className={`requests-revision-card ${tone}`}><h3>{title}</h3><strong>{requestRange(revision)}</strong><span>{revision.absenceType.name}</span><p>{hoursLabel(revision.totalHours)}</p>
-    {revision.mode === "hourly" && <small>Nieobecność przez część dnia, bez określonej pory.</small>}
-  </section>;
-}
 
 function RequestActionDialog({ request, action, onClose, onSaved, onRefresh }: {
   request: RequestDetail; action: "withdraw" | "cancel"; onClose: () => void; onSaved: () => void; onRefresh: () => void;
@@ -63,32 +53,16 @@ function RequestDetails({ request, onClose, onEdit, onAction, actorId }: {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, [request.id]);
   const own = request.user.id === actorId;
-  const last = request.current ?? request.latestVisibleRevision;
-  const history = [...request.history].reverse();
   return <section className="requests-detail" aria-labelledby="request-detail-title">
     <div className="requests-detail-header"><div><span className="requests-eyebrow">Wniosek #{request.id}</span><h2 id="request-detail-title" ref={heading} tabIndex={-1}>Szczegóły wniosku</h2>{!own && <p>{request.user.firstName} {request.user.lastName}</p>}</div><button className="button button-secondary button-small" onClick={onClose}>Zamknij szczegóły</button></div>
-    <RequestStatusBadge status={request.status} />
-    {(request.status === "change_pending" || request.status === "cancellation_pending") && <p className="requests-explanation">{request.status === "change_pending" ? "Zmiana czeka na decyzję. Do tego czasu obowiązuje zatwierdzony termin." : "Anulowanie czeka na decyzję. Urlop nadal obowiązuje, a saldo pozostaje bez zmian."}</p>}
-    <div className="requests-revisions">
-      {request.effective && <RevisionCard revision={request.effective} title="Obowiązujący urlop" tone="is-effective" />}
-      {request.pending && request.pending.kind !== "cancellation" && <RevisionCard revision={request.pending} title={request.effective ? "Proponowana zmiana" : "Oczekujący wniosek"} tone="is-proposed" />}
-      {!request.effective && !request.pending && <RevisionCard revision={last} title="Termin wniosku" />}
-    </div>
-    {last.decision?.reason && <div className="requests-decision-reason"><strong>Powód decyzji</strong><p>{last.decision.reason}</p></div>}
+    <RequestRevisionDetails request={request} />
     {own && <div className="requests-inline-actions">
       {request.actions.edit && <button className="button button-primary" onClick={() => onEdit("edit")}>Edytuj wniosek</button>}
       {request.actions.change && <button className="button button-primary" onClick={() => onEdit("change")}>Zmień termin lub wymiar</button>}
       {request.actions.withdraw && <button className="button button-secondary" onClick={() => onAction("withdraw")}>{request.effective ? "Wycofaj propozycję" : "Wycofaj wniosek"}</button>}
       {request.actions.cancel && <button className="button button-secondary" onClick={() => onAction("cancel")}>Anuluj urlop</button>}
     </div>}
-    <details className="requests-history"><summary>Historia wniosku <span>{history.length} {history.length === 1 ? "wersja" : history.length < 5 ? "wersje" : "wersji"}</span></summary>
-      <ol>{history.map(revision => <li key={revision.id}><div className="requests-history-heading"><strong>{revision.kind === "cancellation" ? "Prośba o anulowanie" : revision.kind === "change" ? "Zmiana wniosku" : "Wniosek"} · wersja {revision.revision}</strong><span>{revision.decision ? ({ approved: "Zaakceptowano", rejected: "Odrzucono", withdrawn: "Wycofano", superseded: "Zastąpiono nowszą wersją" })[revision.decision.outcome] : "Oczekuje na decyzję"}</span></div>
-        <p>{requestRange(revision)} · {revision.totalHours} h · {revision.absenceType.name}</p>
-        <small>Zgłoszono: {requestTimestamp(revision.submitted.at)}{revision.submitted.actorName && ` · ${revision.submitted.actorName}`}</small>
-        {revision.submitted.reason && <p className="requests-history-reason">Uzasadnienie korekty: {revision.submitted.reason}</p>}
-        {revision.decision && <><small>Decyzja: {requestTimestamp(revision.decision.at)}{revision.decision.actorName && ` · ${revision.decision.actorName}`}</small>{revision.decision.reason && <p className="requests-history-reason">Uzasadnienie: {revision.decision.reason}</p>}</>}
-      </li>)}</ol>
-    </details>
+    <RequestHistory request={request} />
   </section>;
 }
 

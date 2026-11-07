@@ -1,4 +1,4 @@
-# API kalendarza zespołu — etap 8
+# API kalendarza zespołu — etapy 8–9
 
 Kalendarz jest ekranem startowym. Widoczność wynika z B15–B16 i B22–B24;
 reguły zapisano w [REQUIREMENTS.md](REQUIREMENTS.md). Ten odczyt jest osobną,
@@ -105,3 +105,23 @@ Scenariusze automatyczne są w `TeamCalendarApiTest`: sesja, wymuszone hasło,
 unieważnienie dostępu, prywatność, statusy zmian/anulowania, transfery i zakresy,
 odświeżanie roli, ścisłe wejście, puste przypisanie i brak cichego obcinania ponad
 100 wpisów. Faktyczny wynik wykonania należy odnotować w TEST_PLAN.
+
+## Prezentacja w etapie 9
+
+Kontrakt i reguły backendu pozostają bez zmian. Interfejs zawęża autoryzowane
+odpowiedzi filtrami osoby i statusu wspólnymi dla kalendarza oraz listy dwóch
+miesięcy. Status „Zatwierdzone” oznacza `kind=effective` także podczas zmiany
+lub anulowania; „Oczekujące” oznacza `kind=pending`; „Zmiany i anulowania”
+zachowuje dostępne wpisy ze statusem `change_pending` lub `cancellation_pending`.
+
+Lista grupuje wpisy po `requestId`, pokazując osobno obowiązujący i proponowany
+termin z ich własnymi godzinami. Nie sumuje wersji i nie łączy odrębnych wniosków
+tej samej osoby w tym samym dniu. Odfiltrowana lub niedostępna wersja nie jest
+odtwarzana po stronie klienta.
+
+Kliknięcie dozwolonego wpisu wykonuje świeże `GET /api/requests/{id}` w dialogu.
+Flaga z feedu nie zastępuje autoryzacji: datowane przeniesienie może unieważnić
+prawo do szczegółów, mimo nadal aktywnej sesji. Gdy API zwraca tylko historię
+(`currentVisible=false`, `status=null`), ekran nie przypisuje statusu ukrytej
+wersji. Zestaw testów sprawdza przejście pomiędzy endpointami, role, zakres
+historyczny i zmianę dostępu po północy w Warszawie.

@@ -707,3 +707,53 @@ zielonym CI #29; nie pominięto ani nie osłabiono wcześniejszych asercji.
    braku salda, konfliktu, wygasłej sesji i bezpiecznego ponowienia po utracie odpowiedzi.
 
 Kolejka decyzji i formularze korekt przełożonego pozostają w etapie 10.
+
+## Etap 9 — raport odbioru
+
+Lokalny `TeamCalendarApiTest`: **12 testów / 1625 asercji — PASS**, 49,3 s,
+PHP 8.4.24 + MySQL 8.0.32, UTC. Dwa nowe testy łączą wskazówkę kalendarza z faktycznym
+odczytem szczegółów dla wszystkich ról oraz sprawdzają odebranie dostępu po
+przeniesieniu pracownika o północy mimo nadal aktywnej sesji kierownika.
+Uzupełniono kontrolę ukrytej propozycji i mieszanej historii zespołów.
+PHPStan zmienionego testu, ESLint, TypeScript i produkcyjny build — PASS.
+Kod produkcyjny backendu, schemat i zależności pozostają bez zmian.
+
+Pełny [CI #32 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42412836879)
+dla kodu `345eab527d808cf57f31994e3aac3d552e2c1e0c`, PHP 8.3.36 + MySQL 8.0.32:
+
+- **422 testy / 18 350 asercji**; migracje i zgodność schematu, powtarzalne demo.
+- PHPStan, lint YAML/Twig, ESLint, produkcyjny build i TypeScript — PASS.
+- Chrome: dotychczasowe logowanie, administracja, saldo, formularze i kalendarz — PASS.
+- Nowy `calendar-ui-check.cjs`: wspólne filtry obu zakresów, semantyka zatwierdzenia,
+  powiązane wersje bez sumowania, niewidoczna propozycja, puste wyniki/reset,
+  osoby z przyszłych/historycznych wpisów, zachowanie okresu i filtrów — PASS.
+- Odczyt dla pracownika/kierownika/zastępcy/admina, brak prywatnych odczytów kolegów,
+  odmowa 403, świeża autoryzacja po focus, historyczny zakres, zmiana zespołu,
+  klawiatura, mobile i cofnięta sesja — PASS.
+- Kontrolowana kolejność odpowiedzi: błąd kalendarza pozostaje widoczny po wolniejszym
+  sukcesie `/requests/options`; kolejne ponowienie przywraca kalendarz — PASS.
+- Rzeczywisty HTTP i proces wniosku przez Chrome/Nginx/PHP-FPM, restart z zachowaniem
+  danych oraz workery Messenger/Scheduler — PASS.
+
+Zrzuty `calendar-filters-desktop/mobile` i `calendar-details-desktop/mobile`
+sprawdzono wizualnie: czytelne oznaczenia, zawijanie długich nazw, osobne wymiary
+wersji, wyśrodkowany dialog desktop i pełnoekranowy mobile; bez poziomego przepełnienia.
+Sprawdzono również podstawowy widok telefonu. Dane i odpowiedzi w regresji UI są
+syntetyczne; rzeczywista polityka dostępu jest osobno sprawdzana przez PHP/MySQL.
+
+Pierwszy CI #31 zatrzymał się na selektorze nowego testu: `getByLabel(..., exact)`
+nie pasował do etykiety zawierającej opcje. Zmieniono go na stabilne identyfikatory
+pól, zachowując wszystkie asercje danych. CI #32 zaliczył cały przebieg.
+
+### Ręczny odbiór etapu 9
+
+1. Na kalendarzu wybierz osobę i status. Sprawdź, że zawężają również listę
+   kolejnych dwóch miesięcy. Przesuń okres, a następnie wyczyść filtry.
+2. Wybierz „Zatwierdzone”: urlop oczekujący na zmianę lub anulowanie nadal obowiązuje.
+   „Oczekujące” pokazuje nowe wnioski, „Zmiany i anulowania” odpowiednie procesy.
+3. Przy zmianie terminu sprawdź jedną pozycję listy z osobno opisanymi terminami
+   i wymiarami. Dwa niezależne wnioski 3 h + 5 h pozostają osobnymi pozycjami.
+4. Jako przełożony otwórz dozwolone szczegóły i historię, zamknij okno i sprawdź
+   zachowanie okresu, filtrów i fokusu. Zwykły współpracownik nie ma tego przycisku.
+5. Na telefonie sprawdź filtry, listę dni i pełnoekranowe szczegóły. Administrator
+   po zmianie zespołu rozpoczyna z wyczyszczonymi filtrami.

@@ -211,7 +211,27 @@ testów pozostają w TEST_PLAN. Sam wpis nie oznacza zaliczenia odbioru.
 | DT49 | Korekta historycznego zaakceptowanego wniosku zapisuje nową wersję i decyzję w jednej transakcji; stary oczekujący INITIAL zachowuje pierwotną konieczność akceptacji. | Anulowanie historycznego INITIAL jest wycofaniem. Istniejącą oczekującą zmianę/anulowanie trzeba najpierw rozstrzygnąć, nie jest po cichu usuwana. Wyjątek niedoboru B33 dotyczy nowych brakujących godzin przeszłych, nie przyszłych; B29 korekty kalendarza pozostaje osobną operacją. |
 | DT50 | Zatwierdzona zmiana ma własny zakres uprawnień, a zastąpiona wersja jest osobną historią. | Oczekująca propozycja wymaga dostępu do starego i nowego zakresu. Odczyt osobno filtruje wersję obowiązującą i oczekującą. Podgląd nie ujawnia pul przełożonemu uprawnionemu tylko do dawnego wniosku, bez prawa do bieżącego salda. |
 
+## Decyzje realizacyjne etapu 9 — 7 listopada 2026 r.
+
+Użytkownik zlecił etap 9 po przedstawieniu pozostałego zakresu: filtry,
+czytelność zmian, szczegóły dla uprawnionych osób i odbiór. Zachowujemy B34
+oraz widok 1/2 tygodnie; widok miesiąca pozostaje opcją późniejszego rozwoju.
+
+| ID | Decyzja wykonawcza | Uzasadnienie i granice |
+|---|---|---|
+| DT51 | Filtry osoby i statusu działają wspólnie na kalendarz i listę dwóch miesięcy. | Zawężają już autoryzowany kompletny feed w pamięci strony; nie zmieniają kontraktu API ani uprawnień. Opcje osób to suma obu widocznych okresów. Wybrana osoba zostaje podczas nawigacji, zmiana zespołu czyści filtry. Bez localStorage i bez nowych zależności. |
+| DT52 | „Zatwierdzone” pokazuje obowiązujące wersje, także oczekujące na zmianę/anulowanie; „Oczekujące” wyłącznie nowe wnioski; „Zmiany i anulowania” dostępne wersje powiązanego procesu. | Zmiana i anulowanie nie unieważniają dotychczasowego urlopu. Filtr nie wnioskuje o niedostępnej propozycji. Lista grupuje po wniosku, nie sumuje wersji i nie łączy dwóch niezależnych wniosków 3 h + 5 h. |
+| DT53 | Szczegóły z kalendarza otwieramy w krótkim oknie tylko po wskazaniu `canViewDetails`, zawsze z nowym odczytem istniejącego API. | Backend ponownie autoryzuje każdą wersję. Modal czyści wcześniejszy DTO przed odświeżeniem, po odmowie i przy ukryciu strony. Zamknięcie zachowuje okres/filtry i przywraca fokus. Brak nowych uprawnień lub kontrolek decyzji; panel przełożonego pozostaje w etapie 10. |
+
 ## Problemy i ograniczenia
+
+### E14 — niezależne błędy opcji i kalendarza
+
+Przegląd etapu 9 wykrył współdzielenie komunikatu błędu przez pobranie daty
+serwerowej i kalendarza. Po ponowieniu wolniejszy sukces `/requests/options`
+mógł usunąć błąd kalendarza i pozostawić wskaźnik ładowania bez zakończenia.
+Oba odczyty mają teraz odrębny stan błędu. Regresja Chrome wymusza kolejność:
+błąd kalendarza, opóźniony sukces opcji, widoczny komunikat i skuteczne ponowienie.
 
 ### E13 — pozycja dialogu na komputerze
 

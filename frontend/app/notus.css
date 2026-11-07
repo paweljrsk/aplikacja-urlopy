@@ -163,3 +163,33 @@ a.calendar-entry:hover { filter: brightness(.96); }
   .upcoming-section { margin-top: 30px; } .upcoming-heading { align-items: flex-end; } .upcoming-heading h2 { font-size: 21px; } .upcoming-heading .eyebrow { font-size: 8px; } .upcoming-heading p { font-size: 10px; max-width: 210px; } .upcoming-heading .text-link { font-size: 10px; gap: 5px; flex-shrink: 0; } .upcoming-list > li { display: grid; grid-template-columns: 38px 1fr auto; padding: 15px; gap: 8px 12px; } .upcoming-date { width: 38px; min-height: 44px; grid-row: 1 / 3; } .upcoming-person { grid-column: 2 / 4; } .upcoming-person > strong { font-size: 11px; } .upcoming-person > span { font-size: 9px; } .calendar-status { grid-column: 2; justify-self: start; font-size: 8px; padding: 3px 7px; } .upcoming-details { grid-column: 3; margin-left: 0; font-size: 9px; gap: 4px; } .workspace-footer { width: calc(100% - 36px); font-size: 9px; gap: 20px; }
 }
 @media (max-width: 370px) { .notus-brand-divider, .notus-brand > span:last-child { display: none; } .app-navigation { gap: 23px; } .calendar-controls { gap: 7px; } .calendar-pagination { gap: 3px; } .period-toggle button { padding: 5px 8px; } .calendar-today { padding: 5px 8px; } .dashboard-balance strong { font-size: 21px; } }
+
+/* Calendar filters narrow the same authorized feed used by both views. */
+.calendar-filters { margin: 0 0 20px; padding: 18px 22px; border: 1px solid var(--line); background: white; border-radius: 13px; }
+.calendar-filter-fields { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
+.calendar-filter-fields label { display: flex; flex-direction: column; gap: 7px; min-width: 0; flex: 0 1 270px; font-size: 11px; font-weight: 600; }
+.calendar-filter-fields select { width: 100%; min-width: 0; height: 42px; min-height: 42px; padding: 8px 10px; font-size: 12px; font-weight: 400; border-color: #d5dae3; }
+.calendar-filter-reset { min-height: 42px; font-size: 11px; }
+.calendar-filter-hint { margin: 11px 0 0; font-size: 11px; color: #69717f; line-height: 1.6; }
+.calendar-change-hint { width: 100%; margin: 0; padding-top: 6px; color: #745166; font-size: 11px; line-height: 1.6; }
+button.calendar-entry { width: 100%; padding: 3px 2px; cursor: pointer; }
+button.calendar-entry:hover { filter: brightness(.96); }
+button.upcoming-details { background: transparent; border: 0; padding: 9px 0; cursor: pointer; flex-shrink: 0; }
+.upcoming-list > li.has-pending-change { align-items: flex-start; }
+.upcoming-version { display: block; line-height: 1.65; }
+.upcoming-version b { font-weight: 550; color: #49685d; margin-right: 10px; }
+.upcoming-version.is-proposed_change b { color: #9b3868; }
+.upcoming-person .upcoming-change-note { color: #7c6372; font-size: 10px; line-height: 1.6; margin-top: 3px; }
+.mobile-entry-context { display: block; font-size: 9px; color: #7c6372; margin: 3px 0; }
+@media (max-width: 760px) {
+  .calendar-filters { padding: 16px; }
+  .calendar-filter-fields { gap: 12px; }
+  .calendar-filter-fields label { flex: 1 1 100%; }
+  .calendar-filter-hint { font-size: 10px; }
+  .calendar-filter-reset { width: 100%; }
+  .mobile-calendar-entry button.calendar-entry { width: auto; flex-shrink: 0; }
+  .upcoming-person .upcoming-version { font-size: 10px; }
+  .upcoming-version b { display: block; margin-right: 0; }
+  .upcoming-person .upcoming-change-note { font-size: 9px; }
+  .calendar-change-hint { font-size: 10px; }
+}

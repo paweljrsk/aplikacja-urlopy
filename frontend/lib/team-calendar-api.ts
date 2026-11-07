@@ -11,6 +11,32 @@ export type TeamCalendar = {
   people: CalendarPerson[]; entries: CalendarEntry[]; holidays: { date: string; name: string }[];
 };
 
+export type CalendarStatusFilter = "" | "approved" | "pending" | "changes";
+export type CalendarGroup = { requestId: number; userId: number; entries: CalendarEntry[]; startDate: string };
+
+// Filters only narrow the already-authorized feed. They never infer hidden versions.
+export function filterCalendarEntries(entries: CalendarEntry[], personId: number | undefined, status: CalendarStatusFilter): CalendarEntry[] {
+  return entries.filter(entry => (personId === undefined || entry.userId === personId) && (
+    status === "" || (status === "approved" && entry.kind === "effective")
+    || (status === "pending" && entry.kind === "pending")
+    || (status === "changes" && (entry.status === "change_pending" || entry.status === "cancellation_pending"))
+  ));
+}
+
+export function groupCalendarEntries(entries: CalendarEntry[]): CalendarGroup[] {
+  const groups = new Map<number, CalendarGroup>();
+  for (const entry of entries) {
+    const group = groups.get(entry.requestId);
+    if (group) {
+      group.entries.push(entry);
+      if (entry.startDate < group.startDate) group.startDate = entry.startDate;
+    } else groups.set(entry.requestId, { requestId: entry.requestId, userId: entry.userId, entries: [entry], startDate: entry.startDate });
+  }
+  const order = { effective: 0, pending: 1, proposed_change: 2 };
+  for (const group of groups.values()) group.entries.sort((a, b) => order[a.kind] - order[b.kind]);
+  return [...groups.values()].sort((a, b) => a.startDate.localeCompare(b.startDate) || a.userId - b.userId || a.requestId - b.requestId);
+}
+
 // These helpers arrange calendar dates only. Hours and balances always come from the API.
 export function shiftDate(date: string, days: number): string {
   const result = new Date(`${date}T12:00:00Z`);

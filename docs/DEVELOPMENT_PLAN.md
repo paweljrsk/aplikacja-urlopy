@@ -347,16 +347,19 @@ rozwinie i zweryfikuje scenariusze kalendarza zgodnie z aktualnym stanem wdroże
 ### Prompt 9 — kalendarz zespołu
 
 ```text
-Wykonaj etap 9 zgodnie ze wspólnym protokołem. Zbuduj kalendarz jako ekran startowy
-po zalogowaniu. Zaproponuj czytelny widok miesiąca na komputerze i wygodny widok
-listy/dni na telefonie, z łatwym przejściem do dzisiaj i dodania wniosku.
+Wykonaj etap 9 zgodnie ze wspólnym protokołem. Rozwiń kalendarz ekranu startowego
+z etapu 8 zgodnie z B34 i późniejszym zleceniem etapu 9. Zachowaj widok 1/2 tygodnie
+na komputerze i wygodną listę dni na telefonie, przejście do dzisiaj i dodania
+wniosku. Widok miesiąca pozostaje opcjonalnym późniejszym dodatkiem.
 
 Pokaż członków dostępnego zespołu i ich nieobecności z imieniem/nazwiskiem, datami,
 statusem i godzinami. Odróżnij oczekujące i zaakceptowane wpisy oraz zaznacz dni wolne.
 Dla nieobecności częściowej pokaż np. 3 h, bez wymyślonego przedziału zegarowego.
 Wersję obowiązującą odróżnij od propozycji zmiany, aby nie sugerować dwóch urlopów.
 
-Dodaj listę nieobecności, zmianę okresu i przydatne filtrowanie osoby/statusu.
+Uzupełnij istniejącą listę nieobecności i zmianę okresu o filtrowanie osoby/statusu.
+Filtry dotyczą kalendarza oraz listy nadchodzących nieobecności. Powiąż wersje tego
+samego wniosku i zachowaj kontekst kalendarza przy odczycie szczegółów.
 Zakres zespołów wynika z API: pracownik/kierownik/zastępca tylko własny zespół,
 administrator wszystkie. W danych dostępnych współpracownikom nie ujawniaj rodzaju,
 salda ani prywatnych szczegółów. Uprawniony użytkownik może przejść do odpowiednich

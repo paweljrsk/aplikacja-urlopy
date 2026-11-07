@@ -64,7 +64,7 @@ final class TeamCalendarApiTest extends WebTestCase
         $employment = new EmploymentType($this->prefix.'_uop', 'Synthetic UoP', true);
         $objects = ['alpha' => $alpha, 'beta' => $beta, 'employment' => $employment];
         foreach (['admin' => TeamRole::EMPLOYEE, 'employee' => TeamRole::EMPLOYEE, 'peer' => TeamRole::EMPLOYEE,
-            'manager' => TeamRole::MANAGER, 'other' => TeamRole::EMPLOYEE, 'managerBeta' => TeamRole::MANAGER,
+            'manager' => TeamRole::MANAGER, 'deputy' => TeamRole::DEPUTY, 'other' => TeamRole::EMPLOYEE, 'managerBeta' => TeamRole::MANAGER,
             'unassigned' => TeamRole::EMPLOYEE, 'temporary' => TeamRole::EMPLOYEE] as $key => $role) {
             $user = new User('Synthetic', 'Calendar '.$key, $this->prefix.'_'.$key.'@example.test', 'admin' === $key);
             $temporary = 'temporary' === $key;
@@ -173,6 +173,75 @@ final class TeamCalendarApiTest extends WebTestCase
         self::assertCount(3, array_unique(array_column($entries, 'key')));
     }
 
+    public function testCalendarDetailLinksLeadToSeparatelyAuthorizedReadsForEveryAllowedRole(): void
+    {
+        $id = $this->request('employee', ['2026-11-12' => 8], DecisionOutcome::APPROVED);
+        $this->proposal($id, RequestChangeKind::CHANGE, ['2026-11-13' => 3]);
+
+        foreach (['employee', 'manager', 'deputy', 'admin'] as $actor) {
+            $this->login($actor);
+            $this->get();
+            $calendar = $this->success();
+            $entries = array_values(array_filter($calendar['entries'], static fn (array $entry): bool => $entry['requestId'] === $id));
+            self::assertSame(['effective', 'proposed_change'], array_column($entries, 'kind'));
+            self::assertSame([true, true], array_column($entries, 'canViewDetails'));
+            self::assertStringNotContainsString('Private absence marker', json_encode($calendar, JSON_THROW_ON_ERROR));
+            self::assertStringNotContainsString('Private audit marker', json_encode($calendar, JSON_THROW_ON_ERROR));
+
+            // Follow the identifier supplied by the public calendar, rather than a private list.
+            $this->client->request('GET', '/api/requests/'.$entries[0]['requestId']);
+            $detail = $this->success()['request'];
+            self::assertSame($id, $detail['id']);
+            self::assertTrue($detail['currentVisible']);
+            self::assertSame('change_pending', $detail['status']);
+            self::assertSame('2026-11-12', $detail['effective']['startDate']);
+            self::assertSame('2026-11-13', $detail['pending']['startDate']);
+            self::assertSame([1, 2], array_column($detail['history'], 'revision'));
+            self::assertSame($detail['effective']['revision'], $detail['pending']['baseRevision']);
+            self::assertStringContainsString('Private absence marker', $detail['pending']['absenceType']['name']);
+        }
+
+        $this->login('peer');
+        $this->get();
+        $entries = $this->success()['entries'];
+        self::assertSame([false, false], array_column($entries, 'canViewDetails'));
+        $this->client->request('GET', '/api/requests/'.$entries[0]['requestId']);
+        $this->error(403, 'FORBIDDEN');
+        self::assertStringNotContainsString('Private absence marker', $this->content());
+        self::assertStringNotContainsString('Private audit marker', $this->content());
+    }
+
+    public function testPreviouslyGrantedCalendarHintDoesNotAuthorizeDetailsAfterTransferAtMidnight(): void
+    {
+        $this->transfer('employee', '2026-11-12');
+        $id = $this->request('employee', ['2026-11-16' => 8], DecisionOutcome::APPROVED);
+        $this->clock->modify('2026-11-11 23:59:00 Europe/Warsaw');
+        $this->login('manager');
+        $this->get();
+        $entry = $this->success()['entries'][0];
+        self::assertSame($id, $entry['requestId']);
+        self::assertTrue($entry['canViewDetails']);
+
+        // The actor's session and role remain valid, but responsibility for future leave changes.
+        $this->clock->modify('+2 minutes');
+        $this->client->request('GET', '/api/auth/me');
+        self::assertSame($this->ids['manager'], $this->success()['user']['id']);
+        $this->client->request('GET', '/api/requests/'.$entry['requestId']);
+        $this->error(403, 'FORBIDDEN');
+        self::assertStringNotContainsString('2026-11-16', $this->content());
+        self::assertStringNotContainsString('Private absence marker', $this->content());
+        $this->get();
+        self::assertNotContains($id, array_column($this->success()['entries'], 'requestId'));
+
+        $this->login('managerBeta');
+        $this->get();
+        $entries = $this->success()['entries'];
+        self::assertSame([$id], array_column($entries, 'requestId'));
+        self::assertSame([true], array_column($entries, 'canViewDetails'));
+        $this->client->request('GET', '/api/requests/'.$entries[0]['requestId']);
+        self::assertSame('2026-11-16', $this->success()['request']['effective']['startDate']);
+    }
+
     public function testTransferClipsDaysTotalsAndDetailPermissionWithoutLeakingHiddenProposal(): void
     {
         $this->transfer('employee', '2026-11-12');
@@ -195,12 +264,31 @@ final class TeamCalendarApiTest extends WebTestCase
         self::assertStringNotContainsString('2026-11-12', $serialized);
         self::assertStringNotContainsString('2026-11-16', $serialized);
         self::assertStringNotContainsString('change_pending', $serialized);
+        $this->client->request('GET', '/api/requests/'.$byId[$old]['requestId']);
+        $detail = $this->success()['request'];
+        self::assertFalse($detail['currentVisible']);
+        self::assertNull($detail['status']);
+        self::assertNull($detail['version']);
+        self::assertNull($detail['current']);
+        self::assertNull($detail['pending']);
+        self::assertSame('2026-11-09', $detail['effective']['startDate']);
+        self::assertSame([1], array_column($detail['history'], 'revision'));
+        self::assertSame([false], array_values(array_unique($detail['actions'])));
+        self::assertStringNotContainsString('2026-11-16', $this->content());
+        self::assertStringNotContainsString('change_pending', $this->content());
+        $this->client->request('GET', '/api/requests/'.$mixed);
+        $this->error(403, 'FORBIDDEN');
         $this->login('managerBeta');
         $this->get('2026-11-09', '2026-11-20');
         $entries = $this->success()['entries'];
         self::assertSame(['2026-11-12', '2026-11-16'], array_column($entries, 'startDate'));
         self::assertSame([8, 8], array_column($entries, 'totalHours'));
         self::assertSame([false, false], array_column($entries, 'canViewDetails'));
+        foreach ([$old, $mixed] as $id) {
+            $this->client->request('GET', '/api/requests/'.$id);
+            $this->error(403, 'FORBIDDEN');
+            self::assertStringNotContainsString('Private absence marker', $this->content());
+        }
     }
 
     public function testScheduledTransferGrantsNoEarlyCalendarAccessAndScopeChangesOnItsDate(): void

@@ -9,8 +9,8 @@ import {
 } from "@/lib/request-api";
 import "./requests.css";
 
-export function RequestModal({ title, description, children, onClose, closeDisabled = false }: {
-  title: string; description?: string; children: ReactNode; onClose: () => void; closeDisabled?: boolean;
+export function RequestModal({ title, description, children, onClose, closeDisabled = false, eyebrow = "Twoje nieobecności", closeLabel = "Zamknij formularz" }: {
+  title: string; description?: string; children: ReactNode; onClose: () => void; closeDisabled?: boolean; eyebrow?: string; closeLabel?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -51,8 +51,8 @@ export function RequestModal({ title, description, children, onClose, closeDisab
     onKeyDown={keepTabInside}
     onCancel={event => { event.preventDefault(); if (!closeDisabled) onClose(); }}>
     <div className="requests-dialog-heading">
-      <div><span className="requests-eyebrow">Twoje nieobecności</span><h2 ref={heading} tabIndex={-1} id={`${id}-title`}>{title}</h2>{description && <p id={`${id}-description`}>{description}</p>}</div>
-      <button type="button" className="requests-close" aria-label="Zamknij formularz" onClick={onClose} disabled={closeDisabled}>×</button>
+      <div><span className="requests-eyebrow">{eyebrow}</span><h2 ref={heading} tabIndex={-1} id={`${id}-title`}>{title}</h2>{description && <p id={`${id}-description`}>{description}</p>}</div>
+      <button type="button" className="requests-close" aria-label={closeLabel} onClick={onClose} disabled={closeDisabled}>×</button>
     </div>
     {children}
   </dialog>;
