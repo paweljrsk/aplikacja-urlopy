@@ -219,3 +219,21 @@ Właściwe zdarzenie audytu jest źródłem wersji/decyzji i księgowania. Dodat
 i wersji optymistycznej; nie jest finansowym ruchem. Oba wpisy zapisują się wraz
 z wnioskiem, rozliczeniem i zajętością w jednej transakcji. Nieudana operacja nie
 pozostawia częściowej wersji ani historii. Szczegóły: [REQUESTS_API.md](REQUESTS_API.md).
+
+## Rozszerzenie etapu 7
+
+Wykorzystuje istniejące encje i schemat bez nowej migracji. Wersje CHANGE i
+CANCELLATION wskazują aktualną zatwierdzoną wersję przez baseRevision. Do decyzji
+obowiązuje stary urlop; odrzucona/wycofana propozycja nie usuwa jego skutków.
+Kontekst zatrudnienia w starym zakresie pozostaje zapisany; nowe daty poza nim
+używają właściwych datowanych przypisań. Powód korekty i decyzja są w audycie.
+
+Rozliczenie zachowuje dokładne pochodzenie istniejącego finansowania, dopisuje
+kompensacje i nowe zapisy tylko dla danego wniosku. Nie zmienia innych urlopów.
+Dodatkowe pokrycie propozycji rozlicza się per rok i dozwolona pula, a zajętość dnia
+stanowi maksimum wymiarów obu wersji. Anulowanie zwraca godziny do pierwotnych pul.
+
+Podgląd korekty wycofuje wszystkie zapisane próbnie wersje, decyzje i księgowania;
+może pozostawić luki w numerach technicznych AUTO_INCREMENT, które nie są
+identyfikatorami kolejności biznesowej. Potwierdzenie zapisuje całość atomowo po
+ponownym sprawdzeniu stanu. Niezmienność zapisów historycznych pozostaje zachowana.

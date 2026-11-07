@@ -77,6 +77,15 @@ Użytkownik potwierdził obie przedstawione propozycje odpowiedzią „Tak”.
 | B30 | Q2 — dzisiejszy dzień | Własny wniosek można złożyć na dzisiaj. Do końca dnia w Europe/Warsaw można edytować lub wycofać własny oczekujący wniosek, jeśli nie obejmuje wcześniejszych dni. Nie ustalamy pory nieobecności, bo wniosek nie ma godzin zegarowych. Przeszłe daty pozostają zablokowane dla samoobsługi; procedury indywidualnych korekt pozostają w etapie 7. |
 | B31 | Q10 — odrzucenie | Powód odrzucenia jest obowiązkowy i widoczny dla właściciela wniosku oraz osób uprawnionych do jego szczegółów. |
 
+## Doprecyzowania przed etapem 7 — 7 listopada 2026 r.
+
+Użytkownik potwierdził obie przedstawione propozycje odpowiedzią „Tak”.
+
+| ID | Pytanie | Potwierdzona decyzja |
+|---|---|---|
+| B32 | Q2 — korekty rozpoczętych/przeszłych wniosków | Uprawniony kierownik, zastępca lub administrator wykonuje korektę bezpośrednio po podglądzie i jawnym potwierdzeniu, z obowiązkowym powodem, decyzją i historią. Kierownik może poprawić własny wniosek; własny wniosek zastępcy poprawia kierownik albo administrator. Zachowujemy zakres zespołów i B22–B24. Dzisiejsze/przyszłe zmiany stosują zwykłą propozycję i decyzję; granica dnia według B30. Przeszłość sprzed początku ewidencji nadal poprawiana przez dane początkowe B28. |
+| B33 | Q4 — korekta historycznego wniosku i niedobór | Korektę zwiększającą niedobór, także po wykorzystaniu przeniesionej puli w kolejnym roku, dopuszcza wyłącznie administrator po podglądzie i jawnym potwierdzeniu niedoboru, z uzasadnieniem. Nie anuluje innych urlopów; zachowuje pochodzenie godzin i audyt. Nowe obciążenia zwiększające niedobór są blokowane. Kierownik/zastępca koryguje w swoim zakresie bez zwiększenia niedoboru; uprawnienia do limitów z B26/B27 bez zmian. |
+
 ## Ustalony sposób realizacji
 
 | ID | Zasada | Status |
@@ -180,6 +189,15 @@ testów pozostają w TEST_PLAN. Sam wpis nie oznacza zaliczenia odbioru.
 | DT45 | Każda wersja historii ma osobne uprawnienie do odczytu. | Odczyt we wspólnej transakcji i świeżym grafie; przełożony ze starą historią nie otrzymuje obecnego statusu, wersji ani szczegółów nowego zespołu. Lista jest stronicowana, sprawdza najwyżej 500 kandydatów i pozwala kontynuować kursorem bez liczników niedostępnych danych. |
 | DT46 | Etap 6 obejmuje API, bez nowych bibliotek, schematu i ekranów frontendu. | Publiczny proces i kontrakt w REQUESTS_API; UI w etapie 8, korekty zatwierdzonych w 7. PHPUnit ma jawny limit 512 MB wyłącznie podczas testów; pełny zestaw lokalnie przekracza domyślne 128 MB PHP. |
 
+## Decyzje techniczne etapu 7 — 7 listopada 2026 r.
+
+| ID | Decyzja i uzasadnienie | Zakres i granice |
+|---|---|---|
+| DT47 | Rezerwacja propozycji porównuje zapotrzebowanie per rok nieobecności i uprawnienie do puli pochodzenia, niezależnie od dat zajętości. | Obowiązujący urlop zachowuje finansowanie; dodatkowe pokrycie zabezpiecza nową propozycję. Zajętość to maksimum starego i nowego wymiaru na każdej dacie, plus inne wnioski. |
+| DT48 | Korekta przeszłości wymaga świeżego podglądu i jawnego potwierdzenia. | Podgląd wykonuje te same walidacje i rozliczenie pod blokadą, po czym zawsze wycofuje transakcję i odłącza encje. HMAC wiąże aktora, treść i powód, wersję wniosku, dane rozliczeń, zasady i dzień w Warszawie. Zmiana danych wymaga nowego podglądu; znacznik audytu celowo może unieważnić go także po innej operacji. |
+| DT49 | Korekta historycznego zaakceptowanego wniosku zapisuje nową wersję i decyzję w jednej transakcji; stary oczekujący INITIAL zachowuje pierwotną konieczność akceptacji. | Anulowanie historycznego INITIAL jest wycofaniem. Istniejącą oczekującą zmianę/anulowanie trzeba najpierw rozstrzygnąć, nie jest po cichu usuwana. Wyjątek niedoboru B33 dotyczy nowych brakujących godzin przeszłych, nie przyszłych; B29 korekty kalendarza pozostaje osobną operacją. |
+| DT50 | Zatwierdzona zmiana ma własny zakres uprawnień, a zastąpiona wersja jest osobną historią. | Oczekująca propozycja wymaga dostępu do starego i nowego zakresu. Odczyt osobno filtruje wersję obowiązującą i oczekującą. Podgląd nie ujawnia pul przełożonemu uprawnionemu tylko do dawnego wniosku, bez prawa do bieżącego salda. |
+
 ## Problemy i ograniczenia
 
 ### E01 — środowisko testowe PHPUnit w Compose
@@ -282,6 +300,23 @@ bieżącą pulą. Brak pokrycia powoduje pełne wycofanie edycji. Osobne testy p
 odmowę wariantu finansowanego zaległością, dopuszczenie wariantu z rocznej puli i
 możliwość akceptacji istniejącej rezerwacji B2B po jawnej korekcie powodującej niedobór.
 To uszczelnienie B26, nie zmiana zasad przenoszenia ani anulowanie innych urlopów.
+
+### E10 — uzasadnienie ze współdzielonego zdarzenia audytu
+
+Pełna regresja etapu 7 wykryła, że nowe pole `submitted.reason` pobierało ogólny
+powód ze źródłowego zdarzenia audytu. Starsze dane mogą używać tego samego zdarzenia
+jako decyzji poprzedniej wersji i źródła nowej; w takim przypadku powód ze starego
+zespołu trafiał do odczytu nowego zespołu. Istniejący negatywny test nie został osłabiony.
+
+Odczyt uzasadnienia zgłoszenia wymaga teraz zdarzenia `request.corrected` wskazującego
+ten sam wniosek, właściwy rodzaj korekty oraz zgodną treść konkretnej wersji.
+Ponowione testy API: 21 testów / 4625 asercji PASS. Pozostałe decyzje mają własne,
+osobno kontrolowane uzasadnienie. Wynik pełnego odbioru zapisano w TEST_PLAN.
+
+Test kalendarza z etapu 5 zaktualizowano do zatwierdzonej w etapie 7 zasady
+pokrycia propozycji per rok/pula: przesunięte 16 h nie rezerwuje dodatkowych 8 h
+wyłącznie ze względu na inny dzień. Dodanie wolnego nadal zwraca dokładnie 8 h,
+a oba pozostałe terminy zachowują zajętość do decyzji.
 
 ## Format kolejnego wpisu
 

@@ -6,7 +6,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 4 — administracja — zakończony.** Q5 rozstrzygnięto w B22–B24.
 **Etap 5 — kalendarz roboczy, limity i saldo — zakończony.**
 **Etap 6 — wnioski, rezerwacje i decyzje — zakończony.** Q2 o dzisiaj i Q10 zatwierdzone jako B30–B31.
-**Etap 7 — rozpoczęta analiza; pozostałe Q2/Q4 oczekują na odpowiedź.**
+**Etap 7 — implementacja i lokalne testy gotowe; oczekuje na odbiór Docker CI.** Q2/Q4: B32–B33.
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -87,15 +87,15 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Sprawdzić scenariusze ról, przełomu roku, współbieżnych wniosków i decyzji oraz zachowanie dotychczasowych danych. CI #22: 337 testów / 10 662 asercje, SUCCESS.
 - [x] Uzupełnić kontrakt API, README, plan testów i rzeczywisty raport odbioru; opublikować PR #6 i zweryfikować pełny CI.
 
-## Etap 7 — w trakcie analizy
+## Etap 7 — końcowa weryfikacja
 
 - [x] Odczytać aktualny prompt 7, wymagania, decyzje, otwarte pytania, PR #6 i podstawowe usługi wniosków/rozliczeń.
-- [-] Rozstrzygnąć tryb indywidualnych korekt rozpoczętych/przeszłych wniosków (Q2) i korekt starego roku po wykorzystaniu przeniesionej puli (Q4); propozycje w OPEN_QUESTIONS nie są zatwierdzone.
-- [ ] Dodać API propozycji zmiany/anulowania i decyzji oraz odczyt wersji obowiązującej i proponowanej.
-- [ ] Sprawdzić dodatkowe rezerwacje per rok/pula, ochronę obu terminów i maksymalną zajętość dnia bez podwójnego sumowania wersji.
-- [ ] Wdrożyć uzgodnione korekty historyczne z kontrolą uprawnień, podglądem wpływu, audytem i zachowaniem danych początkowych.
-- [ ] Sprawdzić zmiany rodzaju i roku, transfery, niedobór, zwroty, ponowienia i rzeczywistą współbieżność na MySQL.
-- [ ] Uzupełnić kontrakt API, dokumentację i faktyczne wyniki odbioru; zachować brak zmian UI do etapu 8.
+- [x] Rozstrzygnąć Q2/Q4 i zapisać odpowiedź „Tak” jako B32–B33 przed zależną implementacją.
+- [x] Dodać API propozycji zmiany/anulowania i decyzji oraz odczyt wersji obowiązującej i proponowanej.
+- [x] Sprawdzić dodatkowe rezerwacje per rok/pula, ochronę obu terminów i maksymalną zajętość dnia bez podwójnego sumowania wersji.
+- [x] Wdrożyć uzgodnione korekty historyczne z kontrolą uprawnień, podglądem wpływu, audytem i zachowaniem danych początkowych.
+- [x] Sprawdzić zmiany rodzaju i roku, transfery, niedobór, zwroty, ponowienia i rzeczywistą współbieżność na MySQL.
+- [-] Uzupełnić kontrakt API, dokumentację i faktyczne wyniki odbioru; lokalnie 391 testów / 15 091 asercji i rzeczywiste HTTP PASS. Oczekuje publikacja PR i końcowy Docker CI.
 
 ## Kolejne etapy
 
@@ -215,7 +215,7 @@ utrwalony zakres. Poprzednią oczekującą wersję zastępować nową w jednej t
 rozliczając tylko końcowy stan. Uprawnienia do historii sprawdzać osobno dla każdej
 wersji; dostęp do obecnego wniosku nie pozwala ujawnić całej historii innego zespołu.
 
-### Bieżący punkt wznowienia — początek etapu 7, 7 listopada 2026 r.
+### Historyczny punkt rozpoczęcia etapu 7, 7 listopada 2026 r.
 
 Gałąź `codex/etap-7-zmiany-anulowania-korekty` bazuje na końcowym commicie etapu 6
 `6c0be6b3a292ae427bc286d97ee5eeee394d810f` (CI #23 SUCCESS).
@@ -238,3 +238,18 @@ Nie utożsamiać dostępności całego salda z prawem przełożonego starego zes
 dokumentacji wykonano przez GitHub; nie uruchomiono nowych testów i nie zmieniono
 kodu aplikacji. Dalsza weryfikacja wymaga działającego środowiska lub właściwego CI
 na nowym kodzie. Etap 8 pozostaje nierozpoczęty.
+
+### Aktualizacja punktu wznowienia — odpowiedź przed implementacją etapu 7
+
+Użytkownik potwierdził obie propozycje. B32–B33 i REQUIREMENTS 1.5 są obowiązujące.
+Środowisko wykonawcze odzyskało dostęp; gałąź pobrano lokalnie bez zmian kodu etapu 6.
+Wznowić implementację i testy etapu 7 na tej gałęzi. Wcześniejsza blokada pytań i
+niedostępność środowiska opisują stan historyczny, nie aktualne przeszkody.
+
+### Bieżący punkt wznowienia — odbiór etapu 7
+
+Implementacja i dokumentacja są gotowe. Lokalne 391 testów / 15 091 asercji,
+PHPStan/lint i rzeczywiste HTTP przeszły. Poprawiono ujawnienie uzasadnienia starego
+zespołu (E10), sprawdzono granicę ewidencji i flagi działań po korekcie do przyszłości.
+Opublikować PR oparty na PR #6 i wykonać pełny Docker CI. Nie oznaczać odbioru CI
+jako zaliczonego bez wyniku. Etap 8 uruchomić dopiero na kolejne polecenie użytkownika.

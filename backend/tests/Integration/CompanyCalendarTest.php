@@ -100,7 +100,8 @@ final class CompanyCalendarTest extends KernelTestCase
         $this->em->flush();
         $this->accounting->reserveRevision($this->employee, $pending, $this->key());
         $before = $this->accounting->getBalance($this->employee, 2090);
-        self::assertSame(184, $before['availableHours']);
+        // Stage 7 matches alternative funding by year/pool: shifted 16 h needs no extra hours.
+        self::assertSame(192, $before['availableHours']);
         $preview = $this->calendar->preview($this->admin, $this->change('2090-02-14'));
         self::assertSame(1, $preview['changedRequests']);
         self::assertSame(8, $preview['impacts'][0]['afterHours']);
@@ -111,9 +112,10 @@ final class CompanyCalendarTest extends KernelTestCase
         self::assertSame(16, $original->getTotalHours());
         self::assertSame(16, $pending->getTotalHours());
         $balance = $this->accounting->getBalance($this->employee, 2090);
-        self::assertSame(192, $balance['availableHours']);
+        self::assertSame(200, $balance['availableHours']);
+        self::assertSame(8, $balance['availableHours'] - $before['availableHours']);
         self::assertSame(8, $balance['approvedFutureHours']);
-        self::assertSame(8, $balance['changeReservedHours']);
+        self::assertSame(0, $balance['changeReservedHours']);
         self::assertSame(0, $this->occupancy('2090-02-14'));
         self::assertSame(8, $this->occupancy('2090-02-13'));
         self::assertSame(8, $this->occupancy('2090-02-15'));

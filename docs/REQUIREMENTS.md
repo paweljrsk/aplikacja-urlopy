@@ -1,6 +1,6 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.4 • stan uzgodnień z 7 listopada 2026 r., po odpowiedziach przed etapem 6.
+Wersja 1.5 • stan uzgodnień z 7 listopada 2026 r., po odpowiedziach przed etapem 7.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
 [decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
@@ -54,7 +54,7 @@ Po zmianie formy zatrudnienia już złożone wnioski zachowują dotychczasowe za
 | Ustawianie limitów pracowników | Nie | W swoim zespole | Nie | Wszystkie zespoły |
 | Zarządzanie kontami, zespołami i słownikami | Nie | Nie | Nie | Tak |
 
-Administrator ma pełny dostęp do funkcji. To nie znosi automatycznie reguł poprawności dat, godzin ani rozliczeń. Własny limit kierownika zmienia administrator. Tryb korekt samych wniosków pozostaje do uzgodnienia przed etapem 7.
+Administrator ma pełny dostęp do funkcji. To nie znosi automatycznie reguł poprawności dat, godzin ani rozliczeń. Własny limit kierownika zmienia administrator. Tryb korekt samych wniosków określają B32–B33 poniżej.
 
 W kalendarzu współpracowników pokazujemy imię i nazwisko, daty, status oraz liczbę godzin nieobecności. Nie ujawniamy ich sald ani rodzaju nieobecności. Pracownik widzi własne szczegóły; uprawnione osoby obsługujące wnioski mają dostęp do danych potrzebnych do podjęcia decyzji.
 
@@ -134,7 +134,24 @@ widocznego dla właściciela oraz osób uprawnionych do szczegółów wniosku (B
 
 Zmiana zaakceptowanego urlopu oraz jego anulowanie wymagają decyzji. Do czasu decyzji obowiązuje dotychczas zatwierdzony termin i wymiar. Odrzucenie proponowanej zmiany zachowuje pierwotny urlop. Anulowanie nie zwraca salda przed akceptacją anulowania.
 
-Do obsługi rozpoczętych i przeszłych nieobecności uprawnieni są kierownik, zastępca i administrator. Zastępca nie otrzymuje przy tym prawa do zatwierdzania własnych wniosków. Decyzja o istniejącym oczekującym wniosku może nastąpić po jego terminie, z zachowaniem rezerwacji (B25). Szczegóły indywidualnej korekty bezpośredniej albo zmiany oczekującej na decyzję wymagają rozstrzygnięcia pozostałej części Q2 przed etapem 7.
+Do obsługi rozpoczętych i przeszłych nieobecności uprawnieni są kierownik, zastępca i administrator. Zastępca nie otrzymuje przy tym prawa do zatwierdzania własnych wniosków. Decyzja o istniejącym oczekującym wniosku może nastąpić po jego terminie, z zachowaniem rezerwacji (B25). Indywidualne korekty stosują zatwierdzone B32–B33.
+
+Kierownik, zastępca i administrator mogą bezpośrednio korygować wniosek obejmujący
+wcześniejsze daty, w swoim zakresie dostępu, po podglądzie skutków i jawnym
+potwierdzeniu. Wymagane są uzasadnienie, zapis decyzji oraz pełna historia.
+Kierownik może skorygować własny wniosek; własny wniosek zastępcy koryguje uprawniony
+kierownik albo administrator. Nie powstaje dodatkowa kolejka akceptacji korekty.
+Dzisiejsze i przyszłe zmiany/anulowania zachowują zwykły obieg propozycji i decyzji;
+B30 nadal wyznacza granicę dnia. Zachowujemy B22–B24 i kontrolę starej oraz nowej
+wersji; zakres przekraczający zespoły wymaga administratora (B32).
+
+Historyczna korekta wniosku może zwiększyć niedobór po wykorzystaniu przeniesionych
+godzin wyłącznie po jawnym potwierdzeniu administratora, podglądzie skutków i podaniu
+uzasadnienia. Pozostają rok pochodzenia godzin, pełna historia i inne zatwierdzone
+urlopy. Niedobór jest widoczny, a nowe obciążenia zwiększające go są blokowane.
+Kierownik i zastępca wykonują korekty wyłącznie bez zwiększenia niedoboru.
+Okres sprzed początku ewidencji nadal poprawia się przez dane początkowe (B28);
+uprawnienia do korekt limitów z B26–B27 nie zmieniają się (B33).
 
 Historia obejmuje autora operacji, czas, zmienione wartości, decyzję i powiązanie z wnioskiem/limitem. Rejestrujemy historię od pierwszych mutacji, a nie dopiero przy budowie ekranu historii.
 

@@ -329,15 +329,155 @@ try {
       operationKey: `http.unpaid-withdraw.${unpaid.id}.${suffix}`, expectedVersion: unpaid.version,
     });
   }
+  step = 'approved request change reserves only the increase across shifted dates';
+  const changedProposal = (await employeeMutate(`/api/requests/${receipt.id}/change`, {
+    operationKey: `http.change-grow.${suffix}`, expectedVersion: approved.version,
+    absenceTypeId: paidType.id, startDate: requestDate(7), endDate: requestDate(9),
+  })).operation;
+  check(changedProposal.status === 'change_pending', 'Change proposal was not pending');
+  const changeDetail = (await employeeFresh.request(`/api/requests/${receipt.id}`, 200)).request;
+  check(changeDetail.effective?.totalHours === 16 && changeDetail.pending?.totalHours === 24,
+    'Effective absence and proposed change were not separated');
+  const changingBalance = (await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance;
+  check(changingBalance.availableHours === 56, 'Shifted 16 to 24 hour proposal did not reserve only 8 extra hours');
+  const heldDate = await employeeMutate('/api/requests', {
+    operationKey: `http.old-day-held.${suffix}`, absenceTypeId: unpaidType.id,
+    startDate: requestDate(0), endDate: requestDate(0), mode: 'hourly', hours: 1,
+  }, 409);
+  check(heldDate.error?.code === 'DAILY_CAPACITY_EXCEEDED', 'Pending change released the old date before decision');
+  const rejectedChange = (await mutate(`/api/requests/${receipt.id}/reject`, {
+    operationKey: `http.change-reject.${suffix}`, expectedVersion: changedProposal.version,
+    reason: 'Synthetic change rejection',
+  })).operation;
+  check(rejectedChange.status === 'approved', 'Rejecting change did not preserve the approved absence');
+  check((await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance.availableHours === 64,
+    'Rejecting change released more than its extra reservation');
+
+  step = 'shortening approved absence refunds only after approval';
+  const shorter = (await employeeMutate(`/api/requests/${receipt.id}/change`, {
+    operationKey: `http.change-shorter.${suffix}`, expectedVersion: rejectedChange.version,
+    absenceTypeId: paidType.id, startDate: requestDate(0), endDate: requestDate(0),
+  })).operation;
+  check((await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance.availableHours === 64,
+    'Shortening refunded hours before approval');
+  const shortened = (await mutate(`/api/requests/${receipt.id}/approve`, {
+    operationKey: `http.change-approve.${suffix}`, expectedVersion: shorter.version,
+  })).operation;
+  check(shortened.status === 'approved', 'Approved shortening has incorrect status');
+  check((await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance.availableHours === 72,
+    'Approved shortening failed to refund 8 hours');
+
+  step = 'cancellation returns hours exactly once after an authorized decision';
+  const cancellation = (await employeeMutate(`/api/requests/${receipt.id}/cancel`, {
+    operationKey: `http.cancel-propose.${suffix}`, expectedVersion: shortened.version,
+  })).operation;
+  check(cancellation.status === 'cancellation_pending', 'Cancellation proposal was not pending');
+  check((await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance.availableHours === 72,
+    'Cancellation refunded hours before decision');
+  await employeeMutate(`/api/requests/${receipt.id}/approve`, {
+    operationKey: `http.cancel-self-denied.${suffix}`, expectedVersion: cancellation.version,
+  }, 403);
+  const cancelDecision = { operationKey: `http.cancel-approve.${suffix}`, expectedVersion: cancellation.version };
+  const cancelled = (await mutate(`/api/requests/${receipt.id}/approve`, cancelDecision)).operation;
+  const cancelReplay = (await mutate(`/api/requests/${receipt.id}/approve`, cancelDecision)).operation;
+  check(cancelled.status === 'cancelled' && isDeepStrictEqual(cancelled, cancelReplay),
+    'Cancellation replay changed its result');
+  check((await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance.availableHours === 80,
+    'Cancellation did not return exactly the final 8 hour charge');
+  const cancelledDetail = (await employeeFresh.request(`/api/requests/${receipt.id}`, 200)).request;
+  check(cancelledDetail.effective === null && cancelledDetail.pending === null && cancelledDetail.history.length >= 4,
+    'Cancellation lost history or kept an active absence');
+
   await employeeFresh.request('/api/requests?scope=managed', 403);
   await employeeFresh.post('/api/auth/logout', {});
+
+  step = 'synthetic historical fixture for real correction preview and confirmation';
+  // Historical data is seeded only on this disposable development CI database.
+  // All correction operations below use the real authenticated HTTP endpoints.
+  const historyFixture = JSON.parse(execFileSync('docker', ['compose', 'exec', '-T', 'php', 'php'], {
+    cwd: resolve(__dirname, '../..'), encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
+    timeout: 30000, maxBuffer: 65536,
+    input: '<?php $ids = json_decode(' + JSON.stringify(JSON.stringify({ admin: userId, team: team.id, employment: employment.id, type: paidType.id })) + ', true);\n' + String.raw`
+try {
+    if ('dev' !== getenv('APP_ENV')) { throw new RuntimeException('Development environment required.'); }
+    require 'vendor/autoload.php';
+    (new Symfony\Component\Dotenv\Dotenv())->bootEnv('.env');
+    $kernel = new App\Kernel('dev', true);
+    $kernel->boot();
+    $em = $kernel->getContainer()->get('doctrine')->getManager();
+    $clock = new Symfony\Component\Clock\MockClock('now', new DateTimeZone('Europe/Warsaw'));
+    $calendar = new App\Service\Calendar\WorkingCalendar($em);
+    $date = $clock->now()->setTime(0, 0)->modify('-1 day');
+    while ([] === $calendar->days($date, $date, 3)) { $date = $date->modify('-1 day'); }
+    $admin = $em->find(App\Entity\User::class, $ids['admin']);
+    $employee = new App\Entity\User('Synthetic', 'HistoricalHttp', 'historical-http-'.bin2hex(random_bytes(8)).'@example.test');
+    $assignment = new App\Entity\StaffAssignment($employee, $em->find(App\Entity\Team::class, $ids['team']),
+        $em->find(App\Entity\EmploymentType::class, $ids['employment']), App\Enum\TeamRole::EMPLOYEE, $date);
+    $em->persist($employee); $em->persist($assignment); $em->flush();
+    $resolver = new App\Security\CurrentAssignmentResolver();
+    $accounting = new App\Service\Accounting\AccountingService($em, $clock, $resolver,
+        new App\Security\BalanceAccessPolicy($resolver), new App\Security\RequestAccessPolicy($resolver));
+    $year = (int) $date->format('Y');
+    $accounting->initializeOpening($admin, $employee, [
+        'operationKey' => 'http.history.opening', 'expectedVersion' => $accounting->getBalance($employee, $year)['version'],
+        'effectiveDate' => $date->format('Y-m-d'), 'annualHours' => 3, 'currentYearUsedHours' => 0, 'carries' => [],
+    ]);
+    $request = $em->wrapInTransaction(function () use ($em, $clock, $date, $ids, $employee, $assignment, $admin, $accounting) {
+        $request = new App\Entity\LeaveRequest($employee, $clock->now());
+        $type = $em->find(App\Entity\AbsenceType::class, $ids['type']);
+        $policy = $em->getRepository(App\Entity\AbsenceTypeVersion::class)->findOneBy(['type' => $type, 'revision' => $type->getLatestRevision()]);
+        $event = new App\Entity\AuditEvent('http.history.'.bin2hex(random_bytes(12)), 'request.synthetic_fixture',
+            $admin, $employee, $clock->now(), [], ['synthetic' => true], 'request', $request->getReference());
+        $revision = new App\Entity\RequestRevision($request, App\Enum\RequestChangeKind::INITIAL, $policy,
+            App\Enum\RequestMode::HOURLY, $date, $date, [new App\Model\RequestedDay($assignment, $date, 3)], $event);
+        $em->persist($event); $em->persist($request); $em->persist($revision);
+        $em->persist(new App\Entity\RequestDecision($revision, App\Enum\DecisionOutcome::APPROVED, $event));
+        $accounting->reconcileRequest($request, $event); $em->flush();
+        return $request;
+    });
+    echo json_encode(['id' => $request->getId(), 'version' => $request->getVersion(), 'employeeId' => $employee->getId(),
+        'date' => $date->format('Y-m-d'), 'year' => $year], JSON_THROW_ON_ERROR);
+} catch (Throwable) {
+    fwrite(STDERR, "Synthetic historical fixture failed; details suppressed.\n"); exit(1);
+}
+`,
+  }));
+  check(Number.isInteger(historyFixture.id) && Number.isInteger(historyFixture.employeeId), 'Historical fixture missing');
+  const historicalPath = `/api/requests/${historyFixture.id}`;
+  const historicalBalancePath = `/api/balances/users/${historyFixture.employeeId}/${historyFixture.year}`;
+  const correctionInput = {
+    expectedVersion: historyFixture.version, action: 'change', reason: 'Synthetic correction of historical hours',
+    absenceTypeId: paidType.id, startDate: historyFixture.date, endDate: historyFixture.date, mode: 'hourly', hours: 5,
+  };
+  const correctionPreview = (await mutate(`${historicalPath}/correction-preview`, correctionInput)).preview;
+  check(correctionPreview.requiresDeficitConfirmation === true && typeof correctionPreview.previewToken === 'string',
+    'Historical deficit preview did not require confirmation');
+  check((await fresh.request(historicalBalancePath, 200)).balance.availableHours === 0,
+    'Correction preview persisted financial changes');
+  const correctionPayload = {
+    ...correctionInput, operationKey: `http.history-correct.${suffix}`,
+    previewToken: correctionPreview.previewToken, confirm: true, allowDeficit: true,
+  };
+  const correctedRequest = (await mutate(`${historicalPath}/correct`, correctionPayload)).operation;
+  const correctionReplay = (await mutate(`${historicalPath}/correct`, correctionPayload)).operation;
+  check(isDeepStrictEqual(correctedRequest, correctionReplay), 'Historical correction replay changed its receipt');
+  const historicalBalance = (await fresh.request(historicalBalancePath, 200)).balance;
+  check(historicalBalance.usedHours === 5 && historicalBalance.availableHours === -2 && historicalBalance.deficitHours === 2,
+    'Explicit historical correction did not retain its charge and visible deficit');
+  const cancelHistoryInput = { expectedVersion: correctedRequest.version, action: 'cancel', reason: 'Synthetic historical cancellation' };
+  const cancelHistoryPreview = (await mutate(`${historicalPath}/correction-preview`, cancelHistoryInput)).preview;
+  await mutate(`${historicalPath}/correct`, {
+    ...cancelHistoryInput, operationKey: `http.history-cancel.${suffix}`, previewToken: cancelHistoryPreview.previewToken, confirm: true,
+  });
+  check((await fresh.request(historicalBalancePath, 200)).balance.availableHours === 3,
+    'Historical cancellation did not return the charge to its original budget');
 
   step = 'logout and session revocation';
   const loggedOut = await fresh.post('/api/auth/logout', {});
   check(loggedOut.status === 'logged_out', 'Logout failed');
   const anonymous = await fresh.request('/api/auth/me', 401);
   check(anonymous.error?.code === 'AUTH_REQUIRED', 'Logout did not revoke session');
-  console.log('Real HTTP smoke passed: auth/session/CSRF, administration, balances/calendar, request create/edit/withdraw/approve/reject, idempotency, stale writes, mandatory rejection reason, paid balance and unpaid daily capacity, employee isolation and logout.');
+  console.log('Real HTTP smoke passed: auth/session/CSRF, administration, balances/calendar, request create/edit/withdraw/approve/reject, approved changes and cancellation, shifted reservations, refund timing, historical preview/correction/deficit/cancellation, idempotency, stale writes, mandatory rejection reason, paid balance and unpaid daily capacity, employee isolation and logout.');
 }
 
 main().catch(error => {

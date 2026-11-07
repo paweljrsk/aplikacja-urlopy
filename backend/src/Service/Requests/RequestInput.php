@@ -62,6 +62,55 @@ final class RequestInput
         return $result;
     }
 
+    /** @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public static function correction(array $data, bool $confirming = false): array
+    {
+        $action = $data['action'] ?? null;
+        if (!\in_array($action, ['change', 'cancel'], true)) {
+            throw new CredentialsException('VALIDATION_FAILED', 'Wybierz korektę zmiany lub anulowania.');
+        }
+        $allowed = ['expectedVersion', 'action', 'reason'];
+        if ('change' === $action) { $allowed = [...$allowed, 'absenceTypeId', 'startDate', 'endDate', 'mode', 'hours']; }
+        if ($confirming) { $allowed = [...$allowed, 'operationKey', 'previewToken', 'confirm', 'allowDeficit']; }
+        AdminInput::only($data, $allowed);
+        $reason = self::reason($data);
+        $result = ['expectedVersion' => AdminInput::int($data, 'expectedVersion'), 'action' => $action, 'reason' => $reason];
+        if ('change' === $action) {
+            $application = array_intersect_key($data, array_flip(['absenceTypeId', 'startDate', 'endDate', 'mode', 'hours']));
+            $normalized = self::application(['operationKey' => 'preview'] + $application);
+            unset($normalized['operationKey']);
+            $result += $normalized;
+        }
+        if ($confirming) {
+            if (true !== ($data['confirm'] ?? null)) {
+                throw new CredentialsException('CONFIRMATION_REQUIRED', 'Potwierdź skutki korekty po sprawdzeniu podglądu.');
+            }
+            $token = $data['previewToken'] ?? null;
+            if (!\is_string($token) || 1 !== preg_match('/^[a-f0-9]{64}$/D', $token)) {
+                throw new CredentialsException('PREVIEW_REQUIRED', 'Wykonaj aktualny podgląd korekty.', 409);
+            }
+            $allowDeficit = $data['allowDeficit'] ?? false;
+            if (!\is_bool($allowDeficit)) {
+                throw new CredentialsException('VALIDATION_FAILED', 'allowDeficit musi być wartością logiczną.');
+            }
+            $result += ['operationKey' => self::key($data), 'previewToken' => $token, 'confirm' => true, 'allowDeficit' => $allowDeficit];
+        }
+        return $result;
+    }
+
+    /** @param array<string, mixed> $data */
+    private static function reason(array $data): string
+    {
+        $reason = $data['reason'] ?? null;
+        $reason = \is_string($reason) ? preg_replace('/\A[\s\p{Z}]+|[\s\p{Z}]+\z/u', '', $reason) : null;
+        if (null === $reason || 1 !== preg_match('/[^\s\p{Z}\p{C}]/u', $reason) || mb_strlen($reason) > 1000) {
+            throw new CredentialsException('REASON_REQUIRED', 'Podaj uzasadnienie (1–1000 znaków).');
+        }
+        return $reason;
+    }
+
     /** @param array<string, mixed> $data */
     private static function key(array $data): string
     {
