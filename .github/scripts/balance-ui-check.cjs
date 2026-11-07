@@ -264,8 +264,17 @@ function recordHistory(action, before, after, reason) {
     await page.getByLabel('Szukaj osoby lub zespołu', { exact: true }).fill('Nieistniejąca osoba');
     await page.getByText('Brak osób spełniających wybrane kryteria.', { exact: true }).waitFor();
     await page.getByLabel('Szukaj osoby lub zespołu', { exact: true }).fill('');
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true, 'The team table scrolls inside the mobile page.');
     await page.screenshot({ path: join(screenshotDir, 'team-balances-mobile.png'), fullPage: true });
+    const teamPageFits = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+    if (!teamPageFits) {
+      console.error('Team mobile overflow:', await page.evaluate(() => [...document.querySelectorAll('body *')].flatMap(element => {
+        const rect = element.getBoundingClientRect();
+        if (!rect.width || rect.right <= innerWidth + 1 && rect.left >= -1) return [];
+        const selector = `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${[...element.classList].slice(0, 3).map(name => `.${name}`).join('')}`;
+        return [{ selector, left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width), viewport: innerWidth }];
+      }).slice(0, 12)));
+    }
+    assert.equal(teamPageFits, true, 'The team table scrolls inside the mobile page.');
     await page.getByRole('button', { name: 'Saldo: Anna Testowa', exact: true }).click();
     await page.getByRole('heading', { name: `Anna Testowa · ${year + 1}`, exact: true }).waitFor();
     assert.equal(await page.getByLabel('Osoba', { exact: true }).inputValue(), '2');
