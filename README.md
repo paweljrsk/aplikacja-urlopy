@@ -2,7 +2,7 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 9 — filtry i dopracowanie kalendarza — weryfikacja.**
+**Bieżący zakres: etap 9 — filtry i dopracowanie kalendarza — ukończony.**
 Wspólne filtry pracownika i statusu zawężają kalendarz oraz listę kolejnych dwóch
 miesięcy. Zatwierdzony termin i propozycja zmiany tworzą jedną pozycję listy,
 z osobnymi wymiarami. Uprawnione osoby otwierają szczegóły w oknie, zachowując
@@ -11,9 +11,14 @@ Widok 1/2 tygodnie i prosty formularz pozostają bez zmian.
 
 Gałąź: `codex/etap-9-kalendarz-filtry`, oparta na końcowym etapie 8
 `531d418d833aaa336adeb8427e241849ff499a57` ([CI #30 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42410557413)).
-Lokalnie: 12 testów kalendarza / 1625 asercji, PHPStan, ESLint, TypeScript i build
-— PASS. Końcowa regresja Chrome i odbiór wizualny oczekują na CI.
+[PR #9](https://github.com/paweljrsk/aplikacja-urlopy/pull/9),
+[CI #32 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42412836879) dla kodu
+`345eab527d808cf57f31994e3aac3d552e2c1e0c`: **422 testy / 18 350 asercji**,
+kontrole statyczne i build, wszystkie regresje Chrome, rzeczywisty proces wniosku,
+restart z zachowaniem danych oraz workery — PASS. Sprawdzono zrzuty desktop/mobile.
+Lokalnie: 12 testów kalendarza / 1625 asercji, PHPStan, ESLint, TypeScript i build — PASS.
 Bez zmian schematu, rozliczeń i reguł uprawnień; bez nowych zależności.
+PR pozostaje niescalony. Etap 10 wymaga kolejnego polecenia użytkownika.
 
 **Ukończony wcześniej etap 8 — formularz, widoki pracownika i kalendarz Notus.**
 Dostępny jest nowy ekran główny z kalendarzem zespołu (dwa tygodnie na komputerze,
@@ -26,7 +31,7 @@ stylistykę Notus; logo i fonty są lokalne, bez zewnętrznych skryptów marketi
 
 Gałąź: `codex/etap-8-formularz-kalendarz-notus`, [PR #8](https://github.com/paweljrsk/aplikacja-urlopy/pull/8), oparta na etapie 7.
 Podstawowy kalendarz przeniesiono z etapu 9 na prośbę użytkownika (B34).
-Etap 9 pozostaje do dalszego doskonalenia kalendarza; kolejka decyzji i widoki
+Etap 9 rozwija kalendarz zgodnie z opisem powyżej; kolejka decyzji i widoki
 przełożonego są zakresem etapu 10. Dotychczasowe API decyzji pozostaje dostępne.
 Kontrakt kalendarza: [TEAM_CALENDAR_API.md](docs/TEAM_CALENDAR_API.md),
 formularza: [REQUESTS_API.md](docs/REQUESTS_API.md), zasoby: [VISUAL_ASSETS.md](docs/VISUAL_ASSETS.md).

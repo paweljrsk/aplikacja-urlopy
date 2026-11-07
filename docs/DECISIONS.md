@@ -225,6 +225,14 @@ oraz widok 1/2 tygodnie; widok miesiąca pozostaje opcją późniejszego rozwoju
 
 ## Problemy i ograniczenia
 
+### E14 — niezależne błędy opcji i kalendarza
+
+Przegląd etapu 9 wykrył współdzielenie komunikatu błędu przez pobranie daty
+serwerowej i kalendarza. Po ponowieniu wolniejszy sukces `/requests/options`
+mógł usunąć błąd kalendarza i pozostawić wskaźnik ładowania bez zakończenia.
+Oba odczyty mają teraz odrębny stan błędu. Regresja Chrome wymusza kolejność:
+błąd kalendarza, opóźniony sukces opcji, widoczny komunikat i skuteczne ponowienie.
+
 ### E13 — pozycja dialogu na komputerze
 
 Po zielonym CI #28 odbiór zrzutów wykrył dialog przy lewej górnej krawędzi:
