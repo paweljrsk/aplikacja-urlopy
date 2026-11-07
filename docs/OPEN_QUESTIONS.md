@@ -28,4 +28,8 @@ Nie blokują przedstawienia planu, ale blokują implementację zależnego zachow
 | Q8 | Rozstrzygnięte — B21 i B28 | Dane początkowe według daty rozpoczęcia: limit, wykorzystanie bieżącej puli, pozostałości starszych pul. Korekty z uzasadnieniem i audytem, bez ponownego obciążania historycznymi wnioskami. Data startu zablokowana po rozpoczęciu rozliczeń wniosków. |
 | Q9 | Rozstrzygnięte — B29 | Przyszłe daty, podgląd wpływu i potwierdzenie administratora; jawne korekty istniejących wniosków, zwrot/zwiększenie godzin, anulowanie lub wycofanie przy zerze. Brak zbiorczego przeliczania przeszłości. |
 
-Dodatkowe dni wolne firmy i obowiązkowość komentarza do korekty/odrzucenia można ustalić przy odpowiednim ekranie. Szczegóły wyglądu proponuje wykonawca w ramach stylistyki Notus; decyzji biznesowych nie zastępuje domyślnym zachowaniem biblioteki UI.
+Zarządzanie firmowymi dniami wolnymi oraz obowiązkowe uzasadnienie korekt limitów,
+danych początkowych i kalendarza rozstrzygnięto dla etapu 5. Do ustalenia przy
+kolejnych etapach pozostają uzasadnienia odrzucenia i procedury indywidualnych
+korekt wniosków. Szczegóły wyglądu proponuje wykonawca w ramach stylistyki Notus;
+decyzji biznesowych nie zastępuje domyślnym zachowaniem biblioteki UI.

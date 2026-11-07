@@ -4,7 +4,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 2 — model danych i migracje — zakończony**.
 **Etap 3 — logowanie lokalne i kontrola dostępu — zakończony**.
 **Etap 4 — administracja — zakończony.** Q5 rozstrzygnięto w B22–B24.
-**Etap 5 — rozpoczęty na polecenie użytkownika; analiza i rozstrzygnięcie pytań.**
+**Etap 5 — kalendarz roboczy, limity i saldo — zakończony.**
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -64,23 +64,23 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Wykonać testy API i UI, migracje, zachowanie danych, Nginx/PHP-FPM, restart i workery. CI #16: 198 testów / 4599 asercji, SUCCESS.
 - [x] Uzupełnić README, kontrakt administracji, decyzje techniczne i raport odbioru.
 
-## Etap 5 — w trakcie
+## Etap 5 — ukończony
 
 - [x] Odczytać aktualny kod, wymagania, decyzje i prompt etapu 5; sprawdzić stan Git.
 - [x] Uzyskać odpowiedzi na Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisać decyzje B25–B29 przed zależną implementacją.
 - [x] Zweryfikować urzędowe źródła świąt i wdrożyć lokalny kalendarz dni roboczych.
-- [-] Wdrożyć limity, dane początkowe, saldo godzinowe i idempotentne rozliczenie roku; końcowy odbiór.
-- [-] Przygotować atomowe operacje rezerwacji, zwolnienia, zatwierdzenia i korekty; końcowy odbiór.
-- [-] Dodać chronione API i podstawowy ekran limitów/danych początkowych; odbiór Chrome.
-- [-] Sprawdzić obliczenia, uprawnienia, współbieżność, migracje i zachowanie istniejących danych; lokalnie zaliczone, docelowe CI w przygotowaniu.
-- [-] Uzupełnić dokumentację, wzór salda i rzeczywisty raport odbioru.
+- [x] Wdrożyć limity, dane początkowe, saldo godzinowe i idempotentne rozliczenie roku.
+- [x] Przygotować atomowe operacje rezerwacji, zwolnienia, zatwierdzenia i korekty.
+- [x] Dodać chronione API i podstawowe ekrany limitów/danych początkowych oraz dni firmowych; sprawdzić Chrome.
+- [x] Sprawdzić obliczenia, uprawnienia, współbieżność, migracje i zachowanie istniejących danych. CI #20: 268 testów / 6832 asercje, SUCCESS.
+- [x] Uzupełnić dokumentację, wzór salda i rzeczywisty raport odbioru.
 
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
 - [x] Etap 3 — logowanie lokalne i kontrola dostępu w API.
 - [x] Etap 4 — administracja użytkownikami, zespołami i słownikami.
-- [-] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
+- [x] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
 - [ ] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
 - [ ] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
 - [ ] Etap 8 — formularz i widoki pracownika w stylistyce Notus.
@@ -123,12 +123,10 @@ pozostają zakresem kolejnych etapów. Aktualizacja: `make stop`, pobranie gał�
 `make init`, `make verify`, `make db-validate`; pierwszego administratora inicjalizuje
 interaktywne `app:admin:bootstrap`, bez stałego hasła demonstracyjnego.
 
-Q1 jest zamknięte. Q5 zamknięto przed etapem 4: obowiązują B22–B24.
-Q8 nadal wymaga procedury korekt sprzed granicy ewidencji. Pozostałe pytania są otwarte;
-nie wolno rozstrzygać ich domyślnie w modelu ani implementować zależnych operacji.
-Etap 4 rozpoczęto na polecenie użytkownika; nie rozpoczynać etapu 5 bez kolejnego polecenia.
+Historycznie przed etapem 4 zamknięte były Q1 i Q5 (B22–B24). Aktualny stan pytań
+znajduje się w OPEN_QUESTIONS; decyzje etapu 5 rozszerzyły te ustalenia o B25–B29.
 
-### Bieżący punkt wznowienia — po etapie 4, 7 listopada 2026 r.
+### Historyczny odbiór etapu 4 — 7 listopada 2026 r.
 
 Etap 4 odebrano na commicie `4b1f4f42fd02c7550d17974f1dee6de465f4008d`:
 [CI #16](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42349188537)
@@ -147,9 +145,28 @@ na pustej bazie jawnie dodaj słowniki startowe, zespół i konta. Nie uruchamia
 ponownie bootstrap ani demo, jeśli masz już własne konta. Wygląd nadal roboczy,
 dopasowanie do Notus w etapie 8.
 
-Użytkownik polecił rozpoczęcie **etapu 5 — kalendarz roboczy, limity i saldo**.
-Przygotowano gałąź `codex/etap-5-kalendarz-limity-saldo` na ukończonym etapie 4.
-Punkt wznowienia: wdrożyć rozliczenia zgodnie z zatwierdzonymi B25–B29 oraz promptem 5. Nie scalać PR
-bez osobnego polecenia. Usługi wniosków w etapach 6–7 mają
-korzystać z `RequestAccessPolicy` i blokować agregat użytkownika przed zapisem
-przypisań dni; samo zapisane `RequestDay.assignment` nie określa uprawnień.
+### Bieżący punkt wznowienia — po etapie 5, 7 listopada 2026 r.
+
+Etap 5 odebrano na commicie `c526ab8e2eda42ab029ba24a1f49ec6d5ff58701`:
+[CI #20](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42357495900)
+**SUCCESS**, PHP 8.3.36 + MySQL 8.0.32, **268 testów / 6832 asercje**.
+Przeszły migracje z zachowaniem danych etapu 4, rozliczenia i uprawnienia,
+PHPStan/lint/build, Chrome, rzeczywisty HTTP przez Nginx/PHP-FPM,
+restart bez utraty danych i workery. Zakres kontroli opisuje TEST_PLAN.
+
+Kod jest w [PR #5](https://github.com/paweljrsk/aplikacja-urlopy/pull/5), gałąź
+`codex/etap-5-kalendarz-limity-saldo`, oparta na PR #4. PR-y pozostają niescalone.
+Nowe ekrany: `/balances` i `/calendar-settings`. Aktualizacja lokalna:
+`make stop`, pobranie gałęzi, `make init`, `make verify`, `make db-validate`.
+Dotychczasowe konto administratora i dane pozostają zachowane.
+
+Punkt wznowienia: **etap 6 — wnioski, rezerwacje, decyzje i wycofanie**, dopiero
+po kolejnym poleceniu użytkownika. Przed wdrożeniem reguł dat rozstrzygnąć Q2
+o wnioskach na dzisiejszy dzień. Przeczytać prompt 6 i aktualne OPEN_QUESTIONS.
+Nie scalać PR bez osobnego polecenia.
+
+Usługi wniosków w etapach 6–7 mają korzystać z `RequestAccessPolicy`, blokować
+agregat użytkownika przed zapisem i zachowywać pełny `RequestAssignmentContext`.
+Samo `RequestDay.assignment` nie określa uprawnień. Przygotowane operacje rozliczeń
+przyjmują zwalidowane, zapisane wersje; publiczny proces musi sprawdzać daty,
+kalendarz, dostępność rodzaju i zatrudnienie przed ich utworzeniem.

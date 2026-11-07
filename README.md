@@ -9,9 +9,12 @@ obejmują dane początkowe, rezerwacje, obciążenia, korekty i wspólne pule za
 Formularz składania wniosków oraz główny kalendarz zespołu powstaną w kolejnych
 etapach. Wygląd pozostaje roboczy — pełna stylistyka Notus w etapie 8.
 
-Gałąź etapu 5: `codex/etap-5-kalendarz-limity-saldo`, oparta na ukończonym
-[PR #4](https://github.com/paweljrsk/aplikacja-urlopy/pull/4). Poprzednie etapy
-pozostają niescalone. Status kontroli: [plan testów](docs/TEST_PLAN.md).
+Etap 5 ukończony w [PR #5](https://github.com/paweljrsk/aplikacja-urlopy/pull/5),
+gałąź `codex/etap-5-kalendarz-limity-saldo`, oparta na ukończonym
+[PR #4](https://github.com/paweljrsk/aplikacja-urlopy/pull/4). PR-y pozostają niescalone.
+[CI #20 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42357495900):
+268 testów / 6832 asercje, Chrome, migracje, Nginx/PHP-FPM, restart i workery.
+Szczegóły i instrukcja ręcznego odbioru: [plan testów](docs/TEST_PLAN.md).
 Instrukcje: [rozliczenia](docs/ACCOUNTING.md), [API](docs/BALANCES_API.md),
 [kalendarz](docs/CALENDAR.md), [administracja](docs/ADMINISTRATION.md).
 `GET /api/health` sprawdza kernel/routing, nie gotowość bazy.
