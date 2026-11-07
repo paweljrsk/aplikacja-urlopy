@@ -238,6 +238,15 @@ Q7 dotyczy konfiguracji przed produkcją. Zachowujemy B22–B33.
 
 ## Problemy i ograniczenia
 
+### E18 — klawiatura po wymianie przycisku podglądu
+
+CI #36 zaliczył salda mobilne i wcześniejsze ekrany, ale wykrył opuszczenie
+dialogu klawiszami Tab/Shift+Tab po podglądzie decyzji. Dotychczasowa obsługa
+klawiatury działała tylko dla zdarzeń pochodzących z dialogu; nie obejmowała
+fokusu utraconego przy zmianie aktywnych kontrolek. Wspólny modal przechwytuje
+Tab na dokumencie wyłącznie podczas otwarcia, kieruje fokus do dostępnych
+kontrolek i usuwa nasłuchiwanie przy zamknięciu. Asercja pozostaje bez zmian.
+
 ### E17 — spóźniony podgląd po zmianie dostępu
 
 Przegląd etapu 10 wykrył, że pominięcie odświeżenia dostępu podczas trwającego

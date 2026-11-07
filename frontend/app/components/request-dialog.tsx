@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { redirectForAuthError } from "@/lib/auth-api";
 import { hoursLabel } from "@/lib/balance-api";
 import {
@@ -18,37 +18,43 @@ export function RequestModal({ title, description, children, onClose, closeDisab
   useEffect(() => {
     const element = dialog.current;
     if (!element) return;
+    const headingElement = heading.current;
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const overflow = document.body.style.overflow;
     element.showModal();
     document.body.style.overflow = "hidden";
-    heading.current?.focus();
+    function keepTabInside(event: KeyboardEvent) {
+      if (event.key !== "Tab" || !element?.open || event.defaultPrevented) return;
+      const active = document.activeElement;
+      const otherDialog = active?.closest("dialog[open]");
+      if (otherDialog && otherDialog !== element) return;
+      // Disabling/removing the focused control can leave focus on body. Capture
+      // at document level so the next Tab cannot escape before reaching a dialog.
+      // Recompute every time because loading and confirmations change the controls.
+      const controls = Array.from(element.querySelectorAll<HTMLElement>("button, a[href], input, select, textarea, summary, [tabindex], [contenteditable=true]"))
+        .filter(control => control.tabIndex >= 0 && !control.matches(":disabled") && !control.closest("[inert]")
+          && control.getClientRects().length > 0 && !["hidden", "collapse"].includes(getComputedStyle(control).visibility));
+      if (!controls.length) {
+        event.preventDefault(); headingElement?.focus(); return;
+      }
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      const outsideTabOrder = !controls.some(control => control === active);
+      if ((event.shiftKey && (active === first || outsideTabOrder)) || (!event.shiftKey && (active === last || outsideTabOrder))) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      }
+    }
+    document.addEventListener("keydown", keepTabInside, true);
+    headingElement?.focus();
     return () => {
+      document.removeEventListener("keydown", keepTabInside, true);
       element.close();
       document.body.style.overflow = overflow;
       if (trigger?.isConnected) trigger.focus();
     };
   }, []);
-  function keepTabInside(event: KeyboardEvent<HTMLDialogElement>) {
-    if (event.key !== "Tab") return;
-    // Recompute after loading/saving: :disabled also includes controls disabled by a fieldset.
-    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("button, a[href], input, select, textarea, [tabindex], [contenteditable=true]"))
-      .filter(element => element.tabIndex >= 0 && !element.matches(":disabled") && !element.closest("[inert]")
-        && element.getClientRects().length > 0 && !["hidden", "collapse"].includes(getComputedStyle(element).visibility));
-    if (!controls.length) {
-      event.preventDefault(); heading.current?.focus(); return;
-    }
-    const first = controls[0];
-    const last = controls[controls.length - 1];
-    const active = document.activeElement;
-    const outsideTabOrder = !controls.some(element => element === active);
-    if ((event.shiftKey && (active === first || outsideTabOrder)) || (!event.shiftKey && (active === last || outsideTabOrder))) {
-      event.preventDefault();
-      (event.shiftKey ? last : first).focus();
-    }
-  }
   return <dialog ref={dialog} className="requests-dialog" aria-labelledby={`${id}-title`} aria-describedby={description ? `${id}-description` : undefined}
-    onKeyDown={keepTabInside}
     onCancel={event => { event.preventDefault(); if (!closeDisabled) onClose(); }}>
     <div className="requests-dialog-heading">
       <div><span className="requests-eyebrow">{eyebrow}</span><h2 ref={heading} tabIndex={-1} id={`${id}-title`}>{title}</h2>{description && <p id={`${id}-description`}>{description}</p>}</div>

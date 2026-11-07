@@ -83,6 +83,8 @@ jobs:
       - name: Browser calendar filters and scoped details with synthetic API responses
         run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/calendar-ui-check.cjs
       - name: Browser managed request decisions and corrections with synthetic API responses
+        id: managed_ui
+        continue-on-error: true
         run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/managed-requests-ui-check.cjs
       - name: Write synthetic persistence marker outside the application schema
         run: |
@@ -139,6 +141,11 @@ jobs:
           else:
               raise SystemExit('Workers failed to become stable: ' + repr(previous))
           PY
+      - name: Require managed request browser checks to pass
+        if: always() && steps.managed_ui.outcome == 'failure'
+        run: |
+          echo 'Managed request browser checks failed; independent E2E results do not override this failure.'
+          exit 1
       - name: Save synthetic browser screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -31,7 +31,7 @@ kontrole statyczne i build, wszystkie regresje Chrome, rzeczywisty proces wniosk
 restart z zachowaniem danych oraz workery — PASS. Sprawdzono zrzuty desktop/mobile.
 Lokalnie: 12 testów kalendarza / 1625 asercji, PHPStan, ESLint, TypeScript i build — PASS.
 Bez zmian schematu, rozliczeń i reguł uprawnień; bez nowych zależności.
-PR pozostaje niescalony. Etap 10 wymaga kolejnego polecenia użytkownika.
+PR pozostaje niescalony. Zlecony etap 10 opisano na początku tego pliku.
 
 **Ukończony wcześniej etap 8 — formularz, widoki pracownika i kalendarz Notus.**
 Dostępny jest nowy ekran główny z kalendarzem zespołu (dwa tygodnie na komputerze,
@@ -328,3 +328,10 @@ Konfiguracja produkcyjna, HTTPS/VPN, polityka backupów oraz próba odtworzenia 
    wynik przed zapisaniem. Kierownik nie zmienia własnego limitu, zastępca tylko czyta.
 5. Administrator: karta „Historia” w `/admin` pokazuje autora, czas i dozwolone
    zmienione wartości. Szczegóły decyzji urlopowych i limitów pozostają przy ich danych.
+6. Otwórz ten sam wniosek w dwóch oknach. Zapisz decyzję w pierwszym, następnie
+   spróbuj zapisać w drugim: wymagany jest świeży odczyt, a saldo zmienia się raz.
+   Po powrocie do otwartego formularza aplikacja ponownie sprawdza dostęp i wymaga
+   nowego podglądu. Niepewny zapis ponawia tę samą operację.
+7. Na telefonie sprawdź kolejkę, pełnoekranowe okno korekty i przewijanie tabeli
+   sald wewnątrz panelu. Tab/Shift+Tab pozostają w otwartym oknie; Escape zamyka
+   je, a formularz korekty z niezapisanymi zmianami wymaga potwierdzenia zamknięcia.

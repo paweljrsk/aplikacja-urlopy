@@ -218,8 +218,17 @@ let step = 'launch';
     await previewDecision(dialog);
     assert.match(await dialog.getByRole('region', { name: 'Wpływ decyzji na saldo', exact: true }).innerText(), /47 h/);
     assert.equal(writes.length, 0, 'Inspecting a decision never commits it.');
-    await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
-    assert.equal(await page.evaluate(() => !!document.activeElement?.closest('dialog[open]')), true);
+    const focusState = () => page.evaluate(() => ({
+      tag: document.activeElement?.tagName, id: document.activeElement?.id,
+      label: document.activeElement?.getAttribute('aria-label'), documentFocused: document.hasFocus(),
+      insideDialog: !!document.activeElement?.closest('dialog[open]'),
+      dialogOpen: !!document.querySelector('dialog[open]'),
+    }));
+    const beforeTab = await focusState();
+    await page.keyboard.press('Tab'); const afterTab = await focusState();
+    assert.equal(afterTab.insideDialog, true, `Tab must stay inside the open dialog: ${JSON.stringify({ beforeTab, afterTab })}`);
+    await page.keyboard.press('Shift+Tab'); const afterReverseTab = await focusState();
+    assert.equal(afterReverseTab.insideDialog, true, `Shift+Tab must stay inside the open dialog: ${JSON.stringify({ beforeTab, afterTab, afterReverseTab })}`);
     await page.screenshot({ path: join(screenshotDir, 'managed-decision-desktop.png') });
     await dialog.getByRole('button', { name: 'Potwierdź akceptację', exact: true }).dblclick({ force: true });
     await dialog.getByRole('button', { name: 'Ponów decyzję', exact: true }).waitFor();
