@@ -1,6 +1,6 @@
-# Limity i rozliczenia godzinowe — etapy 5–6
+# Limity i rozliczenia godzinowe — etapy 5–7
 
-Zasady biznesowe: B21 oraz B25–B29 w [DECISIONS.md](DECISIONS.md).
+Zasady biznesowe: B21, B25–B29 oraz B32–B33 w [DECISIONS.md](DECISIONS.md).
 Kontrakt HTTP: [BALANCES_API.md](BALANCES_API.md).
 Kalendarz i jego źródła: [CALENDAR.md](CALENDAR.md).
 
@@ -46,7 +46,7 @@ niedobór = max(0, −dostępne godziny)
 | Wykorzystanie przed startem | `OpeningBalance` oraz jawne korekty obciążenia bieżącej puli, bez fikcyjnych dni wniosków |
 | Pozostałości starszych lat na start | `OpeningCarry` według roku pochodzenia oraz jawne korekty przydziałów tych pul |
 | Oczekujące wnioski | Netto rezerwacji początkowych wersji wniosków |
-| Dodatkowa rezerwacja na zmiany | Nadwyżka proponowanych godzin względem obowiązującego urlopu w danym dniu |
+| Dodatkowa rezerwacja na zmiany | Niepokryta część propozycji po dopasowaniu finansowania obowiązującego urlopu w tym samym roku nieobecności i w dozwolonych pulach |
 | Zatwierdzone przyszłe | Netto obciążeń dni po dzisiejszej dacie w Europe/Warsaw |
 | Wykorzystane w ewidencji | Netto obciążeń dni do dzisiejszej daty włącznie |
 | Dostępna zaległość | Pozostałości dopuszczonych starszych pul po ich wszystkich rezerwacjach i obciążeniach |
@@ -79,6 +79,43 @@ zasad zatrudnienia i wspólnej puli; operacja nie powiela przydziałów. Ponowie
 rozliczenia nie dodaje godzin. Istniejące wnioski zachowują zapisaną formę
 zatrudnienia po zmianie umowy.
 
+## Zmiana i anulowanie zatwierdzonego wniosku
+
+Do decyzji obowiązuje stary termin i jego obciążenie. Propozycja nie zwraca godzin
+ze skrócenia ani anulowania. Dodatkowo rezerwujemy tylko część potrzebną do pokrycia
+wariantu proponowanego, z osobną kontrolą roku nieobecności i dozwolonych źródeł.
+Zwykła zmiana nie może zwiększyć niedoboru, nawet przy niezmienionej sumie godzin.
+
+| Przypadek | Do decyzji | Po akceptacji |
+|---|---|---|
+| 16 h → 24 h w tym samym roku i zgodnych pulach | 16 h nadal obciążone, dodatkowe 8 h zarezerwowane, również przy zmianie dat | 24 h obciążone, brak dodatkowej rezerwacji |
+| 16 h → 8 h | Nadal 16 h obciążone | Zwrot 8 h |
+| 8 h z grudnia → 8 h w styczniu | Grudniowe obciążenie oraz pokrycie nowych 8 h w roku styczniowym | Zwrot starego zobowiązania i obciążenie nowego roku |
+| Płatne 8 h → nieobciążające salda 8 h | Stare 8 h nadal obciążone | Zwrot 8 h |
+| Nieobciążające salda 8 h → płatne 8 h | Nowe 8 h zarezerwowane | Rezerwacja zamieniona na obciążenie |
+| Anulowanie | Dotychczasowe obciążenie i zajętość dnia pozostają | Jednorazowy zwrot i zwolnienie dni |
+
+Pokrycie finansowe propozycji sprawdzamy na faktycznych źródłach już zatwierdzonego
+wniosku. Godziny finansowane zaległością UoP nie pokrywają propozycji B2B wymagającej
+puli rocznej. Najpierw dopasowywane są godziny wymagające wyłącznie bieżącej puli,
+potem godziny dopuszczające starsze pule. Każda godzina pokrycia jest używana raz.
+Przy propozycji zachowujemy dokładne źródła obowiązującego obciążenia; dopisanie
+starszej puli do danych początkowych nie refinansuje samoczynnie starego urlopu.
+
+Po decyzji najpierw wykorzystujemy już zaangażowane w ten wniosek godziny w tym
+samym roku i w dozwolonym źródle. Rejestr dostaje przeciwstawne wpisy do starych
+pozycji oraz nowe pozycje z identyfikatorami nowej wersji. Zwrot wraca do pierwotnej
+puli, a nie do umownej puli bieżącego roku. Nie przepisujemy księgowań innych
+wniosków. Akceptacja istniejącej rezerwacji po korekcie limitu zachowuje jej
+pochodzenie i nie przenosi istniejącego niedoboru do innej puli.
+
+Zajętość dnia jest niezależna od finansowania: na każdy dzień bierzemy maksimum
+godzin wersji obowiązującej i proponowanej, następnie dodajemy inne aktywne wnioski.
+Zmiana 3 h → 5 h w jednym dniu zajmuje 5 h. Przeniesienie 8 h z poniedziałku na
+wtorek chroni oba dni do decyzji, choć w tym samym roku i przy zgodnych źródłach
+nie wymaga drugiej rezerwacji finansowej. Limit 8 h obowiązuje również rodzaje
+nieobciążające salda.
+
 ## Korekty i historia
 
 Korekta limitu oraz danych początkowych wymaga uzasadnienia. Oryginalne
@@ -98,6 +135,13 @@ nie może zastąpić finansowania zaległością niepokrytym obciążeniem bież
 nawet jeśli łączny wymiar się nie zmienia. Ochrona istniejącego zobowiązania obejmuje
 zarówno sumę danego roku, jak i godziny wymagające finansowania wyłącznie jego
 roczną pulą. Akceptacja istniejącej rezerwacji po korekcie limitu nadal jest możliwa.
+
+B32–B33 dopuszczają jawną indywidualną korektę historycznego wniosku po podglądzie
+skutków i potwierdzeniu, z uzasadnieniem oraz zapisaną decyzją. Zwiększenie niedoboru
+jest uprawnieniem administratora. Wyjątek dotyczy nowych niepokrytych godzin z dat
+wcześniejszych niż dzisiaj; przesunięcie starego wniosku na większy przyszły wymiar
+nie omija kontroli dostępnego salda. Korekty kalendarza administratora zachowują
+osobne, wcześniej zatwierdzone zasady B29 dla przyszłych dat.
 
 Historia salda w API ogranicza zakres informacji według uprawnień. Przełożony
 obecnego zespołu nie otrzymuje tą drogą szczegółów wniosków poprzedniego zespołu.
@@ -130,6 +174,7 @@ potwierdzenie `request.operation_completed` zapewnia idempotencję, ale nie jest
 drugim księgowaniem i nie pojawia się w historii salda. Właściwe zdarzenia
 `request.created`, `request.edited` i decyzje pozostają widoczne zgodnie z rolą.
 
-Zmiany zaakceptowanego urlopu i indywidualne korekty są zakresem etapu 7. Formularz
+Etap 7 rozszerza ten proces o zmiany zaakceptowanego urlopu i indywidualne korekty.
+Zakres faktycznie zweryfikowanego działania i wyniki odbioru są w TEST_PLAN. Formularz
 składania i pełna stylistyka Notus pozostają w etapie 8, główny kalendarz w etapie 9.
 Kontrakt procesu opisuje [REQUESTS_API.md](REQUESTS_API.md).

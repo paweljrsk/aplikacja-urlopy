@@ -136,6 +136,12 @@ final class RequestQueryService
             $summary = $this->summary($actor, $request, $visible, $now);
             $current = RequestState::current($request);
             $summary['current'] = $summary['currentVisible'] && null !== $current ? $this->revision($current) : null;
+            // Effective absence remains in force while a separately authorized proposal waits.
+            // Null deliberately does not distinguish absence from an unauthorized version.
+            $effective = $request->getEffectiveRevision();
+            $pending = $request->getPendingRevision();
+            $summary['effective'] = null !== $effective && \in_array($effective, $visible, true) ? $this->revision($effective) : null;
+            $summary['pending'] = null !== $pending && \in_array($pending, $visible, true) ? $this->revision($pending) : null;
             $summary['history'] = array_map($this->revision(...), $visible);
 
             return $summary;
@@ -171,14 +177,24 @@ final class RequestQueryService
         return $visible;
     }
 
-    /** @return array{edit: bool, withdraw: bool, approve: bool, reject: bool} */
+    /** @return array{edit: bool, withdraw: bool, approve: bool, reject: bool, change: bool, cancel: bool, correct: bool} */
     private function actions(User $actor, LeaveRequest $request, ?RequestRevision $current, \DateTimeImmutable $now): array
     {
-        $pending = null !== $current && $current === $request->getPendingRevision() && RequestChangeKind::INITIAL === $current->getKind() && null === $request->getEffectiveRevision();
-        $ownFuture = $pending && $actor->getId() === $request->getUser()->getId() && $current->getStartDate()->format('Y-m-d') >= $now->format('Y-m-d');
-        $decide = $pending && $this->access->canDecideRevision($actor, $current, $now);
+        $pending = $request->getPendingRevision();
+        $effective = $request->getEffectiveRevision();
+        $visiblePending = null !== $current && $current === $pending;
+        $initial = $visiblePending && RequestChangeKind::INITIAL === $current->getKind() && null === $effective;
+        $own = $actor->getId() === $request->getUser()->getId();
+        $currentFuture = null !== $current && $current->getStartDate()->format('Y-m-d') >= $now->format('Y-m-d');
+        $baseFuture = null === $current?->getBaseRevision() || $current->getBaseRevision()->getStartDate()->format('Y-m-d') >= $now->format('Y-m-d');
+        $ownFuture = $own && $currentFuture;
+        $decide = $visiblePending && $this->access->canDecideRevision($actor, $current, $now);
+        $propose = null !== $current && $current === $effective && null === $pending && $ownFuture;
+        $correctableState = null !== $current && (($current === $effective && null === $pending) || $initial);
+        $correct = $correctableState && !$currentFuture && $this->access->canManageRevision($actor, $current, $now);
 
-        return ['edit' => $ownFuture, 'withdraw' => $ownFuture, 'approve' => $decide, 'reject' => $decide];
+        return ['edit' => $initial && $ownFuture, 'withdraw' => $visiblePending && $ownFuture && $baseFuture,
+            'approve' => $decide, 'reject' => $decide, 'change' => $propose, 'cancel' => $propose, 'correct' => $correct];
     }
 
     /** @return array<string, mixed> */
@@ -189,19 +205,59 @@ final class RequestQueryService
         $decision = $revision->getDecision();
         $event = $decision?->getEvent();
         $reason = $event?->getAfterData()['reason'] ?? null;
+        $submittedReason = $this->submittedReason($revision);
 
         return [
             'id' => $revision->getId(), 'revision' => $revision->getRevision(), 'kind' => $revision->getKind()->value,
+            'baseRevision' => $revision->getBaseRevision()?->getRevision(),
             'mode' => $revision->getMode()->value, 'startDate' => $revision->getStartDate()->format('Y-m-d'),
             'endDate' => $revision->getEndDate()->format('Y-m-d'), 'totalHours' => $revision->getTotalHours(),
             'days' => array_map(static fn (RequestDay $day): array => ['date' => $day->getDate()->format('Y-m-d'), 'hours' => $day->getHours()], $revision->getDays()),
             'absenceType' => ['id' => $policy->getType()->getId(), 'code' => $policy->getType()->getCode(), 'revision' => $policy->getRevision(), 'name' => $policy->getName(), 'deductsBalance' => $policy->deductsBalance()],
-            'submitted' => ['at' => $source->getOccurredAt()->format(\DATE_ATOM), 'actorName' => $this->actorName($source->getActor())],
+            'submitted' => ['at' => $source->getOccurredAt()->format(\DATE_ATOM), 'actorName' => $this->actorName($source->getActor()),
+                'reason' => \is_string($submittedReason) ? $submittedReason : null],
             'decision' => null === $decision || null === $event ? null : [
                 'outcome' => $decision->getOutcome()->value, 'at' => $event->getOccurredAt()->format(\DATE_ATOM),
                 'actorName' => $this->actorName($event->getActor()), 'reason' => \is_string($reason) ? $reason : null,
             ],
         ];
+    }
+
+    private function submittedReason(RequestRevision $revision): ?string
+    {
+        $source = $revision->getSource();
+        $data = $source->getAfterData();
+        // Legacy edits can share the previous revision's decision event. A generic reason
+        // in that event belongs to its own authorized history, not to the new submission.
+        if ('request.corrected' !== $source->getAction() || 'request' !== $source->getTargetType()
+            || $source->getTargetReference() !== $revision->getRequest()->getReference()
+            || !\is_string($data['reason'] ?? null)
+            || ($data['correctionAction'] ?? null) !== (RequestChangeKind::CANCELLATION === $revision->getKind() ? 'cancel' : 'change')) {
+            return null;
+        }
+        $policy = $revision->getPolicy();
+        $expected = ['absenceTypeId' => $policy->getType()->getId(), 'policyRevision' => $policy->getRevision(),
+            'mode' => $revision->getMode()->value, 'startDate' => $revision->getStartDate()->format('Y-m-d'),
+            'endDate' => $revision->getEndDate()->format('Y-m-d')];
+        foreach ($expected as $field => $value) {
+            if (($data[$field] ?? null) !== $value) {
+                return null;
+            }
+        }
+        $recordedDays = $data['days'] ?? null;
+        $days = $revision->getDays();
+        if (!\is_array($recordedDays) || !array_is_list($recordedDays) || count($recordedDays) !== count($days)) {
+            return null;
+        }
+        foreach ($days as $index => $day) {
+            $recorded = $recordedDays[$index];
+            if (!\is_array($recorded) || ($recorded['date'] ?? null) !== $day->getDate()->format('Y-m-d')
+                || ($recorded['hours'] ?? null) !== $day->getHours()) {
+                return null;
+            }
+        }
+
+        return $data['reason'];
     }
 
     private function actorName(?User $actor): ?string

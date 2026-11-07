@@ -8,6 +8,8 @@ use App\Entity\StaffAssignment;
 use App\Entity\Team;
 use App\Entity\User;
 use App\Enum\TeamRole;
+use App\Enum\DecisionOutcome;
+use App\Enum\RequestChangeKind;
 
 /**
  * Q5 authorization for future request/calendar endpoints; this class does not expose an API.
@@ -98,6 +100,15 @@ final class RequestAccessPolicy
             || $revision !== $revision->getRequest()->getPendingRevision()) {
             return false;
         }
+        return $this->canManageRevision($actor, $revision, $at);
+    }
+
+    /** Authorizes an explicit correction independently of its current decision state. */
+    public function canManageRevision(User $actor, RequestRevision $revision, \DateTimeImmutable $at): bool
+    {
+        if (!$actor->isActive() || [] === $revision->getDays()) {
+            return false;
+        }
         if ($actor->isAdministrator()) {
             return true;
         }
@@ -152,9 +163,11 @@ final class RequestAccessPolicy
     private function affectedDays(RequestRevision $revision): array
     {
         $days = $revision->getDays();
-        // The direct base is the currently approved absence replaced by this proposal.
-        // Older superseded revisions are separate history and need separate authorization.
-        if (null !== $revision->getBaseRevision()) {
+        // Pending proposals involve both current and proposed days. Once a change is
+        // approved, the replaced term is separate history with separate authorization.
+        $approvedChange = RequestChangeKind::CHANGE === $revision->getKind()
+            && DecisionOutcome::APPROVED === $revision->getDecision()?->getOutcome();
+        if (null !== $revision->getBaseRevision() && !$approvedChange) {
             $days = [...$days, ...$revision->getBaseRevision()->getDays()];
         }
 

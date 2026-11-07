@@ -573,3 +573,77 @@ Pełny formularz składania wniosków powstaje w etapie 8.
 Automatyczne odtworzenie: `make test`. Skrypt CI `auth-http-check.cjs` wykonuje
 rozszerzony przebieg HTTP na jednorazowej bazie CI; nie uruchamiaj go na swoich
 kontach i danych użytkowych.
+
+## Etap 7 — lokalna weryfikacja
+
+7 listopada 2026 r. Zatwierdzone B32–B33 zapisano przed implementacją. Bez nowych
+bibliotek i migracji. Frontend bez zmian; formularz i stylistyka Notus pozostają
+w etapie 8. Pełny lokalny PHPUnit po końcowych poprawkach: **391 testów / 15 091 asercji — PASS**.
+PHPStan, lint YAML i kontenera Symfony oraz składnia skryptu HTTP — PASS.
+Pełny odbiór Docker CI #24 zakończył się sukcesem; szczegóły poniżej.
+
+Wykonane kontrole lokalne: PHP 8.4.24, MySQL 8.0.32, domyślne UTC i kontrolowany
+czas Europe/Warsaw. Pierwsza grupa rozliczeń i workflow: 67 testów / 3047 asercji PASS;
+rzeczywista współbieżność procesów: 6 / 264 PASS. Pełny pierwszy przebieg 387 testów
+wykrył dwie rozbieżności opisane w E10; nie jest zaliczeniem pełnego odbioru.
+Po poprawce odczytu uzasadnień 21 testów API / 4625 asercji PASS. Następnie dodano
+4 regresje granicy ewidencji starszych danych oraz sprawdzono flagi działań po
+korekcie historycznego urlopu do przyszłości. Całość ponowiono: 391 / 15 091 PASS,
+43,6 s i 226,5 MB w lokalnym środowisku. Wyniki czasu/pamięci dotyczą testów, nie
+wydajności aplikacji produkcyjnej.
+
+Rzeczywiste HTTP na świeżej lokalnej bazie i serwerze PHP: PASS. Obejmuje stare
+logowanie/administrację/rozliczenia, przesunięcie 16→24 h z rezerwacją tylko 8 h,
+rozdzielenie wersji obowiązującej i oczekującej, ochronę starego dnia, odrzucenie
+zmiany, skrócenie 16→8 h i zwrot po decyzji, anulowanie z jednokrotnym zwrotem,
+podgląd bez zapisu oraz bezpośrednią korektę historyczną z jawnym niedoborem
+administratora, ponowienie i anulowanie korekty. To nie zastępuje Nginx/PHP-FPM
+w Docker CI. Skrypt używa wyłącznie syntetycznych danych w jednorazowej bazie.
+
+### Końcowy odbiór Docker i regresji Chrome etapu 7 — CI #24
+
+7 listopada 2026 r., kod `c08755da94e587c10e2ba9b7b5c5dd528e8f5bf9`,
+[CI #24 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42401371870).
+Docelowy PHP **8.3.36**, MySQL **8.0.32**. Wszystkie wymagane kroki zakończone sukcesem.
+
+| Kontrola | Wynik |
+|---|---|
+| Inicjalizacja, HTTP, powtórzenie migracji i zgodność schematu Doctrine | PASS; bez nowej migracji etapu 7 |
+| Dwukrotne demo, aktualizacja wcześniejszych danych i CLI administratora | PASS; dane i historia zachowane |
+| Pełny PHPUnit, w tym współbieżność na rzeczywistych procesach i MySQL | PASS; **391 testów / 15 091 asercji** |
+| PHPStan, lint Symfony, ESLint/TypeScript i produkcyjny build | PASS |
+| Chrome: logowanie, administracja, saldo i kalendarz firmowy | PASS; syntetyczne odpowiedzi API, regresja desktop/mobile |
+| Rzeczywiste API przez Nginx/PHP-FPM | PASS; propozycje, decyzje, przesunięte rezerwacje, zwroty, anulowanie, podgląd i korekta historyczna z niedoborem, ponowienia i izolacja |
+| Stop/start z kontrolą znacznika zachowania danych | PASS; dane zachowane |
+| Messenger i Scheduler | PASS; oba procesy stabilne |
+
+Formularz wniosków i stylistyka Notus pozostają w etapie 8; testy Chrome obejmują
+dotychczasowe ekrany. Nowe operacje sprawdzono przez rzeczywiste API i testy
+funkcjonalne/integracyjne. Zrzuty są artefaktem `synthetic-ui-screenshots` przebiegu
+CI (retencja 7 dni). Nie weryfikowano środowiska produkcyjnego ani uruchomienia
+na komputerze użytkownika. Późniejszy zapis tego raportu zmienia tylko dokumentację.
+
+### Ręczny odbiór API etapu 7
+
+Przykłady i kontrakt są w [REQUESTS_API.md](REQUESTS_API.md). Wszystkie wywołania
+zapisu wymagają sesji i tokenu CSRF; w etapie 7 nie dodano formularzy frontendu.
+
+1. Ustaw syntetycznemu pracownikowi 80 h i zaakceptuj urlop 16 h. Dostępne: 64 h.
+2. Przez `/change` zaproponuj 24 h, także na innym terminie tego samego roku.
+   Dostępne: 56 h; szczegóły pokazują `effective` 16 h i `pending` 24 h. Oba
+   terminy zajęte do decyzji. Odrzucenie zwraca tylko dodatkowe 8 h.
+3. Zaproponuj skrócenie do 8 h. Dostępne pozostaje 64 h, po akceptacji 72 h.
+4. Zgłoś `/cancel`. Saldo nie zmienia się do decyzji. Akceptacja zwraca końcowe
+   8 h; powtórzenie tego samego klucza nie zwiększa salda ponownie.
+5. Dla syntetycznego historycznego wniosku uprawniona osoba wykonuje
+   `/correction-preview`, sprawdza skutki i potwierdza przez `/correct` z identycznymi
+   danymi, tokenem oraz `confirm:true`. Podgląd nie zapisuje zmian. Zmiana danych
+   po podglądzie wymaga ponowienia; sam pracownik ani zastępca dla własnego urlopu
+   nie może wykonać korekty. Kierownik może skorygować własny wniosek.
+6. Gdy korekta zwiększa historyczny niedobór, administrator musi dodatkowo
+   potwierdzić `allowDeficit:true`. Pozostałe urlopy i pochodzenie godzin pozostają
+   zachowane. Ten wyjątek nie finansuje nowych przyszłych godzin ani nie pozwala
+   przekroczyć 8 h dziennie lub ponownie rozliczyć okresu sprzed początku ewidencji.
+
+Automatyczne odtworzenie: `make test`; pełny stos sprawdza workflow GitHub Actions.
+Nie uruchamiać skryptu HTTP CI na rzeczywistych kontach i danych użytkowych.

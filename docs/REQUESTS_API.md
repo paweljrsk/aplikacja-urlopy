@@ -1,6 +1,6 @@
-# API wniosków — etap 6
+# API wniosków — etapy 6–7
 
-Reguły biznesowe: [REQUIREMENTS.md](REQUIREMENTS.md), B18–B31 w
+Reguły biznesowe: [REQUIREMENTS.md](REQUIREMENTS.md), B18–B33 w
 [DECISIONS.md](DECISIONS.md). Rozliczenia: [ACCOUNTING.md](ACCOUNTING.md).
 Wyniki uruchomionych kontroli są osobno w [TEST_PLAN.md](TEST_PLAN.md).
 Opis kontraktu nie zastępuje odbioru testów.
@@ -15,7 +15,11 @@ obiekty audytu nie są automatycznie dołączane do odpowiedzi wniosku.
 | Operacja | Dostęp |
 |---|---|
 | Złożenie | Własny wniosek każdego użytkownika, z poprawnymi przypisaniami i danymi ewidencji |
-| Edycja i wycofanie | Właściciel oczekującego wniosku, jeśli zakres nie obejmuje wcześniejszych dat |
+| Edycja oczekującego nowego wniosku | Właściciel, jeśli zakres nie obejmuje wcześniejszych dat |
+| Propozycja zmiany/anulowania zatwierdzonego urlopu | Właściciel; dotychczasowy i proponowany zakres od dzisiaj, bez innej oczekującej propozycji |
+| Wycofanie oczekującego wniosku/propozycji | Właściciel; zakres propozycji i zastępowanej wersji nie obejmuje wcześniejszych dat |
+| Korekta rozpoczętego/przeszłego wniosku | Uprawniony kierownik/zastępca/admin po podglądzie i potwierdzeniu; własny wniosek zastępcy koryguje kierownik albo admin |
+| Historyczna korekta zwiększająca niedobór | Wyłącznie administrator, z dodatkowym jawnym potwierdzeniem niedoboru |
 | Akceptacja i odrzucenie | Kierownik i zastępca dla obsługiwanych wniosków zespołu; administrator dla wszystkich zespołów |
 | Decyzja o własnym wniosku | Kierownik i administrator; zastępca nie |
 | Własne szczegóły i historia | Właściciel i administrator |
@@ -32,9 +36,9 @@ Nie kontrolujemy godziny rozpoczęcia dzisiejszej nieobecności, bo model przech
 liczbę godzin bez pory dnia. Uprawniony przełożony nadal może zdecydować o starym
 oczekującym wniosku; rezerwacja nie wygasa przy zmianie dnia ani roku.
 
-Indywidualna zmiana zatwierdzonego urlopu, anulowanie oraz korekty przeszłości są
-zakresem etapu 7. Formularz i docelowe widoki powstają w dalszych etapach; etap 6
-udostępnia proces przez API, bez nowego ekranu frontendu.
+Etap 7 dodaje zmiany zatwierdzonego urlopu, anulowanie oraz bezpośrednie korekty
+przeszłości według B32–B33. Formularz i docelowe widoki powstają w dalszych etapach;
+proces jest dostępny przez API, bez nowego ekranu frontendu.
 
 ## Endpointy
 
@@ -48,9 +52,13 @@ HTTP `200`. Utworzenie zwraca `201`, także przy identycznym ponowieniu operacji
 | `GET /api/requests/{id}` | Szczegóły i dozwolone wersje historii |
 | `POST /api/requests` | Nowy własny wniosek i rezerwacja |
 | `POST /api/requests/{id}/edit` | Zastąpienie oczekującej wersji nową, z atomową korektą rezerwacji |
-| `POST /api/requests/{id}/withdraw` | Wycofanie własnego oczekującego wniosku i zwolnienie rezerwacji |
+| `POST /api/requests/{id}/change` | Propozycja zmiany zatwierdzonego urlopu; zabezpieczenie dodatkowych godzin |
+| `POST /api/requests/{id}/cancel` | Propozycja anulowania; dotychczasowy urlop nadal obowiązuje |
+| `POST /api/requests/{id}/withdraw` | Wycofanie własnego oczekującego wniosku/propozycji i zwolnienie tylko odpowiedniej rezerwacji |
 | `POST /api/requests/{id}/approve` | Akceptacja, zamiana rezerwacji na obciążenie |
-| `POST /api/requests/{id}/reject` | Odrzucenie z obowiązkowym powodem i zwolnienie rezerwacji |
+| `POST /api/requests/{id}/reject` | Odrzucenie z obowiązkowym powodem i zwolnienie odpowiedniej rezerwacji |
+| `POST /api/requests/{id}/correction-preview` | Podgląd historycznej korekty, bez zapisania zmian; wymaga CSRF |
+| `POST /api/requests/{id}/correct` | Jawne potwierdzenie korekty z aktualnego podglądu |
 
 ### Dane zapisu
 
@@ -61,12 +69,12 @@ wartości logiczne i `null` nie zastępują liczb.
 | Pole | Wymaganie |
 |---|---|
 | `operationKey` | Każdy zapis; 1–64 liter ASCII, cyfr lub znaków `.` `_` `:` `-`; unikalne dla logicznej operacji użytkownika |
-| `expectedVersion` | Edycja, wycofanie i decyzje; dodatnia wersja z bieżącego odczytu wniosku |
-| `absenceTypeId` | Utworzenie i edycja; dodatni identyfikator rodzaju |
-| `startDate`, `endDate` | Utworzenie i edycja; daty `RRRR-MM-DD` w uporządkowanym zakresie |
-| `mode` | Utworzenie i edycja; `full_days` domyślnie albo `hourly` |
+| `expectedVersion` | Operacje na istniejącym wniosku, również podgląd; dodatnia wersja z bieżącego odczytu |
+| `absenceTypeId` | Utworzenie, edycja i propozycja zmiany; dodatni identyfikator rodzaju |
+| `startDate`, `endDate` | Utworzenie, edycja i propozycja zmiany; daty `RRRR-MM-DD` w uporządkowanym zakresie |
+| `mode` | Utworzenie, edycja i propozycja zmiany; `full_days` domyślnie albo `hourly` |
 | `hours` | Tylko `hourly`: pełna liczba 1–7; start i koniec muszą wskazywać ten sam dzień |
-| `reason` | Odrzucenie: niepuste uzasadnienie, maksymalnie 1000 znaków |
+| `reason` | Odrzucenie oraz podgląd/potwierdzenie korekty: niepuste uzasadnienie, maksymalnie 1000 znaków |
 
 `full_days` oznacza 8 godzin za każdy dzień roboczy, z pominięciem weekendów,
 świąt i aktywnych dni firmowych. Sam dzień wolny albo zakres bez godzin roboczych
@@ -117,6 +125,13 @@ przez `GET /api/requests/{id}`.
 | `pending` | Wycofanie | `withdrawn`; zwolnienie rezerwacji i zajętości |
 | `pending` | Akceptacja | `approved`; obciążenie zastępuje rezerwację bez drugiego potrącenia |
 | `pending` | Odrzucenie | `rejected`; wymagany powód, zwolnienie rezerwacji i zajętości |
+| `approved` | Propozycja zmiany | `change_pending`; stary urlop obowiązuje, ewentualna dodatkowa rezerwacja |
+| `approved` | Propozycja anulowania | `cancellation_pending`; stary urlop nadal obowiązuje bez zwrotu godzin |
+| `change_pending` | Akceptacja | `approved`; nowa wersja obowiązuje, rozliczenie różnicy godzin |
+| `change_pending` / `cancellation_pending` | Odrzucenie albo dozwolone wycofanie | `approved`; dotychczasowy urlop pozostaje, uwalniana tylko dodatkowa rezerwacja |
+| `cancellation_pending` | Akceptacja | `cancelled`; zwrot godzin raz i zwolnienie zajętości |
+| Historyczny `approved` | Potwierdzona korekta zmiany/anulowania | `approved` z nową obowiązującą wersją albo `cancelled`; decyzja i rozliczenie w tej samej operacji |
+| Historyczny `pending` | Potwierdzona korekta zmiany/wycofania | Nadal `pending` z poprawioną wersją albo `withdrawn`; korekta sama nie zatwierdza pierwotnego wniosku |
 
 Zwykła edycja nie wznawia odrzuconego lub wycofanego wniosku i nie zmienia
 zaakceptowanego urlopu. Kolejna nowa próba akceptacji zakończonej wersji jest
@@ -127,6 +142,72 @@ Wspólna blokada z administracją zapobiega równoczesnej zmianie przypisań lub
 w trakcie składania. Przy edycji zachowujemy użyte wcześniej wersje rodzaju i
 zapisane zasady dotychczasowego zakresu. Nowo dodane daty korzystają z przypisania
 obowiązującego w tych dniach. Błąd któregokolwiek dnia lub roku wycofuje całą edycję.
+
+## Zmiana i anulowanie zatwierdzonego urlopu
+
+`/change` przyjmuje te same pola co `/edit`, w tym `expectedVersion` i `operationKey`.
+`/cancel` przyjmuje `expectedVersion` i `operationKey`. Propozycje składa właściciel.
+Jednocześnie istnieje najwyżej jedna oczekująca wersja. Nie ma edycji propozycji
+przez `/edit`: właściciel może wycofać ją, a następnie zgłosić nową. Przełożony
+podejmuje decyzję przez dotychczasowe `/approve` albo `/reject`.
+
+Do decyzji obowiązuje stara wersja. Przy skróceniu z 16 h do 8 h zwrot 8 h następuje
+dopiero po akceptacji. Przy zwiększeniu 16 h do 24 h zabezpieczamy dodatkowo 8 h;
+odrzucenie zwalnia wyłącznie ten dodatek. Anulowanie zwraca godziny dopiero po
+akceptacji. Zmiana rodzaju na nieobciążający nie zwalnia salda już przy zgłoszeniu.
+
+Rezerwacje są sprawdzane według roku i dozwolonych pul. Przesunięcie 8 h z grudnia
+na styczeń wymaga pokrycia w nowym roku, mimo niezmiennej sumy wniosku. Dla zajętości
+każdego dnia chroniony jest większy wymiar ze starej i proponowanej wersji, plus
+inne aktywne wnioski: 3 h → 5 h zajmuje 5 h; przeniesienie poniedziałku na wtorek
+chroni oba dni do decyzji. Wersje nie sumują się podwójnie w tym samym dniu.
+
+## Bezpośrednia korekta przeszłości
+
+Korekta wymaga zakresu z wcześniejszą datą; dzisiaj nadal podlega B30. Nie służy do
+ominięcia zwykłego obiegu przyszłych wniosków. Istniejąca propozycja zmiany/anulowania
+blokuje korektę do czasu jej rozstrzygnięcia. Poprawiane daty nie mogą poprzedzać
+początku ewidencji: ten okres obsługują korekty danych początkowych, bez powtórnego
+obciążenia historycznymi wnioskami.
+
+Najpierw wyślij `POST /api/requests/{id}/correction-preview`:
+
+```json
+{
+  "expectedVersion": 4,
+  "action": "change",
+  "reason": "Korekta błędnie wpisanej liczby godzin",
+  "absenceTypeId": 1,
+  "mode": "hourly",
+  "startDate": "2026-11-05",
+  "endDate": "2026-11-05",
+  "hours": 4
+}
+```
+
+Dla `action: "cancel"` przekaż tylko `expectedVersion`, `action` i `reason`.
+Podgląd nie przyjmuje `operationKey`; niczego nie zapisuje. Odpowiedź
+`{ "preview": ... }` zawiera `id`, `version`, `action`, nieprzezroczysty `previewToken`,
+`before`, `after`, `impact` i `requiresDeficitConfirmation`. `impact.hoursByYear`
+pokazuje `year`, `beforeHours`, `afterHours`, `deltaHours` dla godzin obciążających
+saldo (rodzaj nieobciążający ma tu 0; rzeczywisty wymiar jest w migawkach `before`
+i `after`). `impact.pools` zawiera listy `before` i `after` według roku pochodzenia;
+te informacje są dostępne tylko przy osobnym uprawnieniu do salda. Dla przełożonego, który ma
+prawo do historycznego wniosku, ale nie do obecnego salda osoby, `impact.pools=null`.
+Brak uprawnienia do salda nie znosi kontroli poprawności rozliczeń.
+
+Potwierdzenie to `POST /api/requests/{id}/correct` z identyczną treścią podglądu,
+uzupełnioną o `operationKey`, otrzymany `previewToken` i `confirm: true`.
+Przed zapisem ponownie weryfikujemy dane, uprawnienia i aktualność podglądu;
+zmieniony wniosek lub wpływ operacji wymaga nowego podglądu. Samo przesłanie
+`confirm: true` bez prawidłowego podglądu nie upoważnia do zapisu.
+
+Jeśli korekta zwiększa niedobór, tylko administrator może ją potwierdzić, dodając
+`allowDeficit: true`. Pole nie jest domyślną zgodą ani obejściem limitu 8 h dziennie,
+granicy ewidencji, zatrudnienia czy uprawnień do zespołu. Pozostałe zaakceptowane
+urlopy i pochodzenie godzin pozostają zachowane. Zwykły nowy wniosek nie może
+zwiększać niedoboru. Każda korekta zapisuje uzasadnienie i historię; ponowienie
+z tym samym kluczem odtwarza potwierdzenie bez kolejnego zwrotu/obciążenia.
 
 ## Odczyty i prywatność
 
@@ -150,8 +231,7 @@ Parametry `GET /api/requests`:
 - `beforeId`: kursor do kolejnej strony; dodatni identyfikator zwrócony w
   `nextBeforeId`. Porządek malejąco po identyfikatorze.
 - `status`: opcjonalnie `pending`, `approved`, `rejected`, `withdrawn`, `cancelled`,
-  `change_pending` lub `cancellation_pending`. Dwa ostatnie są odczytem istniejącego
-  modelu zmian; ich obsługa nie jest udostępniona przez mutacje etapu 6.
+  `change_pending` lub `cancellation_pending`.
 
 Odpowiedź: `{ "requests": [...], "nextBeforeId": liczba_lub_null }`.
 Każda strona sprawdza najwyżej 500 kandydatów, po czym umożliwia kontynuację
@@ -164,25 +244,34 @@ niedostępnej obecnej wersji.
 Element listy zawiera `id`, `reference`, `user` (tylko identyfikator, imię i nazwisko),
 `version`, `status`, `currentVisible`, `latestVisibleRevision` oraz `actions`.
 Nie zawiera pełnej historii ani danych salda. `actions` to wartości logiczne
-`edit`, `withdraw`, `approve`, `reject`; stanowią wskazówkę dla interfejsu,
+`edit`, `withdraw`, `approve`, `reject`, `change`, `cancel`, `correct`; stanowią wskazówkę dla interfejsu,
 a uprawnienia i wersja są zawsze ponownie sprawdzane przy zapisie.
 
 ### Szczegóły
 
 `GET /api/requests/{id}` zwraca `{ "request": ... }`. Poza polami listy zawiera
-`current` oraz `history`. Każda wersja jest autoryzowana niezależnie przez
+`current`, `effective`, `pending` oraz `history`. `effective` oznacza obowiązujący
+urlop, `pending` oczekującą propozycję, a `current` zachowuje dotychczasową semantykę
+(najpierw propozycja, potem obowiązująca wersja lub końcowa wersja zakończonego wniosku).
+Każde pole wersji jest `null`, gdy wersja nie istnieje albo nie jest dostępna.
+Każda wersja jest autoryzowana niezależnie przez
 `RequestAccessPolicy`. Dostęp do aktualnego wniosku nie daje automatycznie dostępu
 do wcześniejszego zakresu innego zespołu.
 
 Jeżeli przełożony może czytać wyłącznie historyczne wersje, zachowuje tę historię,
 ale `currentVisible=false`, `current=null`, `version=null`, `status=null` i wszystkie
 `actions=false`. Odpowiedź nie ujawnia obecnych dat, rodzaju ani decyzji innego
-zespołu. Brak jakiejkolwiek dostępnej wersji daje odmowę dostępu.
+zespołu. Jeśli osobno dostępna wersja nadal obowiązuje podczas niedostępnej
+propozycji, może być pokazana w `effective`; `pending` pozostaje `null` i nie
+ujawnia danych obcego zespołu. Brak jakiejkolwiek dostępnej wersji daje odmowę dostępu.
 
-Wersja zawiera `id`, `revision`, `kind`, `mode`, `startDate`, `endDate`,
+Wersja zawiera `id`, `revision`, `baseRevision` (numer zastępowanej wersji lub `null`),
+`kind`, `mode`, `startDate`, `endDate`,
 `totalHours`, `days` (`date`, `hours`), `absenceType` (`id`, `code`, `revision`,
-`name`, `deductsBalance`), `submitted` (`at`, `actorName`) i `decision`.
-Decyzja to `null` albo `outcome`, `at`, `actorName`, `reason`.
+`name`, `deductsBalance`), `submitted` (`at`, `actorName`, `reason`) i `decision`.
+Decyzja to `null` albo `outcome`, `at`, `actorName`, `reason`. `submitted.reason`
+pochodzi wyłącznie z korekty dotyczącej treści tej wersji; nie ujawnia ogólnego
+uzasadnienia współdzielonego zdarzenia audytu starszej wersji.
 Zwracamy wyłącznie te jawne pola; nie serializujemy kontekstu przypisań, surowego
 `before/after`, kluczy idempotencji, skrótów payloadu ani technicznych potwierdzeń.
 

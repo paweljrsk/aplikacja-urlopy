@@ -2,13 +2,23 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 6 — API wniosków, rezerwacje i decyzje.**
+**Bieżący zakres: etap 7 — zmiany, anulowania i korekty wniosków — ukończony.**
 Dostępne są logowanie, panel administracji `/admin`, limity i saldo `/balances`
 oraz zarządzanie firmowymi dniami wolnymi `/calendar-settings`. Rozliczenia
 obejmują dane początkowe, rezerwacje, obciążenia, korekty i wspólne pule zaległości.
 API umożliwia złożenie, odczyt, edycję oczekującego wniosku, wycofanie, akceptację
-i odrzucenie z uzasadnieniem. Etap 6 udostępnia proces przez API; formularz i
+i odrzucenie z uzasadnieniem. Etap 7 dodaje propozycję zmiany/anulowania zatwierdzonego
+urlopu oraz bezpośrednie korekty przeszłości po podglądzie i potwierdzeniu. Proces
+jest dostępny przez API; formularz i
 pełna stylistyka Notus powstaną w etapie 8, główny kalendarz zespołu w etapie 9.
+
+Etap 7 ukończony w [PR #7](https://github.com/paweljrsk/aplikacja-urlopy/pull/7).
+Gałąź `codex/etap-7-zmiany-anulowania-korekty` jest oparta na etapie 6; PR pozostaje niescalony.
+[CI #24 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42401371870)
+dla kodu `c08755da94e587c10e2ba9b7b5c5dd528e8f5bf9`: **391 testów / 15 091 asercji**
+na PHP 8.3.36 i MySQL 8.0.32, migracje i schemat, kontrole statyczne, build,
+regresja Chrome, rzeczywisty HTTP nowych operacji przez Nginx/PHP-FPM, restart
+z zachowaniem danych i workery. Szczegóły oraz ręczny odbiór: [plan testów](docs/TEST_PLAN.md).
 
 Etap 6 ukończony w [PR #6](https://github.com/paweljrsk/aplikacja-urlopy/pull/6).
 Gałąź `codex/etap-6-wnioski-decyzje` jest oparta na ukończonym etapie 5.
@@ -54,7 +64,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/etap-6-wnioski-decyzje
+git switch codex/etap-7-zmiany-anulowania-korekty
 make init
 make verify
 make db-validate
@@ -62,7 +72,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 6, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etap 6 wykorzystuje ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 7, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–7 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 
@@ -131,11 +141,16 @@ firmowe dni zastępcze wpisuje administrator. [Zasady kalendarza](docs/CALENDAR.
 
 ## Codzienna praca
 
-Proces wniosków etapu 6 jest dostępny w `/api/requests`. Wymaga sesji logowania,
+Proces wniosków etapów 6–7 jest dostępny w `/api/requests`. Wymaga sesji logowania,
 CSRF, przypisania pracownika oraz jego danych początkowych; rodzaj obciążający
 saldo wymaga też skonfigurowanego limitu danego roku. Złożenie rezerwuje godziny,
 akceptacja nie potrąca ich ponownie, a odrzucenie i wycofanie zwalniają rezerwację.
 Dzisiejszy dzień jest dozwolony do jego końca w Warszawie. Odrzucenie wymaga powodu.
+Propozycja zmiany chroni dotychczasowy termin oraz rezerwuje tylko dodatkowe godziny
+w odpowiednich latach i pulach. Skrócenie lub anulowanie zwraca saldo po decyzji.
+Korekty wcześniejszych dat wymagają uprawnionej osoby, uzasadnienia, świeżego
+podglądu i potwierdzenia. Zwiększenie historycznego niedoboru zatwierdza wyłącznie
+administrator; nie można w ten sposób finansować nowych przyszłych godzin.
 Kontrakt, przejścia stanów i przykłady: [API wniosków](docs/REQUESTS_API.md).
 
 ```bash
@@ -196,7 +211,7 @@ Build frontendu:
 docker compose exec -T node npm run build
 ```
 
-GitHub Actions w `.github/workflows/checks.yml` definiuje kontrole startu, API, bazy, powtórzenia migracji, zgodności schematu, ponownego ładowania demo, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli. Scenariusze przeglądarkowe logowania, administracji, salda i kalendarza firmowego w Chrome używają jawnie syntetycznych odpowiedzi API i sprawdzają zachowanie ekranów; prawdziwy backend jest sprawdzany osobnymi testami HTTP z MySQL. Dodatkowy przebieg logowania przez Nginx i PHP-FPM potwierdza działanie cookie, CSRF, wymuszonej zmiany hasła, tworzenia słowników/kont, konfliktów wersji, danych początkowych, korekt, niedoboru, zmiany kalendarza, izolacji pracownika i wylogowania w uruchomionym stosie. Narzędzie `playwright-core@1.62.1` jest instalowane tylko na czas kontroli CI, poza zależnościami aplikacji.
+GitHub Actions w `.github/workflows/checks.yml` definiuje kontrole startu, API, bazy, powtórzenia migracji, zgodności schematu, ponownego ładowania demo, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli. Scenariusze przeglądarkowe logowania, administracji, salda i kalendarza firmowego w Chrome używają jawnie syntetycznych odpowiedzi API i sprawdzają zachowanie ekranów; prawdziwy backend jest sprawdzany osobnymi testami HTTP z MySQL. Dodatkowy przebieg przez Nginx i PHP-FPM potwierdza działanie cookie, CSRF, wymuszonej zmiany hasła, tworzenia słowników/kont, konfliktów wersji, danych początkowych, korekt, niedoboru, zmiany kalendarza, izolacji pracownika i wylogowania. Obejmuje również składanie i decyzje wniosków, zmiany zatwierdzonych urlopów, anulowanie, różnicowe rezerwacje, terminy zwrotów oraz potwierdzone korekty historyczne z niedoborem administratora i idempotencją. Narzędzie `playwright-core@1.62.1` jest instalowane tylko na czas kontroli CI, poza zależnościami aplikacji.
 
 Opcjonalne procesy Messenger/Scheduler uruchamia `make workers`. Używają transportów `async` i `scheduler_default`; nie wykonują jeszcze zadań urlopowych. Biblioteka `symfony/amqp-messenger` zapewnia obsługę istniejącego transportu RabbitMQ. Zwykły start aplikacji nie wymaga uruchamiania workerów.
 

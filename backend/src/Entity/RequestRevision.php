@@ -160,6 +160,20 @@ class RequestRevision
                     throw new \DomainException('A calendar correction must use the exact captured assignment for every date.');
                 }
             }
+        } elseif (null !== $baseRevision) {
+            // A proposal retains the approved rules within the old requested range.
+            // New dates outside it capture the assignment valid on those dates.
+            $this->captureEditedContext($baseRevision);
+            foreach ($days as $day) {
+                $key = $day->date->format('Y-m-d');
+                if ($key >= $baseRevision->getStartDate()->format('Y-m-d') && $key <= $baseRevision->getEndDate()->format('Y-m-d')
+                    && $baseRevision->capturedAssignmentFor($day->date) !== $day->assignment) {
+                    throw new \DomainException('A change must retain the captured assignment inside the approved range.');
+                }
+                if (!$this->preservesAssignment($day->assignment, $day->date)) {
+                    throw new \DomainException('A change needs a captured or currently valid assignment for every date.');
+                }
+            }
         } else {
             foreach ($request->getUser()->getAssignments() as $assignment) {
                 if ($assignment->getValidFrom()->format('Y-m-d') <= $this->endDate->format('Y-m-d')

@@ -57,6 +57,30 @@ final class RequestController extends AbstractController
         return $this->execute(fn (User $actor): JsonResponse => $this->json(['operation' => $this->workflow->edit($actor, $id, $this->read($request))]));
     }
 
+    #[Route('/api/requests/{id}/change', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]
+    public function change(int $id, Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['operation' => $this->workflow->proposeChange($actor, $id, $this->read($request))]));
+    }
+
+    #[Route('/api/requests/{id}/cancel', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]
+    public function cancel(int $id, Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['operation' => $this->workflow->proposeCancellation($actor, $id, $this->read($request))]));
+    }
+
+    #[Route('/api/requests/{id}/correction-preview', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]
+    public function correctionPreview(int $id, Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['preview' => $this->workflow->previewCorrection($actor, $id, $this->read($request))]));
+    }
+
+    #[Route('/api/requests/{id}/correct', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]
+    public function correct(int $id, Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['operation' => $this->workflow->correct($actor, $id, $this->read($request))]));
+    }
+
     #[Route('/api/requests/{id}/withdraw', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]
     public function withdraw(int $id, Request $request): JsonResponse
     {

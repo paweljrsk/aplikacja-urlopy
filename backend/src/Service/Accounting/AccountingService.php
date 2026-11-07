@@ -322,7 +322,7 @@ final class AccountingService
      * This method neither commits nor changes decisions. It reconciles the exact effective and
      * pending snapshots, preserving the immutable event/ledger trail and daily occupancy.
      */
-    public function reconcileRequest(LeaveRequest $request, AuditEvent $event, bool $allowDeficit = false): void
+    public function reconcileRequest(LeaveRequest $request, AuditEvent $event, bool $allowDeficit = false, bool $historicalDeficitOnly = false): void
     {
         if (!$this->em->getConnection()->isTransactionActive()) {
             throw new \LogicException('Request reconciliation requires an enclosing transaction.');
@@ -356,40 +356,25 @@ final class AccountingService
             }
         }
         $oldLedger = $this->requestLedger($request);
-        $oldBudget = [];
-        $oldCurrentPoolFunding = [];
-        foreach ($oldLedger as $row) {
-            $year = $row['account']->getYear();
-            $oldBudget[$year] = ($oldBudget[$year] ?? 0) + $row['reserved'] + $row['charged'];
-            if ($row['pool']->getOriginYear() === $year) {
-                $oldCurrentPoolFunding[$year] = ($oldCurrentPoolFunding[$year] ?? 0) + $row['reserved'] + $row['charged'];
-            }
-            if (0 !== $row['reserved'] || 0 !== $row['charged']) {
-                $this->line($row['account'], $row['pool'], $event, LedgerEntryKind::ADJUSTMENT, 0, -$row['reserved'], -$row['charged'], $row['day']);
-            }
-        }
-        $this->em->flush();
         $effective = $request->getEffectiveRevision();
         $pending = $request->getPendingRevision();
         $desiredOccupancy = [];
-        $effectiveHours = [];
-        /** @var list<array{day: RequestDay, amount: int, charged: bool}> $desired */
-        $desired = [];
+        /** @var list<array{day: RequestDay, amount: int, charged: bool}> $effectiveDemand */
+        $effectiveDemand = [];
+        /** @var list<array{day: RequestDay, amount: int, charged: bool}> $pendingDemand */
+        $pendingDemand = [];
         foreach ($effective?->getDays() ?? [] as $day) {
-            $key = $day->getDate()->format('Y-m-d');
-            $desiredOccupancy[$key] = $day->getHours();
+            $desiredOccupancy[$day->getDate()->format('Y-m-d')] = $day->getHours();
             if ($effective->getPolicy()->deductsBalance()) {
-                $effectiveHours[$key] = $day->getHours();
-                $desired[] = ['day' => $day, 'amount' => $day->getHours(), 'charged' => true];
+                $effectiveDemand[] = ['day' => $day, 'amount' => $day->getHours(), 'charged' => true];
             }
         }
         if (null !== $pending && RequestChangeKind::CANCELLATION !== $pending->getKind()) {
             foreach ($pending->getDays() as $day) {
-                $key = $day->getDate()->format('Y-m-d');
-                $desiredOccupancy[$key] = max($desiredOccupancy[$key] ?? 0, $day->getHours());
+                $date = $day->getDate()->format('Y-m-d');
+                $desiredOccupancy[$date] = max($desiredOccupancy[$date] ?? 0, $day->getHours());
                 if ($pending->getPolicy()->deductsBalance()) {
-                    $extra = max(0, $day->getHours() - ($effectiveHours[$key] ?? 0));
-                    if ($extra > 0) { $desired[] = ['day' => $day, 'amount' => $extra, 'charged' => false]; }
+                    $pendingDemand[] = ['day' => $day, 'amount' => $day->getHours(), 'charged' => false];
                 }
             }
         }
@@ -398,31 +383,97 @@ final class AccountingService
                 throw new CredentialsException('BEFORE_OPENING', 'Nieobecności sprzed rozpoczęcia ewidencji popraw przez dane początkowe.');
             }
         }
-        $newBudget = [];
-        $newNonCarryBudget = [];
-        foreach ($desired as $item) {
-            $day = $item['day'];
-            $year = (int) $day->getDate()->format('Y');
-            $newBudget[$year] = ($newBudget[$year] ?? 0) + $item['amount'];
-            if (!$day->getAssignment()->getEmploymentType()->carriesUnusedHours()) {
-                $newNonCarryBudget[$year] = ($newNonCarryBudget[$year] ?? 0) + $item['amount'];
-            }
-            if (null === $opening || $day->getDate()->format('Y-m-d') < $opening['effectiveDate']) {
-                throw new CredentialsException('BEFORE_OPENING', 'Nieobecności sprzed rozpoczęcia ewidencji popraw przez dane początkowe.');
-            }
+        foreach ([...$effectiveDemand, ...$pendingDemand] as $item) {
+            $year = (int) $item['day']->getDate()->format('Y');
             if (null === $this->findAccount($subject, $year)?->getAnnualLimitHours()) {
                 throw new CredentialsException('LIMIT_NOT_CONFIGURED', 'Brak ustawionego limitu na rok '.$year.'.');
             }
+            // A configured zero limit may not have needed a physical pool until now.
+            $this->pool($subject, $year);
         }
-        usort($desired, static fn (array $a, array $b): int => [$a['day']->getDate()->format('Y-m-d'), !$a['charged']] <=> [$b['day']->getDate()->format('Y-m-d'), !$b['charged']]);
-        foreach ($desired as $item) {
+        /** @var array<int, array{pool: HourPool, free: int, originalFree: int}> $pools */
+        $pools = [];
+        foreach ($this->poolTotals($subject) as $row) {
+            $free = $row['allocated'] - $row['reserved'] - $row['charged'];
+            $pools[$row['pool']->getOriginYear()] = ['pool' => $row['pool'], 'free' => $free, 'originalFree' => $free];
+        }
+        /** Funding already committed to this request is reusable only in its leave year.
+         * @var array<int, array<int, int>> $credits */
+        $credits = [];
+        foreach ($oldLedger as $row) {
+            $amount = $row['reserved'] + $row['charged'];
+            if ($amount < 0) { throw new \LogicException('A request funding row cannot be negative.'); }
+            $year = $row['account']->getYear();
+            $origin = $row['pool']->getOriginYear();
+            $credits[$year][$origin] = ($credits[$year][$origin] ?? 0) + $amount;
+            $pools[$origin]['free'] += $amount;
+        }
+        /** @var list<array{day: RequestDay, pool: HourPool, amount: int, charged: bool}> $plan */
+        $plan = [];
+        /** @var array<int, array<int, int>> $effectiveFunding */
+        $effectiveFunding = [];
+        /** @var array<int, int> $permittedDebt */
+        $permittedDebt = [];
+        $this->sortDemand($effectiveDemand);
+        // Existing approved days keep their exact origin, including an explicitly recorded
+        // deficit. A pending proposal must not silently refinance the still-effective leave.
+        foreach ($effectiveDemand as &$item) {
+            foreach ($oldLedger as $row) {
+                if ($row['day'] !== $item['day'] || $row['charged'] <= 0) { continue; }
+                $amount = min($item['amount'], $row['charged']);
+                $origin = $row['pool']->getOriginYear();
+                $year = $row['account']->getYear();
+                $credits[$year][$origin] -= $amount;
+                $this->planFunding($item['day'], $amount, true, $origin, $pools, $plan, $effectiveFunding);
+                $item['amount'] -= $amount;
+            }
+        }
+        unset($item);
+        foreach ($effectiveDemand as &$item) {
+            $this->reuseFunding($item, $credits, $pools, $plan, $effectiveFunding);
+        }
+        unset($item);
+        foreach ($effectiveDemand as $item) {
+            $this->planFreshFunding($item, $event, $allowDeficit, $historicalDeficitOnly, $pools, $plan, $effectiveFunding, $permittedDebt);
+        }
+        // Compare obligations by leave year AND eligible origin, not by date. Different
+        // dates still hold both daily slots, but the same covered annual hours are not
+        // reserved twice. Current-only employment consumes matching current funding first.
+        $this->sortDemand($pendingDemand);
+        $coverage = $effectiveFunding;
+        foreach ($pendingDemand as &$item) {
             $year = (int) $item['day']->getDate()->format('Y');
-            // An existing deficit may be retained, but changing to non-carry employment
-            // cannot turn an old carry-funded commitment into an unfunded annual one.
-            // Both the whole year's commitment and its restricted current-pool subset matter.
-            $preservesCommitment = ($newBudget[$year] ?? 0) <= ($oldBudget[$year] ?? 0)
-                && ($newNonCarryBudget[$year] ?? 0) <= ($oldCurrentPoolFunding[$year] ?? 0);
-            $this->allocate($item['day'], $item['amount'], $item['charged'], $event, $allowDeficit || $preservesCommitment);
+            foreach (array_keys($coverage[$year] ?? []) as $origin) {
+                if (!$this->eligibleForDay($item['day'], $origin)) { continue; }
+                $amount = min($item['amount'], $coverage[$year][$origin]);
+                $coverage[$year][$origin] -= $amount;
+                $item['amount'] -= $amount;
+                if (0 === $item['amount']) { break; }
+            }
+            $this->reuseFunding($item, $credits, $pools, $plan, $effectiveFunding);
+        }
+        unset($item);
+        foreach ($pendingDemand as $item) {
+            $this->planFreshFunding($item, $event, $allowDeficit, $historicalDeficitOnly, $pools, $plan, $effectiveFunding, $permittedDebt);
+        }
+        foreach ($pools as $origin => $row) {
+            // Reusing one old funding right cannot fund two new obligations. This also
+            // prevents relocating an existing shortfall to another pool through an edit.
+            if (max(0, -$row['free']) > max(0, -$row['originalFree']) + ($permittedDebt[$origin] ?? 0)) {
+                throw new CredentialsException('INSUFFICIENT_BALANCE', 'Zmiana zwiększyłaby niedobór w puli '.$origin.'.');
+            }
+        }
+        // Append compensating lines and the exact planned funding. No other request is
+        // rewritten and cancellation returns hours to the origins from which they came.
+        foreach ($oldLedger as $row) {
+            if (0 !== $row['reserved'] || 0 !== $row['charged']) {
+                $this->line($row['account'], $row['pool'], $event, LedgerEntryKind::ADJUSTMENT, 0, -$row['reserved'], -$row['charged'], $row['day']);
+            }
+        }
+        foreach ($plan as $item) {
+            $this->line($this->account($subject, (int) $item['day']->getDate()->format('Y')), $item['pool'], $event,
+                $item['charged'] ? LedgerEntryKind::ADJUSTMENT : LedgerEntryKind::RESERVE,
+                0, $item['charged'] ? 0 : $item['amount'], $item['charged'] ? $item['amount'] : 0, $item['day']);
         }
         foreach (array_unique([...array_keys($state->getOccupancy()), ...array_keys($desiredOccupancy)]) as $date) {
             $delta = ($desiredOccupancy[$date] ?? 0) - ($state->getOccupancy()[$date] ?? 0);
@@ -480,28 +531,119 @@ final class AccountingService
         });
     }
 
-    private function allocate(RequestDay $day, int $amount, bool $charged, AuditEvent $event, bool $allowDeficit): void
+    /** Historical corrections must also validate the original dates when their final
+     * state has no occupancy (for example cancellation of a legacy request).
+     * @param list<\DateTimeImmutable> $dates
+     */
+    public function assertWithinRecordingPeriod(User $subject, array $dates): void
     {
-        $subject = $day->getUser();
+        $opening = $this->openingValues($subject);
+        if (null === $opening) {
+            throw new CredentialsException('BEFORE_OPENING', 'Nieobecności sprzed rozpoczęcia ewidencji popraw przez dane początkowe.');
+        }
+        foreach ($dates as $date) {
+            if ($date->format('Y-m-d') < $opening['effectiveDate']) {
+                throw new CredentialsException('BEFORE_OPENING', 'Nieobecności sprzed rozpoczęcia ewidencji popraw przez dane początkowe.');
+            }
+        }
+    }
+
+    /** Internal data for preview comparisons; callers apply current balance-read access
+     * before exposing these rows. Never includes audit, identities or other requests.
+     * @return list<array{originYear: int, allocatedHours: int, reservedHours: int, chargedHours: int, availableHours: int}>
+     */
+    public function impactSnapshot(User $subject): array
+    {
+        return array_map(static fn (array $row): array => [
+            'originYear' => $row['pool']->getOriginYear(), 'allocatedHours' => $row['allocated'],
+            'reservedHours' => $row['reserved'], 'chargedHours' => $row['charged'],
+            'availableHours' => $row['allocated'] - $row['reserved'] - $row['charged'],
+        ], $this->poolTotals($subject));
+    }
+
+    /** @param list<array{day: RequestDay, amount: int, charged: bool}> $demand */
+    private function sortDemand(array &$demand): void
+    {
+        usort($demand, static fn (array $a, array $b): int => [
+            (int) $a['day']->getDate()->format('Y'), $a['day']->getAssignment()->getEmploymentType()->carriesUnusedHours(), $a['day']->getDate()->format('Y-m-d'),
+        ] <=> [
+            (int) $b['day']->getDate()->format('Y'), $b['day']->getAssignment()->getEmploymentType()->carriesUnusedHours(), $b['day']->getDate()->format('Y-m-d'),
+        ]);
+    }
+
+    private function eligibleForDay(RequestDay $day, int $origin): bool
+    {
+        return $this->eligible($day->getUser(), $origin, (int) $day->getDate()->format('Y'), $day->getAssignment()->getEmploymentType()->carriesUnusedHours());
+    }
+
+    /** @param array{day: RequestDay, amount: int, charged: bool} $item
+     * @param array<int, array<int, int>> $credits
+     * @param array<int, array{pool: HourPool, free: int, originalFree: int}> $pools
+     * @param list<array{day: RequestDay, pool: HourPool, amount: int, charged: bool}> $plan
+     * @param array<int, array<int, int>> $effectiveFunding
+     */
+    private function reuseFunding(array &$item, array &$credits, array &$pools, array &$plan, array &$effectiveFunding): void
+    {
+        $year = (int) $item['day']->getDate()->format('Y');
+        if (isset($credits[$year])) { ksort($credits[$year]); }
+        foreach (array_keys($credits[$year] ?? []) as $origin) {
+            if (!$this->eligibleForDay($item['day'], $origin)) { continue; }
+            $amount = min($item['amount'], $credits[$year][$origin]);
+            $credits[$year][$origin] -= $amount;
+            $item['amount'] -= $amount;
+            $this->planFunding($item['day'], $amount, $item['charged'], $origin, $pools, $plan, $effectiveFunding);
+            if (0 === $item['amount']) { break; }
+        }
+    }
+
+    /** @param array<int, array{pool: HourPool, free: int, originalFree: int}> $pools
+     * @param list<array{day: RequestDay, pool: HourPool, amount: int, charged: bool}> $plan
+     * @param array<int, array<int, int>> $effectiveFunding
+     */
+    private function planFunding(RequestDay $day, int $amount, bool $charged, int $origin, array &$pools, array &$plan, array &$effectiveFunding): void
+    {
+        if ($amount <= 0) { return; }
+        $row = $pools[$origin] ?? throw new \LogicException('Planned funding requires an existing origin pool.');
+        $pools[$origin] = ['pool' => $row['pool'], 'free' => $row['free'] - $amount, 'originalFree' => $row['originalFree']];
+        $plan[] = ['day' => $day, 'pool' => $row['pool'], 'amount' => $amount, 'charged' => $charged];
+        if ($charged) {
+            $year = (int) $day->getDate()->format('Y');
+            $effectiveFunding[$year][$origin] = ($effectiveFunding[$year][$origin] ?? 0) + $amount;
+        }
+    }
+
+    /** @param array{day: RequestDay, amount: int, charged: bool} $item
+     * @param array<int, array{pool: HourPool, free: int, originalFree: int}> $pools
+     * @param list<array{day: RequestDay, pool: HourPool, amount: int, charged: bool}> $plan
+     * @param array<int, array<int, int>> $effectiveFunding
+     * @param array<int, int> $permittedDebt
+     */
+    private function planFreshFunding(array $item, AuditEvent $event, bool $allowDeficit, bool $historicalDeficitOnly, array &$pools, array &$plan, array &$effectiveFunding, array &$permittedDebt): void
+    {
+        $amount = $item['amount'];
+        if (0 === $amount) { return; }
+        $day = $item['day'];
         $year = (int) $day->getDate()->format('Y');
-        $carry = $day->getAssignment()->getEmploymentType()->carriesUnusedHours();
-        $eligible = array_values(array_filter($this->poolTotals($subject), fn (array $row): bool => $this->eligible($subject, $row['pool']->getOriginYear(), $year, $carry)));
-        $free = array_sum(array_map(static fn (array $row): int => $row['allocated'] - $row['reserved'] - $row['charged'], $eligible));
-        if (!$allowDeficit && $free < $amount) {
+        $mayBorrow = $allowDeficit && (!$historicalDeficitOnly || $day->getDate()->format('Y-m-d') < $this->today()->format('Y-m-d'));
+        $eligible = array_keys(array_filter($pools, fn (array $row): bool => $this->eligibleForDay($day, $row['pool']->getOriginYear())));
+        sort($eligible, SORT_NUMERIC);
+        $free = array_sum(array_map(static fn (int $origin): int => $pools[$origin]['free'], $eligible));
+        if (!$mayBorrow && $free < $amount) {
             throw new CredentialsException('INSUFFICIENT_BALANCE', 'Brak dostępnego salda na rok '.$year.'.');
         }
-        $account = $this->account($subject, $year);
-        foreach ($eligible as $row) {
-            $part = min($amount, max(0, $row['allocated'] - $row['reserved'] - $row['charged']));
-            if ($part < 1) { continue; }
-            $this->line($account, $row['pool'], $event, $charged ? LedgerEntryKind::ADJUSTMENT : LedgerEntryKind::RESERVE, 0, $charged ? 0 : $part, $charged ? $part : 0, $day);
+        foreach ($eligible as $origin) {
+            $part = min($amount, max(0, $pools[$origin]['free']));
+            $this->planFunding($day, $part, $item['charged'], $origin, $pools, $plan, $effectiveFunding);
             $amount -= $part;
             if (0 === $amount) { break; }
         }
         if ($amount > 0) {
-            $this->line($account, $this->pool($subject, $year), $event, LedgerEntryKind::ADJUSTMENT, 0, $charged ? 0 : $amount, $charged ? $amount : 0, $day);
+            if (!$mayBorrow || !$event->getActor()?->isAdministrator()) {
+                throw new CredentialsException('INSUFFICIENT_BALANCE', 'Brak pokrycia w dozwolonych pulach godzin.');
+            }
+            $this->planFunding($day, $amount, $item['charged'], $year, $pools, $plan, $effectiveFunding);
+            $permittedDebt[$year] = ($permittedDebt[$year] ?? 0) + $amount;
         }
-        $this->em->flush();
     }
 
     private function start(User $actor, User $subject): void
