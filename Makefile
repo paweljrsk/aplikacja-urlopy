@@ -68,7 +68,7 @@ demo: ## Explicitly load synthetic data into an empty development database (no p
 lint: ## Run backend lint/static analysis and frontend lint/type check
 	$(COMPOSE) exec -T php php bin/console lint:yaml config
 	$(COMPOSE) exec -T php php bin/console lint:container
-	$(COMPOSE) exec -T php vendor/bin/phpstan analyse --no-progress
+	$(COMPOSE) exec -T php vendor/bin/phpstan analyse --no-progress --memory-limit=512M
 	$(COMPOSE) exec -T node npm run lint
 	$(COMPOSE) exec -T node npx --no-install tsc --noEmit
 

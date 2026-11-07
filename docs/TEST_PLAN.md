@@ -430,3 +430,12 @@ kalendarza przy odczycie dat po transferze. Uruchomienie, migracje i zachowanie
 starych danych przeszły. Przyczynę i poprawkę porównywania SQL DATE niezależnie
 od domyślnej strefy PHP opisuje E08 w DECISIONS. Testów późniejszych kroków tego
 przebiegu nie oznaczamy jako wykonanych.
+
+### Drugi odbiór Docker etapu 5 — CI #19
+
+[CI #19](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42356996669)
+na `bc55fe2d33d716614bb62c4e56e239e35689f79b` zaliczyło migracje i pełny PHPUnit
+268 testów / 6832 asercje. Następnie PHPStan przekroczył domyślny limit PHP 128 MB.
+Polecenie `make lint` przydziela teraz wyłącznie PHPStan limit 512 MB, zgodny
+z lokalną weryfikacją; limit procesów aplikacji pozostaje bez zmian.
+Build i testy Chrome/HTTP tego przebiegu zostały pominięte po błędzie analizy.
