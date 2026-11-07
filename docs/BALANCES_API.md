@@ -1,6 +1,6 @@
 # API limitów, salda i kalendarza roboczego
 
-Kontrakt etapu 5. Reguły rozliczeń i wzór salda opisuje [ACCOUNTING.md](ACCOUNTING.md).
+Kontrakt etapu 5, rozszerzony o podglądy formularzy w etapie 10. Reguły rozliczeń i wzór salda opisuje [ACCOUNTING.md](ACCOUNTING.md).
 Opis endpointów nie stanowi potwierdzenia przejścia testów; wyniki są w
 [TEST_PLAN.md](TEST_PLAN.md).
 
@@ -14,6 +14,7 @@ limitów i dni firmowych.
 | Operacja | Pracownik | Kierownik | Zastępca | Administrator |
 |---|---|---|---|---|
 | Odczyt salda | Własne | Własne i bieżącego zespołu | Własne i bieżącego zespołu | Wszystkie |
+| Podgląd limitu lub danych początkowych | Nie | Bieżący zespół, z wyjątkiem własnych danych | Nie | Wszystkie, także własne |
 | Limity i dane początkowe | Nie | Bieżący zespół, z wyjątkiem własnych danych | Nie | Wszystkie, także własne |
 | Odczyt kalendarza roboczego | Tak | Tak | Tak | Tak |
 | Podgląd i zatwierdzenie zmiany dnia firmowego | Nie | Nie | Nie | Tak |
@@ -40,6 +41,9 @@ Udany zapis zwraca kod `200` oraz obiekt `{ "balance": ... }`.
 |---|---|---|
 | `GET /api/balances/people` | Osoby dostępne dla zalogowanego użytkownika | Brak |
 | `GET /api/balances/users/{id}/{year}` | Saldo, pule i historia | Brak |
+| `POST /api/balances/users/{id}/opening-preview` | Podgląd pierwszych danych początkowych | Jak `/opening`, ale bez `operationKey` |
+| `POST /api/balances/users/{id}/{year}/limit-preview` | Podgląd ustawienia lub zmiany limitu | Jak `/limit`, ale bez `operationKey` |
+| `POST /api/balances/users/{id}/opening/corrections-preview` | Podgląd korekty danych początkowych | Jak `/opening/corrections`, ale bez `operationKey` |
 | `POST /api/balances/users/{id}/opening` | Pierwsze dane początkowe | `effectiveDate`, `annualHours`, `currentYearUsedHours`, `carries` |
 | `POST /api/balances/users/{id}/{year}/limit` | Ustawienie albo zmiana limitu rocznego | `annualHours`, `reason` przy zmianie już ustawionego limitu |
 | `POST /api/balances/users/{id}/opening/corrections` | Jawna korekta danych początkowych | `currentYearUsedHours`, kompletna lista `carries`, obowiązkowe `reason`; opcjonalne `effectiveDate` |
@@ -78,6 +82,45 @@ Przykład utworzenia danych początkowych:
   "carries": [{ "originYear": 2025, "remainingHours": 16 }]
 }
 ```
+
+### Podgląd przed zapisem limitów i danych początkowych
+
+Trzy endpointy zakończone `-preview` przyjmują identyczne dane formularza jak
+odpowiadające im zapisy, w tym `expectedVersion`, ale odrzucają `operationKey`.
+Obowiązują te same wymagania uzasadnienia, zakresu dat, pełnych godzin i uprawnień.
+Sam dostęp do odczytu salda nie daje prawa do podglądu zmiany: zastępca nie może
+go wykonać, a kierownik nie może symulować zmiany własnego limitu.
+
+Backend sprawdza uprawnienia i wersję pod blokadą, wykonuje normalną operację
+rozliczeniową, a następnie zawsze wycofuje transakcję. Podgląd nie pozostawia
+przydziałów, danych początkowych, ruchów księgowych, audytu ani zmiany wersji.
+Zmodyfikowane encje ORM są odłączane po wycofaniu. CSRF jest wymagany również
+przy tym odczycie wykonywanym przez `POST`.
+
+Odpowiedź HTTP `200` ma postać `{ "preview": ... }`:
+
+| Pole `preview` | Znaczenie |
+|---|---|
+| `userId` | Pracownik, którego dotyczy podgląd |
+| `year` | Rok limitu albo rok rozpoczęcia ewidencji dla danych początkowych i ich korekty |
+| `version` | Oryginalna wersja salda przed podglądem |
+| `before`, `after` | Rzeczywisty stan przed zmianą i symulowany stan po niej |
+
+`before` i `after` zawierają wyłącznie: `configured`, `annualHours`, `opening`,
+`carriedHours`, `allocatedHours`, `openingUsedHours`, `usedHours`,
+`approvedFutureHours`, `reservedHours`, `changeReservedHours`, `availableHours`,
+`deficitHours`, `displayAvailable`, `pools`. Nie zawierają historii ani wersji
+hipotetycznego zapisu. Struktury `opening` i `pools` odpowiadają opisowi salda poniżej.
+Podgląd pokazuje również ujemne saldo, jeśli dozwolona korekta powoduje niedobór.
+
+Interfejs pokazuje wpływ i prosi o potwierdzenie przed wywołaniem dotychczasowego
+endpointu zapisu z tą samą treścią formularza i nowym `operationKey`. Zmiana pola
+formularza usuwa wcześniejszy podgląd. API podstawowych limitów i danych
+początkowych nie wymaga `previewToken` ani dodatkowego pola `confirm`; zapis
+ponownie sprawdza `expectedVersion` i uprawnienia oraz stosuje zwykłą idempotencję.
+Po utracie potwierdzenia należy ponowić identyczny zapis z tym samym kluczem,
+a po konflikcie pobrać aktualny stan i nowy podgląd. Tokeny i potwierdzenia zmian
+dni firmowych oraz historycznych korekt wniosków zachowują osobne dotychczasowe zasady.
 
 ### Odpowiedź listy osób
 

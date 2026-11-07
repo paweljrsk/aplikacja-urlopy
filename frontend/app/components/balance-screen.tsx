@@ -4,10 +4,13 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, getApi, postApi, redirectForAuthError, type CurrentUser } from "@/lib/auth-api";
 import { displayDate } from "@/lib/admin-api";
 import { balanceError, hoursLabel, wholeNumber, type Balance, type BalancePerson, type Carry, type PeopleResponse } from "@/lib/balance-api";
+import { BalanceImpactPreview, type BalancePreview } from "./balance-impact-preview";
+import { TeamBalancesPanel } from "./team-balances-panel";
 import { AccountingField, AccountingGate, AccountingNotice, useOperationKey } from "./accounting-shared";
 
 type Editor = "opening" | "limit" | "correction" | null;
-type Save = (path: string, body: Record<string, unknown>, message: string) => Promise<void>;
+type SaveResult = "saved" | "uncertain" | "failed";
+type Save = (path: string, body: Record<string, unknown>, message: string) => Promise<SaveResult>;
 
 export function BalanceScreen() {
   return <AccountingGate screen="balances">{actor => <BalanceWorkspace actor={actor} />}</AccountingGate>;
@@ -15,6 +18,8 @@ export function BalanceScreen() {
 
 function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
   const [people, setPeople] = useState<BalancePerson[]>([]);
+  const [view, setView] = useState<"person" | "team">("person");
+  const canViewTeam = actor.isAdministrator || actor.role === "manager" || actor.role === "deputy";
   const [personId, setPersonId] = useState(actor.id);
   const [year, setYear] = useState("");
   const [today, setToday] = useState("");
@@ -43,6 +48,7 @@ function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
         const list = await getApi<PeopleResponse>("/api/balances/people");
         if (sequence.current !== request) return;
         setPeople(list.people); setToday(list.today); setYear(String(list.currentYear));
+        if (canViewTeam && new URLSearchParams(window.location.search).get("view") === "team") setView("team");
         const selected = list.people.find(item => item.id === actor.id) ?? list.people[0];
         if (!selected) { setLoading(false); return; }
         setPersonId(selected.id);
@@ -57,7 +63,7 @@ function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
     }
     void start();
     return () => { sequence.current = -1; };
-  }, [actor.id]);
+  }, [actor.id, canViewTeam]);
 
   async function load(id = personId, requestedYear = year) {
     if (pending.current) return;
@@ -83,19 +89,30 @@ function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
   }
 
   const save: Save = async (path, body, message) => {
-    if (pending.current || !balance) return;
+    if (pending.current || !balance) return "failed";
     pending.current = true; setBusy(true); setError(""); setNotice("");
     const request = sequence.current;
     const payload = { ...body, expectedVersion: balance.version };
     try {
       const result = await postApi<{ balance: Balance }>(path, { ...payload, operationKey: keyFor({ path, ...payload }) });
-      if (sequence.current !== request) return;
+      if (sequence.current !== request) return "saved";
       setBalance(result.balance); setYear(String(result.balance.year)); setEditor(null); setNotice(message);
-    } catch (failure) { if (sequence.current === request) fail(failure); }
-    finally { pending.current = false; setBusy(false); }
+      return "saved";
+    } catch (failure) {
+      if (sequence.current === request) fail(failure);
+      return failure instanceof ApiError && (failure.status === 0 || failure.status >= 500 || failure.code === "INVALID_RESPONSE") ? "uncertain" : "failed";
+    } finally { pending.current = false; setBusy(false); }
   };
 
+  function changeView(next: "person" | "team") {
+    if (busy) return;
+    setView(next); setEditor(null); setError(""); setNotice("");
+    window.history.replaceState(null, "", next === "team" ? "/balances?view=team" : "/balances");
+  }
+
   return <>
+    {canViewTeam && <div className="balance-view-tabs" role="group" aria-label="Widok sald"><button type="button" className="button button-secondary" disabled={busy} aria-pressed={view === "person"} onClick={() => changeView("person")}>Saldo osoby</button><button type="button" className="button button-secondary" disabled={busy} aria-pressed={view === "team"} onClick={() => changeView("team")}>Salda zespołu</button></div>}
+    {view === "team" && canViewTeam ? (today ? <TeamBalancesPanel initialYear={String(balance?.year ?? Number(today.slice(0, 4)))} onSelect={(selected, selectedYear) => { setPeople(previous => [...previous.filter(item => item.id !== selected.id), selected]); changeView("person"); void load(selected.id, selectedYear); }} /> : error ? <AccountingNotice>{error}<button type="button" className="text-button" onClick={() => window.location.reload()}>Spróbuj ponownie</button></AccountingNotice> : <p role="status">Wczytywanie zestawienia…</p>) : <>
     {error && <AccountingNotice>{error}<div className="notice-actions"><button className="text-button" disabled={busy || loading} onClick={() => void load()}>Wczytaj aktualne dane</button></div></AccountingNotice>}
     {notice && <AccountingNotice kind="success">{notice}</AccountingNotice>}
     {people.length > 0 && <form className="balance-filters" onSubmit={event => { event.preventDefault(); void load(); }}><fieldset disabled={busy || loading} className="admin-fieldset balance-filter-fields">
@@ -122,10 +139,11 @@ function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
         {!balance.opening && <button className="button button-primary" disabled={busy} onClick={() => setEditor("opening")}>Ustaw dane początkowe</button>}
         {balance.opening && <><button className="button button-primary" disabled={busy} onClick={() => setEditor("limit")}>{balance.configured ? "Zmień limit roczny" : "Ustaw limit roczny"}</button><button className="button button-secondary" disabled={busy} onClick={() => void openCorrection()}>Koryguj dane początkowe</button><button className="button button-secondary" disabled={busy || balance.year > Number(today.slice(0, 4))} onClick={() => void save(`/api/balances/users/${personId}/${balance.year}/settle`, {}, "Rozliczenie roku jest aktualne. Powtórzenie nie dodaje godzin drugi raz.")}>Rozlicz rok {balance.year}</button></>}
       </div><p className="field-hint">Zmiany zapisują autora, czas i poprzednie wartości. Korekta może wykazać niedobór; nie anuluje urlopów.</p></div> : <p className="field-hint">{actor.role === "manager" && actor.id === personId && !actor.isAdministrator ? "Twój limit i dane początkowe zmienia administrator." : "Masz dostęp do odczytu. Limity ustawia kierownik lub administrator."}</p>}
-      {editor && person.canManage && <BalanceEditor key={`${personId}:${balance.year}:${balance.version}:${editor}`} kind={editor} balance={balance} person={person} busy={busy} today={today} save={save} close={() => setEditor(null)} />}
+      {editor && person.canManage && <BalanceEditor key={`${personId}:${balance.year}:${balance.version}:${editor}`} kind={editor} balance={balance} person={person} busy={busy} today={today} save={save} onAccessError={fail} close={() => setEditor(null)} />}
       {balance.opening && <section className="balance-section" aria-labelledby="opening-title"><h2 id="opening-title">Dane początkowe</h2><p className="field-hint">Bieżące wartości po korektach. Wcześniejsze wersje pozostają w historii.</p><dl className="balance-breakdown"><div><dt>Początek ewidencji</dt><dd>{displayDate(balance.opening.effectiveDate)}</dd></div><div><dt>Limit roku rozpoczęcia</dt><dd>{hoursLabel(balance.opening.annualHours)}</dd></div><div><dt>Wykorzystane z bieżącej puli przed startem</dt><dd>{balance.opening.currentYearUsedHours} h</dd></div>{balance.opening.carries.map(carry => <div key={carry.originYear}><dt>Pozostałość z {carry.originYear} na dzień startu</dt><dd>{carry.remainingHours} h</dd></div>)}</dl></section>}
       {balance.pools.length > 0 && <section className="balance-section" aria-labelledby="pools-title"><h2 id="pools-title">Pule godzin według pochodzenia</h2><div className="accounting-table-scroll"><table className="accounting-table"><thead><tr><th scope="col">Rok puli</th><th scope="col">Przydział</th><th scope="col">Rezerwacje</th><th scope="col">Obciążenia</th><th scope="col">Pozostało</th><th scope="col">Dostępność w {balance.year}</th></tr></thead><tbody>{balance.pools.map(pool => <tr key={pool.originYear}><th scope="row">{pool.originYear}</th><td>{pool.allocatedHours} h</td><td>{pool.reservedHours} h</td><td>{pool.chargedHours} h</td><td>{pool.availableHours} h</td><td>{pool.eligible ? "Dostępna" : "Niedostępna w tym roku"}</td></tr>)}</tbody></table></div><p className="field-hint">Ta sama pula jest wspólna dla lat korzystających z zaległości. Nie sumuj jej ponownie między latami.</p></section>}
       <section className="balance-section" aria-labelledby="history-title"><h2 id="history-title">Historia rozliczeń</h2>{balance.history.length === 0 ? <p className="field-hint">Brak zapisanych operacji.</p> : <ol className="balance-history">{balance.history.map(item => <li key={item.id}><div><strong>{actionLabel(item.action)}</strong><span>{new Intl.DateTimeFormat("pl-PL", { timeZone: "Europe/Warsaw", dateStyle: "short", timeStyle: "short" }).format(new Date(item.occurredAt))} · {item.actorName ?? "System"}</span></div>{item.reason && <p>{item.reason}</p>}<HistoryValues before={item.before} after={item.after} /></li>)}</ol>}</section>
+    </>}
     </>}
   </>;
 }
@@ -162,7 +180,7 @@ function HistoryValues({ before, after }: { before: Record<string, unknown>; aft
 }
 
 type CarryRow = { key: number; originYear: string; remainingHours: string };
-function BalanceEditor({ kind, balance, person, busy, today, save, close }: { kind: Exclude<Editor, null>; balance: Balance; person: BalancePerson; busy: boolean; today: string; save: Save; close: () => void }) {
+function BalanceEditor({ kind, balance, person, busy, today, save, onAccessError, close }: { kind: Exclude<Editor, null>; balance: Balance; person: BalancePerson; busy: boolean; today: string; save: Save; onAccessError: (failure: unknown) => void; close: () => void }) {
   const [annual, setAnnual] = useState(String(kind === "opening" ? "" : balance.annualHours ?? ""));
   const [unit, setUnit] = useState("hours");
   const [date, setDate] = useState(balance.opening?.effectiveDate ?? (Number(today.slice(0, 4)) === balance.year ? today : `${balance.year}-01-01`));
@@ -170,6 +188,13 @@ function BalanceEditor({ kind, balance, person, busy, today, save, close }: { ki
   const [carries, setCarries] = useState<CarryRow[]>((balance.opening?.carries ?? []).map((item, key) => ({ key, originYear: String(item.originYear), remainingHours: String(item.remainingHours) })));
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+  const [preview, setPreview] = useState<BalancePreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [uncertain, setUncertain] = useState(false);
+  const prepared = useRef<{ path: string; body: Record<string, unknown>; message: string } | null>(null);
+  const previewSequence = useRef(0);
+  const saving = useRef(false);
   const nextKey = useRef(carries.length);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
@@ -177,31 +202,66 @@ function BalanceEditor({ kind, balance, person, busy, today, save, close }: { ki
   let converted: number | null = null;
   try { if (annual !== "") converted = wholeNumber(annual, 0, unit === "days" ? 125000 : 1000000) * (unit === "days" ? 8 : 1); } catch { /* Input remains editable before submission. */ }
 
+  function invalidate() {
+    ++previewSequence.current; setPreview(null); setConfirmed(false); setError(""); prepared.current = null;
+  }
+
+  useEffect(() => () => { ++previewSequence.current; }, []);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (busy) return; setError("");
+    event.preventDefault(); if (busy || previewLoading || uncertain) return;
+    const request = ++previewSequence.current;
+    setPreview(null); setConfirmed(false); setError(""); setPreviewLoading(true); prepared.current = null;
     try {
       const annualHours = kind === "correction" ? 0 : wholeNumber(annual, 0, unit === "days" ? 125000 : 1000000) * (unit === "days" ? 8 : 1);
+      let operation: { path: string; body: Record<string, unknown>; message: string };
       if (kind === "limit") {
-        await save(`/api/balances/users/${person.id}/${balance.year}/limit`, { annualHours, reason: reason.trim() }, "Zapisano limit roczny."); return;
+        operation = { path: `/api/balances/users/${person.id}/${balance.year}/limit`, body: { annualHours, reason: reason.trim() }, message: "Zapisano limit roczny." };
+      } else {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Wybierz poprawną datę rozpoczęcia ewidencji.");
+        const parsed: Carry[] = carries.map(row => ({ originYear: wholeNumber(row.originYear, 1000, Number(date.slice(0, 4)) - 1), remainingHours: wholeNumber(row.remainingHours) }));
+        if (new Set(parsed.map(row => row.originYear)).size !== parsed.length) throw new Error("Każdy rok zaległości może pojawić się tylko raz.");
+        const body = { effectiveDate: date, currentYearUsedHours: wholeNumber(used), carries: parsed };
+        operation = kind === "opening"
+          ? { path: `/api/balances/users/${person.id}/opening`, body: { ...body, annualHours }, message: "Zapisano dane początkowe." }
+          : { path: `/api/balances/users/${person.id}/opening/corrections`, body: { ...body, reason: reason.trim() }, message: "Zapisano korektę danych początkowych." };
       }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Wybierz poprawną datę rozpoczęcia ewidencji.");
-      const parsed: Carry[] = carries.map(row => ({ originYear: wholeNumber(row.originYear, 1000, Number(date.slice(0, 4)) - 1), remainingHours: wholeNumber(row.remainingHours) }));
-      if (new Set(parsed.map(row => row.originYear)).size !== parsed.length) throw new Error("Każdy rok zaległości może pojawić się tylko raz.");
-      const body = { effectiveDate: date, currentYearUsedHours: wholeNumber(used), carries: parsed };
-      if (kind === "opening") await save(`/api/balances/users/${person.id}/opening`, { ...body, annualHours }, "Zapisano dane początkowe.");
-      else await save(`/api/balances/users/${person.id}/opening/corrections`, { ...body, reason: reason.trim() }, "Zapisano korektę danych początkowych.");
-    } catch (failure) { setError(balanceError(failure)); }
+      const result = await postApi<{ preview: BalancePreview }>(`${operation.path}-preview`, { ...operation.body, expectedVersion: balance.version });
+      if (request !== previewSequence.current) return;
+      if (result.preview.userId !== person.id || result.preview.version !== balance.version) throw new ApiError(0, "INVALID_RESPONSE");
+      prepared.current = operation; setPreview(result.preview);
+    } catch (failure) {
+      if (request !== previewSequence.current) return;
+      if (failure instanceof ApiError && (failure.status === 401 || failure.status === 403)) onAccessError(failure);
+      else if (!redirectForAuthError(failure)) setError(balanceError(failure));
+    } finally { if (request === previewSequence.current) setPreviewLoading(false); }
+  }
+
+  async function confirm() {
+    if (saving.current || busy || !confirmed || !preview || !prepared.current) return;
+    saving.current = true;
+    try {
+      const result = await save(prepared.current.path, prepared.current.body, prepared.current.message);
+      if (result === "uncertain") setUncertain(true);
+      else if (result === "failed") invalidate();
+    } finally { saving.current = false; }
   }
 
   return <section className="admin-editor balance-editor" aria-labelledby="balance-editor-title"><div className="reset-heading"><h2 id="balance-editor-title" ref={heading} tabIndex={-1}>{titles[kind]} · {person.firstName} {person.lastName}</h2><button className="text-button" disabled={busy} onClick={close}>Zamknij formularz</button></div>
     {error && <AccountingNotice>{error}</AccountingNotice>}
-    <form onSubmit={event => void submit(event)}><fieldset className="admin-fieldset" disabled={busy}>
+    <form onSubmit={event => void submit(event)} onChange={invalidate}><fieldset className="admin-fieldset" disabled={busy || previewLoading || uncertain}>
       {kind !== "correction" && <div className="admin-form-grid"><AccountingField id="annual-limit" label={kind === "opening" ? "Limit roku rozpoczęcia" : `Limit na rok ${balance.year}`} value={annual} onChange={setAnnual} type="number" min={0} max={unit === "days" ? 125000 : 1000000} /><div className="field"><label htmlFor="limit-unit">Jednostka limitu</label><select id="limit-unit" value={unit} onChange={event => { setUnit(event.target.value); setAnnual(""); }}><option value="hours">Godziny</option><option value="days">Pełne dni (8 h)</option></select></div>{converted !== null && <p className="field-hint balance-conversion" role="status">Zostanie zapisane: {hoursLabel(converted)}.</p>}</div>}
       {kind !== "limit" && <><div className="admin-form-grid"><AccountingField id="opening-date" label="Początek ewidencji" type="date" value={date} onChange={setDate} min={kind === "correction" ? `${balance.opening!.effectiveDate.slice(0, 4)}-01-01` : `${balance.year}-01-01`} max={kind === "correction" ? `${balance.opening!.effectiveDate.slice(0, 4)}-12-31` : `${balance.year}-12-31`} hint={kind === "correction" ? "Datę można skorygować w tym samym roku, dopóki nie rozpoczęto rozliczania wniosków." : "Wcześniejsze nieobecności uwzględniamy wyłącznie w danych początkowych."} /><AccountingField id="opening-used" label="Wykorzystane z bieżącej puli przed startem (h)" value={used} onChange={setUsed} type="number" min={0} max={1000000} /></div>
-        <fieldset className="absence-availability"><legend>Pozostałości wcześniejszych lat na dzień startu</legend><p className="field-hint">Wpisz pozostałe godziny osobno dla każdego roku pochodzenia. Nie odejmuj od nich ponownie wcześniejszego wykorzystania.</p>{!person.employmentType?.carriesUnusedHours && <p className="field-hint">Bieżąca forma zatrudnienia nie przenosi niewykorzystanych godzin.</p>}{carries.map((row, index) => <div className="carry-row" key={row.key}><AccountingField id={`carry-year-${row.key}`} label={`Rok pochodzenia ${index + 1}`} type="number" value={row.originYear} onChange={value => setCarries(carries.map(item => item.key === row.key ? { ...item, originYear: value } : item))} min={1000} max={Number(date.slice(0, 4)) - 1} /><AccountingField id={`carry-hours-${row.key}`} label={`Pozostałe godziny ${index + 1}`} type="number" value={row.remainingHours} onChange={value => setCarries(carries.map(item => item.key === row.key ? { ...item, remainingHours: value } : item))} min={0} max={1000000} /><button type="button" className="button button-secondary" aria-label={`Usuń zaległość ${index + 1}`} onClick={() => setCarries(carries.filter(item => item.key !== row.key))}>Usuń</button></div>)}<button type="button" className="button button-secondary" onClick={() => setCarries([...carries, { key: nextKey.current++, originYear: String(Number(date.slice(0, 4)) - 1), remainingHours: "0" }])}>Dodaj rok zaległości</button></fieldset>
+        <fieldset className="absence-availability"><legend>Pozostałości wcześniejszych lat na dzień startu</legend><p className="field-hint">Wpisz pozostałe godziny osobno dla każdego roku pochodzenia. Nie odejmuj od nich ponownie wcześniejszego wykorzystania.</p>{!person.employmentType?.carriesUnusedHours && <p className="field-hint">Bieżąca forma zatrudnienia nie przenosi niewykorzystanych godzin.</p>}{carries.map((row, index) => <div className="carry-row" key={row.key}><AccountingField id={`carry-year-${row.key}`} label={`Rok pochodzenia ${index + 1}`} type="number" value={row.originYear} onChange={value => setCarries(carries.map(item => item.key === row.key ? { ...item, originYear: value } : item))} min={1000} max={Number(date.slice(0, 4)) - 1} /><AccountingField id={`carry-hours-${row.key}`} label={`Pozostałe godziny ${index + 1}`} type="number" value={row.remainingHours} onChange={value => setCarries(carries.map(item => item.key === row.key ? { ...item, remainingHours: value } : item))} min={0} max={1000000} /><button type="button" className="button button-secondary" aria-label={`Usuń zaległość ${index + 1}`} onClick={() => { invalidate(); setCarries(carries.filter(item => item.key !== row.key)); }}>Usuń</button></div>)}<button type="button" className="button button-secondary" onClick={() => { invalidate(); setCarries([...carries, { key: nextKey.current++, originYear: String(Number(date.slice(0, 4)) - 1), remainingHours: "0" }]); }}>Dodaj rok zaległości</button></fieldset>
       </>}
       {kind !== "opening" && <AccountingField id="balance-reason" label="Uzasadnienie zmiany" value={reason} onChange={setReason} required={kind === "correction" || balance.configured} maxLength={1000} hint="Powód będzie widoczny w historii rozliczeń." />}
-      <button className="button button-primary" type="submit">{busy ? "Zapisywanie…" : kind === "opening" ? "Zapisz dane początkowe" : kind === "limit" ? "Zapisz limit" : "Zapisz korektę"}</button>
+      <button className="button button-secondary" type="submit">{previewLoading ? "Sprawdzanie wpływu…" : "Sprawdź wpływ zmiany"}</button>
     </fieldset></form>
+    {preview && <>
+      <BalanceImpactPreview preview={preview} />
+      {uncertain && <AccountingNotice kind="info">Nie otrzymaliśmy potwierdzenia zapisu. Ponów tę samą operację albo wczytaj aktualne dane przed kolejną zmianą. Godziny nie zostaną dodane drugi raz.</AccountingNotice>}
+      <label className="check-field"><input type="checkbox" checked={confirmed} disabled={busy || uncertain} onChange={event => setConfirmed(event.target.checked)} /><span>Potwierdzam pokazany wpływ na saldo.</span></label>
+      <button className="button button-primary" type="button" disabled={busy || !confirmed} onClick={() => void confirm()}>{busy ? "Zapisywanie…" : uncertain ? "Ponów wysłanie" : kind === "opening" ? "Zapisz dane początkowe" : kind === "limit" ? "Zapisz limit" : "Zapisz korektę"}</button>
+    </>}
   </section>;
 }

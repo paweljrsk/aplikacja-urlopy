@@ -12,6 +12,22 @@ use App\Service\CredentialsException;
 /** Strict JSON-domain input; calendar and authorization checks belong inside the transaction. */
 final class RequestInput
 {
+    /** @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public static function decisionPreview(array $data): array
+    {
+        $action = $data['action'] ?? null;
+        if (!\in_array($action, ['approve', 'reject'], true)) {
+            throw new CredentialsException('VALIDATION_FAILED', 'Wybierz akceptację albo odrzucenie.');
+        }
+        AdminInput::only($data, 'reject' === $action ? ['expectedVersion', 'action', 'reason'] : ['expectedVersion', 'action']);
+        unset($data['action']);
+        $input = self::decision(['operationKey' => 'preview'] + $data, 'reject' === $action);
+        unset($input['operationKey']);
+        return ['action' => $action] + $input;
+    }
+
     /** The public preview accepts the same application, but never an operation key.
      * @param array<string, mixed> $data
      * @return array<string, mixed>

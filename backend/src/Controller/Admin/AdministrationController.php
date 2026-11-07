@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Security\ApiResponse;
 use App\Security\SecurityIdentity;
 use App\Service\Admin\AdminInput;
+use App\Service\Admin\AdminHistory;
 use App\Service\Admin\AdminPresenter;
 use App\Service\Admin\AdministrationService;
 use App\Service\CredentialsException;
@@ -34,6 +35,17 @@ final class AdministrationController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
         return $this->json($this->presenter->catalog());
+    }
+
+    #[Route('/api/admin/history', methods: ['GET'])]
+    public function history(Request $request, AdminHistory $history): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        try {
+            return $this->json($history->page($request->query->all()));
+        } catch (CredentialsException $exception) {
+            return ApiResponse::error($exception->errorCode, $exception->getMessage(), $exception->httpStatus);
+        }
     }
 
     #[Route('/api/admin/users/{id}', requirements: ['id' => '\\d+'], methods: ['GET'])]

@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { AdminHistoryPanel } from "./admin-history-panel";
 import { AppHeader } from "./app-shell";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, errorMessage, getApi, getCurrentUser, mutateApi, postApi, redirectForAuthError, roleLabel, type CurrentUser, type TeamRole } from "@/lib/auth-api";
 import { displayDate, warsawToday, type AbsenceType, type AdminUser, type Catalog, type DictionaryItem, type EmploymentType, type TemporaryCredential } from "@/lib/admin-api";
 
-type Section = "users" | "teams" | "employment-types" | "absence-types";
-type Editor = { kind: Section; id: number | null; mode?: "profile" | "assignment" | "password" };
+type CatalogSection = "users" | "teams" | "employment-types" | "absence-types";
+type Section = CatalogSection | "history";
+type Editor = { kind: CatalogSection; id: number | null; mode?: "profile" | "assignment" | "password" };
 type Save = (path: string, method: "POST" | "PATCH", data: Record<string, unknown>, message: string, recipient?: string) => Promise<boolean>;
 const sections: { value: Section; label: string }[] = [
   { value: "users", label: "Użytkownicy" }, { value: "teams", label: "Zespoły" },
   { value: "employment-types", label: "Formy zatrudnienia" }, { value: "absence-types", label: "Rodzaje nieobecności" },
+  { value: "history", label: "Historia" },
 ];
 const teamRoles: Record<TeamRole, string> = { employee: "Pracownik", manager: "Kierownik", deputy: "Zastępca" };
 
@@ -168,6 +171,7 @@ export function AdminScreen() {
         {!catalog && !error && <Notice error>Nie udało się wczytać danych.</Notice>}
         {catalog && actor && <>
           <nav className="admin-nav" aria-label="Obszary administracji">{sections.map(item => <button key={item.value} className={section === item.value ? "is-selected" : ""} aria-current={section === item.value ? "page" : undefined} disabled={busy} onClick={() => changeSection(item.value)}>{item.label}</button>)}</nav>
+          {section === "history" ? <AdminHistoryPanel onAccessError={handleError} /> : <>
           {temporary && <TemporaryPassword key={`${temporary.recipient}-${temporary.expiresAt}`} credential={temporary} onClose={() => setTemporary(null)} />}
           {catalog.employmentTypes.length === 0 || catalog.absenceTypes.length === 0 ? <section className="admin-setup"><div><h2>Przygotuj słowniki startowe</h2><p>Dodaj UoP, B2B oraz trzy podstawowe rodzaje nieobecności. Istniejące pozycje pozostaną zachowane.</p></div><button className="button button-secondary" disabled={busy} onClick={() => void save("/api/admin/catalog/initialize", "POST", {}, "Słowniki startowe są gotowe.")}>Dodaj słowniki startowe</button></section> : null}
           <section aria-labelledby="list-heading">
@@ -180,6 +184,7 @@ export function AdminScreen() {
           {editor && <section className="admin-editor" aria-labelledby="editor-heading"><div className="reset-heading"><h2 id="editor-heading" ref={editorHeading} tabIndex={-1}>{editor.kind === "users" ? editor.id === null ? "Nowy użytkownik" : `${selectedUser?.firstName ?? ""} ${selectedUser?.lastName ?? ""}` : editor.id === null ? "Nowa pozycja słownika" : "Edycja pozycji słownika"}</h2><button className="button button-secondary button-small" disabled={busy} onClick={() => setEditor(null)}>Zamknij edycję</button></div>
             {editor.kind === "users" ? <UserEditor key={`${editor.id}-${selectedUser?.version}-${editor.mode}`} user={selectedUser} actor={actor} catalog={catalog} mode={editor.mode ?? "profile"} busy={busy} save={save} onMode={mode => openEditor({ ...editor, mode })} /> : <DictionaryEditor key={`${editor.kind}-${editor.id}`} kind={editor.kind} item={dictionaries.find(item => item.id === editor.id)} catalog={catalog} busy={busy} save={save} />}
           </section>}
+          </>}
         </>}
       </>}
     </main>

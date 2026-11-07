@@ -757,3 +757,19 @@ pól, zachowując wszystkie asercje danych. CI #32 zaliczył cały przebieg.
    zachowanie okresu, filtrów i fokusu. Zwykły współpracownik nie ma tego przycisku.
 5. Na telefonie sprawdź filtry, listę dni i pełnoekranowe szczegóły. Administrator
    po zmianie zespołu rozpoczyna z wyczyszczonymi filtrami.
+
+## Etap 10 — weryfikacja w toku
+
+Lokalne wyniki PHP 8.4.24 + MySQL 8.0.32, UTC:
+
+- Nowy `DecisionPreviewApiTest` oraz istniejące preview/changes: **39 testów / 6205 asercji — PASS**.
+- `BalanceApiTest` i `AdminTest`: **26 testów / 2378 asercji — PASS**.
+- PHPStan zmienionych plików, składnia, TypeScript, ESLint i produkcyjny build — PASS.
+- Nowa izolowana fixture rzeczywistego procesu przełożonego: uruchomienie na MySQL — PASS.
+
+Sprawdzono rollback rzeczywistych podglądów, decyzje i wszystkie role, widoczność
+historii po transferze, brak ujawnienia bieżącego salda, granice lat, wersje,
+idempotencję i konkurencyjną decyzję; historię administracji z zagnieżdżonymi
+markerami sekretów. Nie dodano migracji ani zależności.
+Nowe regresje Chrome i pełne CI pozostają do wykonania; sam zapis skryptów nie
+potwierdza odbioru. Ręczny odbiór jest opisany w README, sekcja etapu 10.

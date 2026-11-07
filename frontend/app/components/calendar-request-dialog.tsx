@@ -77,7 +77,8 @@ function CalendarRequestDialogContent({ requestId, actorId, onClose }: Props) {
     </div>
     <div className="requests-dialog-footer">
       <button type="button" className="button button-secondary" onClick={onClose}>Wróć do kalendarza</button>
-      {request?.user.id === actorId && <Link href={`/requests?id=${request.id}`} prefetch={false} className="button button-primary">Przejdź do mojego wniosku</Link>}
+      {request?.user.id === actorId && !(request.actions.approve || request.actions.reject || request.actions.correct) && <Link href={`/requests?id=${request.id}`} prefetch={false} className="button button-primary">Przejdź do mojego wniosku</Link>}
+      {request && (request.actions.approve || request.actions.reject || request.actions.correct) && <Link href={`/management?id=${request.id}`} prefetch={false} className="button button-primary">Obsłuż wniosek</Link>}
     </div>
   </RequestModal>;
 }

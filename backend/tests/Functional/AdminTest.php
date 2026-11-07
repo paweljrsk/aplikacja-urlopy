@@ -104,7 +104,7 @@ final class AdminTest extends WebTestCase
 
     public function testAdminReadsAndWritesRequireAuthentication(): void
     {
-        foreach (['/api/admin/users', '/api/admin/catalog', '/api/admin/users/'.$this->users['employee']['id']] as $path) {
+        foreach (['/api/admin/users', '/api/admin/catalog', '/api/admin/history', '/api/admin/users/'.$this->users['employee']['id']] as $path) {
             $this->client->request('GET', $path);
             $this->assertError($this->client, 401, 'AUTH_REQUIRED');
         }
@@ -129,6 +129,7 @@ final class AdminTest extends WebTestCase
         $employment = $this->employment['uop'];
         $routes = [
             ['GET', '/api/admin/catalog'],
+            ['GET', '/api/admin/history'],
             ['GET', '/api/admin/users'],
             ['GET', '/api/admin/users/'.$user],
             ['POST', '/api/admin/catalog/initialize'],
@@ -152,6 +153,50 @@ final class AdminTest extends WebTestCase
             $this->assertError($this->client, 403, 'FORBIDDEN');
         }
         self::assertSame($before, $this->counts());
+    }
+
+    public function testHistoryProjectsKnownFieldsAndPaginatesWithoutExposingSecrets(): void
+    {
+        $this->login($this->client, 'admin');
+        $em = $this->manager();
+        $actor = $em->find(User::class, $this->users['admin']['id']);
+        $subject = $em->find(User::class, $this->users['employee']['id']);
+        self::assertInstanceOf(User::class, $actor);
+        self::assertInstanceOf(User::class, $subject);
+        $secret = 'NEVER_EXPOSE_'.$this->prefix;
+        $events = [];
+        foreach (['admin.user_updated', 'security.password_reset', 'admin.assignment_changed'] as $index => $action) {
+            $event = new AuditEvent($this->prefix.'_history_'.$index, $action, $actor, $subject, new \DateTimeImmutable('now'),
+                ['firstName' => 'Before', 'passwordHash' => $secret, 'credentialVersion' => 4],
+                ['firstName' => 'After', 'mustChangePassword' => true, 'credentialVersion' => 5, 'temporaryPassword' => $secret, 'session' => ['token' => $secret], 'assignments' => [['team' => ['name' => 'Alpha', 'secret' => $secret], 'employmentType' => ['name' => 'UoP'], 'role' => 'employee', 'validFrom' => '2026-01-01', 'validUntil' => null, 'password' => $secret]]]);
+            $em->persist($event);
+            $events[] = $event;
+        }
+        $em->persist(new AuditEvent($this->prefix.'_unknown', 'admin.unknown_future_action', $actor, $subject, new \DateTimeImmutable('now'), [], ['secret' => $secret]));
+        $em->persist(new AuditEvent($this->prefix.'_financial', 'balance.limit_set', $actor, $subject, new \DateTimeImmutable('now'), [], ['reason' => $secret]));
+        $em->flush();
+        $this->client->request('GET', '/api/admin/history?limit=2');
+        $first = $this->success();
+        self::assertCount(2, $first['events']);
+        self::assertSame([$events[2]->getId(), $events[1]->getId()], array_column($first['events'], 'id'));
+        self::assertSame($events[1]->getId(), $first['nextBeforeId']);
+        self::assertSame('Synthetic Admin', $first['events'][0]['actorName']);
+        self::assertSame(['id' => $subject->getId(), 'firstName' => 'Synthetic', 'lastName' => 'Employee'], $first['events'][0]['subject']);
+        self::assertSame((string) $subject->getId(), $first['events'][0]['targetReference']);
+        self::assertStringContainsString('Alpha', json_encode($first, JSON_THROW_ON_ERROR));
+        foreach ([$secret, 'credentialVersion', 'temporaryPassword', 'passwordHash', 'operationKey', 'payloadHash'] as $forbidden) {
+            self::assertStringNotContainsString($forbidden, $this->content($this->client));
+        }
+        self::assertSame([['field' => 'mustChangePassword', 'label' => 'Wymagana zmiana hasła', 'before' => null, 'after' => 'Tak']], $first['events'][1]['changes']);
+        $this->client->request('GET', '/api/admin/history?limit=1&beforeId='.$first['nextBeforeId']);
+        $second = $this->success();
+        self::assertSame($events[0]->getId(), $second['events'][0]['id']);
+        self::assertSame('Before', $second['events'][0]['changes'][0]['before']);
+        self::assertSame('After', $second['events'][0]['changes'][0]['after']);
+        foreach (['limit=0', 'limit=101', 'beforeId=-1', 'beforeId=abc', 'limit[]=1', 'unknown=1'] as $query) {
+            $this->client->request('GET', '/api/admin/history?'.$query);
+            $this->assertError($this->client, 422, 'VALIDATION_FAILED');
+        }
     }
 
     public function testCreateAccountRequiresCsrfAndPasswordThenProducesUsableOneTimeCredentials(): void

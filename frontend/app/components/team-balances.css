@@ -1,0 +1,23 @@
+.balance-view-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.balance-view-tabs button[aria-pressed="true"] { background: #f8eaf1; border-color: #ecd1dd; color: #9f1e53; }
+.team-balances-panel { background: white; border: 1px solid #e0e4eb; border-radius: 14px; padding: 24px; }
+.team-balance-filters { display: grid; grid-template-columns: 140px minmax(180px, 1fr) auto; gap: 16px; align-items: end; margin: 20px 0 24px; }
+.team-balance-filters > .button { margin: 0; }
+.team-balances-table { min-width: 800px; }
+.team-balances-table th[scope="row"] { min-width: 180px; overflow-wrap: anywhere; }
+.team-balances-table td { min-width: 90px; }
+.team-balances-table .team-balance-available { color: #087f76; }
+.team-balances-table .team-balance-deficit { color: #a3303f; }
+.team-balances-table .text-button { white-space: nowrap; }
+@media (max-width: 700px) {
+  .team-balances-panel { padding: 18px; }
+  .team-balance-filters { grid-template-columns: 1fr; }
+  .balance-view-tabs button { flex: 1; }
+}
+.balance-impact-preview { margin: 24px 0 20px; padding: 20px; border: 1px solid #c7e5df; border-radius: 12px; background: #f5fbf9; }
+.balance-impact-preview h3 { font-size: 20px; margin: 0 0 8px; }
+.balance-impact-preview .accounting-table { min-width: 410px; }
+.balance-impact-preview .accounting-table td { white-space: nowrap; }
+.balance-preview-pools summary { cursor: pointer; font-size: 13px; }
+.balance-impact-preview > p { font-size: 13px; line-height: 1.6; }
+@media (max-width: 700px) { .balance-impact-preview { padding: 16px; } }

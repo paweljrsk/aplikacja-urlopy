@@ -223,7 +223,28 @@ oraz widok 1/2 tygodnie; widok miesiąca pozostaje opcją późniejszego rozwoju
 | DT52 | „Zatwierdzone” pokazuje obowiązujące wersje, także oczekujące na zmianę/anulowanie; „Oczekujące” wyłącznie nowe wnioski; „Zmiany i anulowania” dostępne wersje powiązanego procesu. | Zmiana i anulowanie nie unieważniają dotychczasowego urlopu. Filtr nie wnioskuje o niedostępnej propozycji. Lista grupuje po wniosku, nie sumuje wersji i nie łączy dwóch niezależnych wniosków 3 h + 5 h. |
 | DT53 | Szczegóły z kalendarza otwieramy w krótkim oknie tylko po wskazaniu `canViewDetails`, zawsze z nowym odczytem istniejącego API. | Backend ponownie autoryzuje każdą wersję. Modal czyści wcześniejszy DTO przed odświeżeniem, po odmowie i przy ukryciu strony. Zamknięcie zachowuje okres/filtry i przywraca fokus. Brak nowych uprawnień lub kontrolek decyzji; panel przełożonego pozostaje w etapie 10. |
 
+## Decyzje realizacyjne etapu 10 — 7 listopada 2026 r.
+
+Użytkownik zlecił etap 10. Nie pozostały pytania biznesowe blokujące ten zakres;
+Q7 dotyczy konfiguracji przed produkcją. Zachowujemy B22–B33.
+
+| ID | Decyzja wykonawcza | Uzasadnienie i granice |
+|---|---|---|
+| DT54 | `/management` domyślnie pokazuje wnioski wymagające decyzji aktora, z filtrem historii i stronicowaniem. | Backendowe `status=awaiting` łączy trzy stany, UI używa `actions`; własny wniosek zastępcy nie trafia do kolejki decyzji, pozostaje w jego historii. Nie ujawniamy statusu niedostępnej wersji. |
+| DT55 | Podgląd decyzji i limitu/danych początkowych wykonuje istniejący zapis w wycofywanej transakcji. | Te same walidacje, blokady i obliczenia; brak trwałych zmian. Podgląd decyzji nie ujawnia bieżącego salda bez osobnego prawa. Potwierdzenie UI poprzedza kompatybilny zapis z wersją i kluczem; sam podgląd nie nadaje uprawnień. |
+| DT56 | Historyczne korekty używają istniejącego podglądu z tokenem i jawnego potwierdzenia, bez ponownego implementowania rozliczeń na froncie. | Każda edycja unieważnia podgląd. Administrator osobno potwierdza niedobór. Niepewny zapis zachowuje treść, token i klucz; konflikt wymaga świeżego odczytu. |
+| DT57 | Historia administracji ma osobny stronicowany odczyt administratora z jawną listą zdarzeń i pól. | UI pokazuje autora/czas i zmienione wartości jako tekst. Zdarzenia haseł mają tylko metadane; brak surowego JSON, sekretów, sesji, kluczy operacji i technicznych potwierdzeń. |
+| DT58 | Salda zespołu są drugim widokiem istniejącego `/balances`, z rokiem, wyszukiwaniem i przejściem do osoby. | Lista uprawnionych osób jest pobierana ponownie; maksymalnie cztery równoległe odczyty sald. Brak sumowania wspólnych pul między latami. Własny limit kierownika i brak edycji zastępcy pozostają zgodne z B27. |
+
 ## Problemy i ograniczenia
+
+### E15 — równoległe przekierowania wygasłej sesji w teście
+
+CI #33, po dokumentacji etapu 9, zakończył się `net::ERR_ABORTED` podczas oczekiwania
+na załadowanie strony logowania. Odczyt konta i otwartych szczegółów równolegle
+otrzymały 401 i oba przekierowały na login. Test sprawdza teraz końcowy URL oraz
+wyrenderowany formularz zamiast cyklu pojedynczej, zastąpionej nawigacji.
+Asercje braku prywatnych danych i magazynu przeglądarki pozostają bez zmian.
 
 ### E14 — niezależne błędy opcji i kalendarza
 

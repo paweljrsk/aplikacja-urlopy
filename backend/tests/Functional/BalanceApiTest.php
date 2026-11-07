@@ -68,6 +68,81 @@ final class BalanceApiTest extends WebTestCase
         }
     }
 
+    public function testAdjustmentPreviewsUseRealAccountingAndAlwaysRollback(): void
+    {
+        $this->login('manager');
+        $initial = $this->balance('employee');
+        $opening = $this->openingBody($initial, 80, 72);
+        unset($opening['operationKey']);
+        $base = '/api/balances/users/'.$this->users['employee']['id'];
+        $ledger = $this->ledgerCount();
+        $this->send('POST', $base.'/opening-preview', $opening);
+        $preview = $this->success()['preview'];
+        self::assertSame($initial['version'], $preview['version']);
+        self::assertFalse($preview['before']['configured']);
+        self::assertSame(8, $preview['after']['availableHours']);
+        self::assertArrayNotHasKey('history', $preview['after']);
+        self::assertArrayNotHasKey('version', $preview['after']);
+        self::assertSame($ledger, $this->ledgerCount());
+        self::assertSame($initial, $this->balance('employee'), 'Preview leaves accounts, pools, opening, audit and version unchanged.');
+
+        $this->send('POST', $base.'/opening', $opening + ['operationKey' => $this->key()]);
+        $saved = $this->success()['balance'];
+        self::assertSame($preview['after']['availableHours'], $saved['availableHours']);
+        $ledger = $this->ledgerCount();
+        $limit = ['expectedVersion' => $saved['version'], 'annualHours' => 64, 'reason' => 'Synthetic reduction'];
+        $this->send('POST', $this->path('employee').'/limit-preview', $limit);
+        $preview = $this->success()['preview'];
+        self::assertSame(8, $preview['before']['availableHours']);
+        self::assertSame(-8, $preview['after']['availableHours']);
+        self::assertSame(8, $preview['after']['deficitHours']);
+        self::assertSame($ledger, $this->ledgerCount());
+        self::assertEquals($saved, $this->balance('employee'), 'MySQL may reorder JSON object keys; values and audit remain unchanged.');
+
+        $correction = ['expectedVersion' => $saved['version'], 'currentYearUsedHours' => 48, 'carries' => [['originYear' => $this->year - 1, 'remainingHours' => 16]], 'reason' => 'Synthetic corrected opening'];
+        $this->send('POST', $base.'/opening/corrections-preview', $correction);
+        $preview = $this->success()['preview'];
+        self::assertSame(48, $preview['after']['availableHours']);
+        self::assertSame(16, $preview['after']['carriedHours']);
+        self::assertSame($ledger, $this->ledgerCount());
+        self::assertEquals($saved, $this->balance('employee'), 'MySQL may reorder JSON object keys; values and audit remain unchanged.');
+        $this->send('POST', $base.'/opening/corrections', $correction + ['operationKey' => $this->key()]);
+        $corrected = $this->success()['balance'];
+        self::assertSame($preview['after']['availableHours'], $corrected['availableHours']);
+        self::assertSame($preview['after']['pools'], $corrected['pools']);
+        $this->send('POST', $this->path('employee').'/limit-preview', $limit);
+        $this->assertError(409, 'CONFLICT');
+        self::assertEquals($corrected, $this->balance('employee'));
+    }
+
+    public function testAdjustmentPreviewsRequireCsrfAndSameManagementAccessAsWrites(): void
+    {
+        $base = '/api/balances/users/'.$this->users['employee']['id'];
+        $this->send('POST', $base.'/opening-preview', []);
+        $this->assertError(401, 'AUTH_REQUIRED');
+        $this->login('manager');
+        $initial = $this->balance('employee');
+        $body = $this->openingBody($initial, 80, 0);
+        unset($body['operationKey']);
+        $this->send('POST', $base.'/opening-preview', $body, false);
+        $this->assertError(403, 'CSRF_INVALID');
+        foreach (['manager', 'other'] as $key) {
+            $this->send('POST', '/api/balances/users/'.$this->users[$key]['id'].'/opening-preview', $body);
+            $this->assertError(403, 'FORBIDDEN');
+        }
+        $this->send('POST', $base.'/opening-preview', $body + ['operationKey' => $this->key()]);
+        $this->assertError(422, 'VALIDATION_FAILED');
+        self::assertSame($initial, $this->balance('employee'));
+        $this->send('POST', '/api/auth/logout', []);
+        $this->success();
+        $this->login('deputy');
+        foreach ([$base.'/opening-preview', $base.'/opening/corrections-preview', $this->path('employee').'/limit-preview'] as $path) {
+            $this->send('POST', $path, $body);
+            $this->assertError(403, 'FORBIDDEN');
+        }
+        self::assertSame($initial, $this->balance('employee'));
+    }
+
     public function testEmployeeOnlySeesOwnBalanceAndCannotChangeIt(): void
     {
         $this->login('employee');

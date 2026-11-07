@@ -1,6 +1,6 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.7 • stan uzgodnień z 7 listopada 2026 r., po zleceniu etapu 9.
+Wersja 1.8 • stan uzgodnień z 7 listopada 2026 r., po zleceniu etapu 10.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
 [decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
@@ -172,6 +172,12 @@ Użytkownik zlecił etap po przedstawieniu tego zakresu. Główny widok pozostaj
 jedno/dwutygodniowy; widok miesiąca jest opcjonalnym późniejszym dodatkiem.
 Filtry kalendarza i listy nie rozszerzają zakresu danych przyznanego przez API.
 Szczegóły ponownie sprawdzają uprawnienia, także po zmianie zespołu.
+
+Etap 10 udostępnia istniejące procesy przełożonemu w interfejsie: kolejkę decyzji,
+podgląd wpływu, historyczne korekty oraz salda i historię dla uprawnionych osób.
+Podgląd decyzji i zmian limitów nie zapisuje operacji. Zapis ponownie sprawdza
+uprawnienia i aktualną wersję, a ponowienie zachowuje tożsamość operacji.
+Nie zmienia to B22–B33 ani zakresu dostępu do historycznych wersji i bieżącego salda.
 
 Potrzebne widoki: logowanie i zmiana hasła, kalendarz, formularz, moje wnioski i szczegóły, moje saldo, kolejka decyzji przełożonego, salda zespołu oraz administracja. Widoki mają działać na telefonie i komputerze. Dane z innych zespołów lub prywatne dane kolegów nie mogą trafiać do nieuprawnionego klienta przez API.
 

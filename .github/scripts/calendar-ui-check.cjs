@@ -349,8 +349,12 @@ let step = 'launch';
     assert.equal(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth + 1), true);
     await page.screenshot({ path: join(screenshotDir, 'calendar-details-mobile.png'), fullPage: true });
     session = null; await page.evaluate(() => window.dispatchEvent(new Event('focus')));
-    await page.waitForURL(url => url.pathname === '/login');
+    // Both the account and open details reauthorize on focus. Their independent
+    // 401 redirects may supersede one navigation; assert the settled destination
+    // and rendered login instead of waiting for that particular navigation load.
+    await until(() => new URL(page.url()).pathname === '/login', 'Revoked session must reach the login page.');
     await page.getByRole('heading', { name: 'Zaloguj się', exact: true }).waitFor();
+    assert.equal(new URL(page.url()).pathname, '/login');
     assert.equal(await page.getByText(privateType, { exact: true }).count(), 0);
     assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
     assert.deepEqual(errors, [], 'No unhandled browser exceptions.');

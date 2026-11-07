@@ -53,6 +53,46 @@ final class AccountingService
         return $this->readBalance($subject, $year);
     }
 
+    /** Execute the normal write under the same locks and always roll it back.
+     * The returned projections contain no audit records or hypothetical version.
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public function previewAdjustment(User $actor, User $subject, string $action, ?int $year, array $data): array
+    {
+        if (array_key_exists('operationKey', $data)) {
+            throw new CredentialsException('VALIDATION_FAILED', 'Podgląd nie przyjmuje klucza zapisu.');
+        }
+        $connection = $this->em->getConnection();
+        $connection->beginTransaction();
+        try {
+            $this->start($actor, $subject);
+            $this->manage($actor, $subject);
+            $this->checkVersion($subject, $data);
+            $year = match ($action) {
+                'opening' => (int) AdminInput::date($data, 'effectiveDate')->format('Y'),
+                'correction' => (int) substr(($this->openingValues($subject) ?? throw new CredentialsException('OPENING_REQUIRED', 'Brak danych początkowych do skorygowania.'))['effectiveDate'], 0, 4),
+                'limit' => $year ?? throw new \LogicException('Limit preview requires a year.'),
+                default => throw new \LogicException('Unknown adjustment preview.'),
+            };
+            $before = $this->getBalance($subject, $year);
+            $input = $data + ['operationKey' => 'preview.'.bin2hex(random_bytes(16))];
+            $after = match ($action) {
+                'opening' => $this->initializeOpening($actor, $subject, $input),
+                'correction' => $this->correctOpening($actor, $subject, $input),
+                'limit' => $this->setAnnualLimit($actor, $subject, $year, $input),
+            };
+            $fields = array_flip(['configured', 'annualHours', 'opening', 'carriedHours', 'allocatedHours', 'openingUsedHours', 'usedHours', 'approvedFutureHours', 'reservedHours', 'changeReservedHours', 'availableHours', 'deficitHours', 'displayAvailable', 'pools']);
+
+            return ['userId' => $subject->getId(), 'year' => $year, 'version' => $before['version'],
+                'before' => array_intersect_key($before, $fields), 'after' => array_intersect_key($after, $fields)];
+        } finally {
+            $connection->rollBack();
+            // Mutated managed entities must never escape a rolled-back preview.
+            $this->em->clear();
+        }
+    }
+
     /** @return array<string, mixed> */
     private function readBalance(User $subject, int $year): array
     {

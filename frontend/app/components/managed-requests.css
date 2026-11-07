@@ -1,0 +1,40 @@
+.managed-page-heading { display: flex; gap: 24px; justify-content: space-between; align-items: center; }
+.managed-page-heading > a { flex-shrink: 0; }
+.managed-list > li { grid-template-columns: minmax(150px, .85fr) minmax(200px, 1.3fr) 60px minmax(115px, auto) auto; }
+.managed-request-person { min-width: 0; display: flex; flex-direction: column; gap: 5px; overflow-wrap: anywhere; }
+.managed-request-person strong { font-size: 13px; }
+.managed-request-person span, .managed-request-person small { color: #69717f; font-size: 11px; }
+.managed-request-person small { color: #9f1e53; }
+.managed-detail .requests-detail-header p { margin: 8px 0 0; font-size: 14px; color: #69717f; overflow-wrap: anywhere; }
+.managed-actions { background: #f8f9fb; border-radius: 10px; padding: 17px 20px; margin: 22px 0; }
+.managed-actions > p { color: #69717f; font-size: 12px; margin: 0 0 13px; }
+.managed-decision-person { display: flex; flex-direction: column; gap: 7px; overflow-wrap: anywhere; }
+.managed-decision-person strong { color: #171a20; font-size: 18px; }
+.managed-decision-person span { font-size: 12px; color: #69717f; }
+.managed-decision-body .requests-revisions { grid-template-columns: minmax(0, 1fr); }
+.managed-decision-body > .field { margin-top: 24px; }
+.managed-decision-body textarea { resize: vertical; min-height: 95px; width: 100%; border: 1px solid #cdd3dc; border-radius: 8px; padding: 12px; }
+.managed-decision-preview h3 { margin: 0; font-size: 18px; }
+.managed-refresh { margin-top: 15px; }
+@media (max-width: 1000px) {
+  .managed-list > li { grid-template-columns: minmax(130px, 1fr) minmax(180px, 1.3fr) 55px auto; }
+  .managed-list .requests-status { grid-column: 2; grid-row: 2; justify-self: start; }
+  .managed-list > li > button { grid-column: 4; grid-row: 1 / span 2; }
+}
+@media (max-width: 760px) {
+  .managed-page-heading { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .managed-page-heading > a { width: 100%; }
+  .managed-list-panel .requests-list-toolbar { align-items: stretch; flex-direction: column; }
+  .managed-list-panel .requests-list-toolbar .field { display: block; }
+  .managed-list-panel .requests-list-toolbar select { width: 100%; margin-top: 7px; }
+  .managed-list > li { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+  .managed-list .managed-request-person { grid-column: 1; grid-row: 1; }
+  .managed-list .requests-row-hours { grid-column: 2; grid-row: 1; }
+  .managed-list .requests-row-date { grid-column: 1 / -1; grid-row: 2; }
+  .managed-list .requests-status { grid-column: 1; grid-row: 3; }
+  .managed-list > li > button { grid-column: 2; grid-row: 3; }
+  .managed-actions { padding: 16px; }
+  .managed-actions .button { width: 100%; }
+  .managed-decision-preview dl > div { flex-direction: column; gap: 3px; }
+  .managed-decision-preview dd { text-align: left; }
+}

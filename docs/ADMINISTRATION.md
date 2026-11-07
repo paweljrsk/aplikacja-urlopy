@@ -129,3 +129,18 @@ ekrany oddzielnie. Smoke HTTP przez Nginx/PHP-FPM sprawdza wspólny origin, sesj
 CSRF, tworzenie słowników i kont, zmianę hasła oraz izolację uprawnień.
 
 Nie uruchomiono jeszcze funkcji wniosków, sald, kalendarza ani integracji M365/Slack.
+
+## Historia administracji — etap 10
+
+Karta „Historia” korzysta z `GET /api/admin/history?limit=20&beforeId=...`.
+Dostęp ma wyłącznie aktualny administrator. `limit` ma zakres 1–100;
+`beforeId` jest dodatnim kursorem. Odpowiedź to `events` oraz `nextBeforeId`.
+Zdarzenie zawiera `id`, `action`, `occurredAt`, `actorName`, opcjonalne `subject`
+(`id`, `firstName`, `lastName`), `targetType`, `targetReference` i `changes`.
+Zmiana to `field`, `label`, `before` i `after`; wartości są tekstem albo `null`.
+
+Odczyt dopuszcza tylko rozpoznane zdarzenia administracji i cyklu dostępu.
+Zmienione pola oraz zagnieżdżone przypisania mają jawne listy dopuszczonych wartości.
+Historia haseł pokazuje jedynie fakt, autora i czas operacji. Nie serializujemy
+surowych migawek, haseł/skrótów, wersji poświadczeń, sesji ani kluczy operacji.
+Historia decyzji i korekt urlopowych jest dostępna przy wniosku, a limitów przy saldzie.
