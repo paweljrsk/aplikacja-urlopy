@@ -148,6 +148,8 @@ final class DemoData
 
         $employeeAccount = new LeaveAccount($employee, 2026);
         $contractorAccount = new LeaveAccount($contractor, 2026);
+        $employeeAccount->setAnnualLimitHours(208);
+        $contractorAccount->setAnnualLimitHours(160);
         $employeePool = new HourPool($employee, 2026);
         $employeeCarryPool = new HourPool($employee, 2025);
         $contractorPool = new HourPool($contractor, 2026);

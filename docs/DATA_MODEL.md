@@ -181,3 +181,23 @@ automatycznych danych demo ani usuwania istniejących rekordów.
 Datowane przeniesienie nie zmienia `RequestDay.assignment`: to nadal zapis
 historycznych zasad. Widoczność i osoby uprawnione wyznacza osobna polityka Q5.
 Pełny kontrakt i zabezpieczenia administracji opisuje [ADMINISTRATION.md](ADMINISTRATION.md).
+
+
+## Rozszerzenie etapu 5
+
+Migracja `Version20261107100000` dodaje nullable `annual_limit_hours` do
+`leave_account`: `NULL` oznacza brak konfiguracji, `0` jawny limit zerowy.
+Istniejące przydziały i dane początkowe uzupełniają ten stan bez zmiany historycznych
+księgowań. Dodaje również `request_accounting_state`, odtwarzalną projekcję
+zajętości każdego wniosku, inicjalizowaną z jego obowiązujących i oczekujących dni.
+
+Migracja `Version20261107110000` dodaje wersję firmowego dnia wolnego i
+`request_assignment_context`. Nowy kontekst utrwala okresy zatrudnienia na moment
+złożenia wersji wniosku, również dla pierwotnie wyłączonych dni. Pozwala to zachować
+zasady przy późniejszym usunięciu firmowego dnia wolnego. Przypisanie użyte w tym
+kontekście jest chronione przed nadpisaniem tak samo jak przypisanie użyte w dniu
+wniosku. Starsze wersje nie otrzymują wymyślonej historii.
+
+Obie migracje są addytywne i zachowują źródłowe dane. Nie cofamy ich przez usunięcie
+historii. Schemat nadal powstaje przez Doctrine Migrations. Rozliczenia i granice
+projekcji opisują [ACCOUNTING.md](ACCOUNTING.md) oraz [CALENDAR.md](CALENDAR.md).

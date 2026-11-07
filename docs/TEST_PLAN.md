@@ -393,3 +393,107 @@ Test przeglądarkowy ze sztucznym API oraz rzeczywiste testy backendu/HTTP są
 oddzielnymi kontrolami — nie deklarujemy pełnego przeglądarkowego E2E wszystkich
 procesów urlopowych. Wnioski, kalendarz, limity i saldo należą do kolejnych etapów.
 Końcowy styl Notus pozostaje w etapie 8; wdrożenie produkcyjne w etapie 12.
+
+
+## Etap 5 — lokalna weryfikacja
+
+7 listopada 2026 r. Zweryfikowano lokalnie na PHP 8.4.24 i MySQL 8.0.32:
+
+- pełny PHPUnit po końcowych poprawkach: 268 testów / 6832 asercje;
+- PHPStan, lint YAML i kontenera Symfony;
+- migrację od schematu etapu 3 przez etap 4 z syntetycznymi danymi początkowymi,
+  pulami, rezerwacją, wnioskiem i dniem firmowym do etapu 5; zachowanie wszystkich
+  wcześniejszych kolumn, bezpieczny stan limitu i powtórzenie migracji;
+- zgodność końcowego schematu z mapowaniem Doctrine;
+- rzeczywiste HTTP z MySQL przez lokalny serwer PHP: logowanie, CSRF, administracja,
+  dane początkowe, idempotencja, limit, konflikt wersji, jawny niedobór, korekta,
+  podgląd i zmiana kalendarza, odczyt własnego salda i odmowa cudzych danych/zapisów.
+
+Osobne testy obejmują blokadę współbieżnego zapisu na drugim połączeniu MySQL
+oraz nieaktualną wersję wniosku w drugim EntityManager po równoczesnej akceptacji.
+Testy dat i przełomu roku korzystają z kontrolowanego zegara.
+Dodatkowe regresje potwierdzają, że późniejsze przejście B2B → UoP nie przywraca
+starej puli B2B, a jawnie importowana zaległość nie wymaga fikcyjnych przypisań.
+ESLint, TypeScript, build frontendu i scenariusze rzeczywistych komponentów React
+w lokalnym DOM również przeszły; wynik Chrome zapisano poniżej przy odbiorze CI.
+
+Lokalny serwer PHP nie zastępuje Nginx/PHP-FPM ani docelowego PHP 8.3. Pełny odbiór
+Docker, Chrome, build, restart i workerów znajduje się w raporcie CI #20 poniżej.
+
+
+### Pierwszy odbiór Docker etapu 5 — CI #18
+
+[CI #18](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42356593584)
+na `8b4db305a943d361036e22234e480f3cc7e0316f` zakończyło się błędem jednego testu
+kalendarza przy odczycie dat po transferze. Uruchomienie, migracje i zachowanie
+starych danych przeszły. Przyczynę i poprawkę porównywania SQL DATE niezależnie
+od domyślnej strefy PHP opisuje E08 w DECISIONS. Testów późniejszych kroków tego
+przebiegu nie oznaczamy jako wykonanych.
+
+### Drugi odbiór Docker etapu 5 — CI #19
+
+[CI #19](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42356996669)
+na `bc55fe2d33d716614bb62c4e56e239e35689f79b` zaliczyło migracje i pełny PHPUnit
+268 testów / 6832 asercje. Następnie PHPStan przekroczył domyślny limit PHP 128 MB.
+Polecenie `make lint` przydziela teraz wyłącznie PHPStan limit 512 MB, zgodny
+z lokalną weryfikacją; limit procesów aplikacji pozostaje bez zmian.
+Build i testy Chrome/HTTP tego przebiegu zostały pominięte po błędzie analizy.
+
+### Końcowy odbiór Docker i Chrome etapu 5 — CI #20
+
+Commit implementacji: `c526ab8e2eda42ab029ba24a1f49ec6d5ff58701`.
+[CI #20 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42357495900),
+7 listopada 2026 r., PHP **8.3.36**, MySQL **8.0.32**.
+
+| Kontrola | Wynik |
+|---|---|
+| Start kontenerów, HTTP i baza | PASS |
+| Migracje świeżej bazy, powtórzenie, zgodność schematu | PASS |
+| Aktualizacja danych etapów 2–4 | PASS — zachowane konta, słowniki, limity, otwarcie, księgowania, wnioski i kalendarz; bezpieczne uzupełnienie konfiguracji limitów i zajętości |
+| Dwukrotne jawne demo | PASS — bez duplikacji |
+| PHPUnit | **268 testów / 6832 asercje — PASS** |
+| CLI administratora | PASS |
+| PHPStan, lint YAML/kontenera, ESLint, TypeScript | PASS — PHPStan z limitem 512 MB |
+| Produkcyjny build frontendu | PASS |
+| Chrome: logowanie i administracja | PASS — regresje wcześniejszych etapów |
+| Chrome: limity, saldo i kalendarz | PASS — zakres osób i ról, pełne godziny, 26 dni = 208 h, dane początkowe, korekty aktualnych wartości, limit 0/brak, konflikt i ponowienie, podgląd/potwierdzenie kalendarza, wycofanie nieaktualnego podglądu, odebranie uprawnień |
+| Restart bez utraty danych | PASS |
+| HTTP przez Nginx/PHP-FPM | PASS — sesja/CSRF, administracja, limit/otwarcie/korekty/niedobór, konflikty, kalendarz i izolacja pracowników |
+| Messenger i Scheduler | PASS |
+| Zrzuty desktop 1366 px / mobile 390 px | Przejrzane — czytelne formularze, przyciski w obrębie ekranu, tabele przewijane we własnych sekcjach |
+
+Zrzuty `balance-desktop.png`, `balance-mobile.png` i `calendar-preview-mobile.png`
+są w artefakcie `synthetic-ui-screenshots` przebiegu (retencja 7 dni). Przedstawiają
+sztuczne odpowiedzi API przeznaczone do sprawdzania interakcji i układu; nie są
+raportem poprawności obliczeń. Poprawność rozliczeń sprawdzono osobno na MySQL.
+Znaczniki developerskie Next i widoczność linku przejścia do treści przy zrzucie
+pełnej przewiniętej strony nie są projektem docelowego interfejsu.
+
+Testy przeglądarkowe ze sztucznym API oraz rzeczywiste testy backendu/HTTP to
+oddzielne kontrole. Nie deklarujemy pełnego E2E procesu urlopowego: publiczny
+formularz wniosków i decyzje należą do etapu 6, indywidualne zmiany do etapu 7,
+pełna stylistyka Notus do etapu 8, a główny kalendarz zespołu do etapu 9.
+Nie dodano nowych bibliotek. Lokalne wykonanie Chrome nie było możliwe ze względu
+na ograniczenie AF_UNIX środowiska; powyższe wykonanie Chrome pochodzi z CI.
+
+### Ręczny odbiór etapu 5
+
+Po aktualizacji zgodnie z README zaloguj się dotychczasowym administratorem.
+Scenariusze wykonuj na syntetycznym pracowniku, bez zmieniania rzeczywistych sald:
+
+1. Na `/balances` wybierz pracownika UoP i bieżący rok. Wpisz dane początkowe:
+   26 dni limitu, 40 h wykorzystania bieżącej puli i 16 h pozostałości poprzedniego
+   roku. Wynik: 208 h limitu, 184 h dostępnych, czyli 23 dni.
+2. Zmień limit na 24 dni z uzasadnieniem. Saldo powinno wynosić 168 h. Sprawdź
+   historię oraz zachowanie danych po odświeżeniu. Korekta bez powodu jest odrzucana.
+3. Ustaw w przyszłym roku limit 0. Widok powinien odróżniać go od kolejnego roku
+   bez konfiguracji; nie pokazuje przewidywanej zaległości przed początkiem roku.
+4. Sprawdź role: pracownik widzi tylko własne saldo, zastępca ma odczyt zespołu,
+   a kierownik może zmieniać limit innych osób swojego zespołu, ale nie własny.
+5. Na `/calendar-settings` dodaj przyszły firmowy dzień wolny: podgląd, powód,
+   potwierdzenie. Odśwież listę. Zmiana formularza unieważnia wcześniejszy podgląd.
+6. Sprawdź obie strony przy szerokości telefonu i na komputerze.
+
+Tworzenie i obsługa wniosków nie mają jeszcze publicznego formularza. Rezerwacje,
+przełom roku, niedobory, korekty kalendarza na istniejących wnioskach i współbieżność
+są na tym etapie sprawdzane testami usług/API na syntetycznych danych.

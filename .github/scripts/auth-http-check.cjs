@@ -165,6 +165,46 @@ try {
   }, 409, 'PATCH');
   check(conflict.error?.code === 'CONFLICT', 'Stale update was not rejected');
 
+  step = 'real balance setup, corrections and stale writes';
+  const leaveYear = Number(localDate.slice(0, 4));
+  const balancePath = `/api/balances/users/${created.user.id}`;
+  const initialBalance = (await fresh.request(`${balancePath}/${leaveYear}`, 200)).balance;
+  check(initialBalance.configured === false && initialBalance.annualHours === null, 'Missing limit was not distinguished from zero');
+  const openingPayload = {
+    operationKey: `http.opening.${suffix}`, expectedVersion: initialBalance.version,
+    effectiveDate: localDate, annualHours: 80, currentYearUsedHours: 16, carries: [],
+  };
+  const openingBalance = (await mutate(`${balancePath}/opening`, openingPayload)).balance;
+  check(openingBalance.configured && openingBalance.annualHours === 80 && openingBalance.availableHours === 64, 'Opening balance incorrect');
+  const repeatedOpening = (await mutate(`${balancePath}/opening`, openingPayload)).balance;
+  check(repeatedOpening.availableHours === 64, 'Repeated opening operation duplicated allocation');
+  const limitPayload = { operationKey: `http.limit.${suffix}`, expectedVersion: openingBalance.version, annualHours: 64, reason: 'Synthetic correction of annual limit' };
+  const limitedBalance = (await mutate(`${balancePath}/${leaveYear}/limit`, limitPayload)).balance;
+  check(limitedBalance.availableHours === 48 && limitedBalance.annualHours === 64, 'Annual limit correction incorrect');
+  const staleBalance = await mutate(`${balancePath}/${leaveYear}/limit`, { ...limitPayload, operationKey: `http.stale.${suffix}`, annualHours: 72 }, 409);
+  check(staleBalance.error?.code === 'CONFLICT', 'Stale balance correction was accepted');
+  const deficit = (await mutate(`${balancePath}/${leaveYear}/limit`, {
+    operationKey: `http.deficit.${suffix}`, expectedVersion: limitedBalance.version, annualHours: 8, reason: 'Synthetic explicit deficit',
+  })).balance;
+  check(deficit.availableHours === -8 && deficit.deficitHours === 8, 'Explicit deficit was hidden');
+  const corrected = (await mutate(`${balancePath}/opening/corrections`, {
+    operationKey: `http.opening-correction.${suffix}`, expectedVersion: deficit.version,
+    effectiveDate: localDate, currentYearUsedHours: 24, carries: [], reason: 'Synthetic opening usage correction',
+  })).balance;
+  check(corrected.availableHours === -16 && corrected.history.length >= 4, 'Opening correction or audit unavailable');
+
+  step = 'real company calendar preview and explicit application';
+  const nextYear = leaveYear + 1;
+  const calendarDate = new Date(Date.UTC(nextYear, 1, 15));
+  while ([0, 6].includes(calendarDate.getUTCDay())) calendarDate.setUTCDate(calendarDate.getUTCDate() + 1);
+  const companyChange = { date: calendarDate.toISOString().slice(0, 10), name: 'Synthetic HTTP company day', active: true };
+  const calendarPreview = await mutate('/api/calendar/preview', companyChange);
+  check(calendarPreview.changedRequests === 0 && typeof calendarPreview.previewToken === 'string', 'Calendar preview failed');
+  const appliedCalendar = await mutate('/api/calendar/apply', { ...companyChange, previewToken: calendarPreview.previewToken, operationKey: `http.calendar.${suffix}`, reason: 'Synthetic future company day' });
+  check(appliedCalendar.applied === true, 'Calendar change not applied');
+  const calendar = await fresh.request(`/api/calendar/${nextYear}`, 200);
+  check(calendar.holidays.some(day => day.date === companyChange.date && day.source === 'company' && day.active), 'Applied company day missing');
+
   step = 'new account forced change and denied administration';
   const employeeClient = new Client();
   const employeeLogin = await employeeClient.post('/api/auth/login', {
@@ -177,6 +217,14 @@ try {
   await employeeFresh.post('/api/auth/login', { email: created.user.email, password: employeePassword });
   const forbidden = await employeeFresh.request('/api/admin/catalog', 403);
   check(forbidden.error?.code === 'FORBIDDEN', 'Employee can access administration');
+  const ownBalance = await employeeFresh.request(`${balancePath}/${leaveYear}`, 200);
+  check(ownBalance.balance.availableHours === -16, 'Employee cannot read own balance');
+  const scopedPeople = await employeeFresh.request('/api/balances/people', 200);
+  check(scopedPeople.people.length === 1 && scopedPeople.people[0].id === created.user.id && !scopedPeople.people[0].canManage, 'Balance people list leaks coworkers or grants edits');
+  await employeeFresh.request(`/api/balances/users/${userId}/${leaveYear}`, 403);
+  const { csrfToken: employeeCsrf } = await employeeFresh.request('/api/auth/csrf', 200);
+  await employeeFresh.request(`${balancePath}/${leaveYear}/limit`, 403, { operationKey: `http.denied.${suffix}`, expectedVersion: corrected.version, annualHours: 999, reason: 'Denied synthetic edit' }, employeeCsrf);
+  await employeeFresh.request('/api/calendar/preview', 403, companyChange, employeeCsrf);
   await employeeFresh.post('/api/auth/logout', {});
 
   step = 'logout and session revocation';
@@ -184,7 +232,7 @@ try {
   check(loggedOut.status === 'logged_out', 'Logout failed');
   const anonymous = await fresh.request('/api/auth/me', 401);
   check(anonymous.error?.code === 'AUTH_REQUIRED', 'Logout did not revoke session');
-  console.log('Real HTTP auth smoke passed: CSRF, session persistence, forced change, revocation, admin access, dictionary/account CRUD, stale version, employee isolation and logout.');
+  console.log('Real HTTP smoke passed: auth/session/CSRF, administration, balances/opening/corrections/deficit, stale writes, calendar preview/apply, employee isolation and logout.');
 }
 
 main().catch(() => {

@@ -21,6 +21,10 @@ class LeaveAccount
     #[ORM\Column]
     private int $movementRevision = 0;
 
+    // Null is an unconfigured year; zero is an explicitly configured zero entitlement.
+    #[ORM\Column(nullable: true)]
+    private ?int $annualLimitHours = null;
+
     public function __construct(
         #[ORM\ManyToOne]
         #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
@@ -56,6 +60,20 @@ class LeaveAccount
     public function getMovementRevision(): int
     {
         return $this->movementRevision;
+    }
+
+    public function getAnnualLimitHours(): ?int
+    {
+        return $this->annualLimitHours;
+    }
+
+    public function setAnnualLimitHours(int $hours): void
+    {
+        if ($hours < 0 || $hours > 1000000) {
+            throw new \InvalidArgumentException('An annual limit must be nonnegative whole hours within the supported range.');
+        }
+        $this->annualLimitHours = $hours;
+        $this->touch();
     }
 
     /**

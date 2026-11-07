@@ -1,7 +1,8 @@
 # Otwarte pytania
 
-Stan: 7 listopada 2026 r., po odpowiedziach przed etapem 4. Q1 i Q5 rozstrzygnięte;
-Q8 rozstrzygnięte częściowo. Pozostałe pytania są otwarte.
+Stan: 7 listopada 2026 r., po odpowiedziach przed etapem 5. Q1, Q3, Q5, Q6, Q8
+i Q9 rozstrzygnięte; Q4 rozstrzygnięte dla etapu 5. Otwarte pozostają Q2, Q7
+oraz szczegóły korekt wniosków w etapie 7.
 
 Pytania nie blokują audytu i dokumentacji w etapie 1. Należy je zadać przed pracą,
 której wynik zależy od odpowiedzi. Jeżeli wpływ na model ujawni się wcześniej,
@@ -19,12 +20,16 @@ Nie blokują przedstawienia planu, ale blokują implementację zależnego zachow
 |---|---|---|
 | Q1 | Rozstrzygnięte przed etapem 2 | Jeden wniosek obejmuje zakres pełnych dni albo jeden dzień na 1–7 pełnych godzin. Nie obsługujemy częściowych godzin dla zakresu wielodniowego. Decyzja B18. |
 | Q2 | Część o dzisiaj przed etapem 6; korekty przed 7 | Czy pracownik może składać wnioski na dzisiejszy dzień? Bez godzin od–do nie znamy faktycznej pory rozpoczęcia. Czy uprawniona osoba zmienia rozpoczęty/przeszły wniosek bezpośrednio, czy składa zmianę do akceptacji? Jak obsłużyć jej własny wniosek? Zachować wyjątek kierownika i zakaz własnej akceptacji zastępcy. |
-| Q3 | Przed etapem 5 | Jak potraktować oczekujące stare wnioski przy zmianie roku? Czy przyszły urlop może korzystać z przewidywanego przeniesienia przed rozliczeniem poprzedniego roku? Nie udostępniać tych samych godzin dwukrotnie. |
-| Q4 | Przed etapem 5, rozszerzyć w 7 | Co zrobić, gdy obniżenie limitu lub korekta historyczna powoduje niedobór wobec zatwierdzonych urlopów: blokada korekty czy jawny niedobór wymagający uporządkowania? Nie anulować samodzielnie zatwierdzonych wniosków. |
+| Q3 | Rozstrzygnięte — B25 | Stare rezerwacje pozostają; UoP przenosi wolne godziny od początku roku. Późniejsze zwolnienie starej rezerwacji udostępnia dodatkową zaległość. Bez przewidywanego przeniesienia przed początkiem roku; przyszły ręczny limit dostępny. |
+| Q4 | Rozstrzygnięte dla etapu 5 — B26; procedury wniosków w 7 | Korekta z uzasadnieniem może powodować jawny niedobór. Nie anulujemy zatwierdzonych urlopów; nowe obciążenia zwiększające niedobór są blokowane. |
 | Q5 | Rozstrzygnięte przed etapem 4 | B19–B20: datowane zmiany i zachowanie wersji zasad. B22–B24: historia według dat nieobecności (stary/nowy zespół), pełna historia dla właściciela/admina; od dnia przeniesienia przyszłe oczekujące wnioski obsługuje nowy przełożony, wcześniejsze akceptacje pozostają ważne. Wnioski przekraczające granicę zespołów obsługuje administrator bez dzielenia. Zmiana formy zatrudnienia nie przelicza złożonych wniosków; nowe używają formy z dnia nieobecności. |
-| Q6 | Przed etapem 5 | Czy kierownik może zmieniać także własny limit? Uprawnienie do zatwierdzania własnego urlopu nie rozstrzyga tej kwestii. |
+| Q6 | Rozstrzygnięte — B27 | Własny limit kierownika zmienia administrator. Zastępca nie zmienia limitów. |
 | Q7 | Przed wdrożeniem produkcji | Docelowy adres i TLS, odpowiedzialny za serwer, miejsce i retencja backupów, retencja historii, wymagania firmowych skanerów i sposób przekazywania haseł tymczasowych. Ustalić konkretną konfigurację bez publikowania sekretów. |
-| Q8 | Podstawa rozstrzygnięta; procedura korekt przed etapem 5 | Potwierdzono datę rozpoczęcia ewidencji dla pracownika, limit bieżącego roku, wykorzystanie z bieżącej rocznej puli do dnia poprzedniego i pozostałość starszych pul osobno według roku pochodzenia (B21). Wcześniejsze nieobecności są uwzględnione w danych początkowych i nie mogą pomniejszyć salda ponownie. Nadal trzeba ustalić szczegółową procedurę korekt danych/wniosków sprzed daty granicznej; nie odtwarzamy pojedynczych wniosków z samego agregatu. |
-| Q9 | Przed etapem 5 | Jak dodanie lub usunięcie firmowego dnia wolnego wpływa na złożone i zaakceptowane wnioski? Ustalić zakres dat i kontrolowane przeliczenie godzin/salda; nie zmieniać historycznych rozliczeń po cichu. |
+| Q8 | Rozstrzygnięte — B21 i B28 | Dane początkowe według daty rozpoczęcia: limit, wykorzystanie bieżącej puli, pozostałości starszych pul. Korekty z uzasadnieniem i audytem, bez ponownego obciążania historycznymi wnioskami. Data startu zablokowana po rozpoczęciu rozliczeń wniosków. |
+| Q9 | Rozstrzygnięte — B29 | Przyszłe daty, podgląd wpływu i potwierdzenie administratora; jawne korekty istniejących wniosków, zwrot/zwiększenie godzin, anulowanie lub wycofanie przy zerze. Brak zbiorczego przeliczania przeszłości. |
 
-Dodatkowe dni wolne firmy i obowiązkowość komentarza do korekty/odrzucenia można ustalić przy odpowiednim ekranie. Szczegóły wyglądu proponuje wykonawca w ramach stylistyki Notus; decyzji biznesowych nie zastępuje domyślnym zachowaniem biblioteki UI.
+Zarządzanie firmowymi dniami wolnymi oraz obowiązkowe uzasadnienie korekt limitów,
+danych początkowych i kalendarza rozstrzygnięto dla etapu 5. Do ustalenia przy
+kolejnych etapach pozostają uzasadnienia odrzucenia i procedury indywidualnych
+korekt wniosków. Szczegóły wyglądu proponuje wykonawca w ramach stylistyki Notus;
+decyzji biznesowych nie zastępuje domyślnym zachowaniem biblioteki UI.

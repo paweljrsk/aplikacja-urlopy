@@ -24,6 +24,10 @@ class Holiday
     #[ORM\Column]
     private bool $active = true;
 
+    #[ORM\Version]
+    #[ORM\Column(type: 'integer')]
+    private int $version = 1;
+
     public function __construct(\DateTimeImmutable $date, string $name)
     {
         $name = trim($name);
@@ -53,6 +57,21 @@ class Holiday
     public function isActive(): bool
     {
         return $this->active;
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
+    }
+
+    public function update(string $name, bool $active): void
+    {
+        $name = trim($name);
+        if ('' === $name || mb_strlen($name) > 255) {
+            throw new \InvalidArgumentException('Holiday name must contain 1–255 characters.');
+        }
+        $this->name = $name;
+        $this->active = $active;
     }
 
     public function deactivate(): void

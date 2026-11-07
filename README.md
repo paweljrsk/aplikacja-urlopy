@@ -2,20 +2,22 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 4 — administracja użytkownikami, zespołami i słownikami.**
-Dostępne są logowanie, zmiana hasła i panel `/admin`: tworzenie kont z hasłami
-jednorazowymi, edycja i aktywność kont, datowane przypisania zespołu/roli/formy,
-zespoły i wersjonowane rodzaje nieobecności. Kontrolę dostępu, audyt i konflikty
-zapisów egzekwuje backend. Wygląd jest tymczasowy — stylistyka Notus w etapie 8.
-Wnioski, kalendarz i pełne rozliczenia powstaną w kolejnych etapach.
-`GET /api/health` sprawdza kernel/routing, nie gotowość bazy. Zakres opisują
-[administracja](docs/ADMINISTRATION.md) i [model danych](docs/DATA_MODEL.md).
+**Bieżący zakres: etap 5 — kalendarz roboczy, limity i saldo.**
+Dostępne są logowanie, panel administracji `/admin`, limity i saldo `/balances`
+oraz zarządzanie firmowymi dniami wolnymi `/calendar-settings`. Rozliczenia
+obejmują dane początkowe, rezerwacje, obciążenia, korekty i wspólne pule zaległości.
+Formularz składania wniosków oraz główny kalendarz zespołu powstaną w kolejnych
+etapach. Wygląd pozostaje roboczy — pełna stylistyka Notus w etapie 8.
 
-Kod etapu 4: [PR #4](https://github.com/paweljrsk/aplikacja-urlopy/pull/4), gałąź
-`codex/etap-4-administracja`, oparta na [PR #3](https://github.com/paweljrsk/aplikacja-urlopy/pull/3). Poprzednie etapy pozostają
-niescalone; instrukcja poniżej wybiera pełną gałąź etapu 4.
-[CI #16](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42349188537) przeszło:
-198 testów / 4599 asercji, migracje, kontrole kodu, build, Chrome, HTTP, restart i workery.
+Etap 5 ukończony w [PR #5](https://github.com/paweljrsk/aplikacja-urlopy/pull/5),
+gałąź `codex/etap-5-kalendarz-limity-saldo`, oparta na ukończonym
+[PR #4](https://github.com/paweljrsk/aplikacja-urlopy/pull/4). PR-y pozostają niescalone.
+[CI #20 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42357495900):
+268 testów / 6832 asercje, Chrome, migracje, Nginx/PHP-FPM, restart i workery.
+Szczegóły i instrukcja ręcznego odbioru: [plan testów](docs/TEST_PLAN.md).
+Instrukcje: [rozliczenia](docs/ACCOUNTING.md), [API](docs/BALANCES_API.md),
+[kalendarz](docs/CALENDAR.md), [administracja](docs/ADMINISTRATION.md).
+`GET /api/health` sprawdza kernel/routing, nie gotowość bazy.
 
 
 ## Technologie
@@ -44,7 +46,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/etap-4-administracja
+git switch codex/etap-5-kalendarz-limity-saldo
 make init
 make verify
 make db-validate
@@ -52,7 +54,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 4, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 4 dodaje wersje zespołów i form zatrudnienia, historyczne nazwy rodzajów oraz blokadę transakcyjną administracji. Istniejące słowniki, wnioski i ich zasady pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 5, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Migracje zachowują istniejące limity, dane początkowe, księgowania i historię wniosków. Istniejące słowniki, wnioski i ich zasady pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 
@@ -102,6 +104,22 @@ Sesja wygasa po 60 minutach bezczynności lub 8 godzinach od logowania. Dezaktyw
 zmiana danych uwierzytelniania lub uprawnień unieważniają dostęp przy następnym żądaniu.
 Szczegóły API, granice kontroli dostępu i założenia techniczne:
 [uwierzytelnianie](docs/AUTHENTICATION.md).
+
+## Konfiguracja limitów i kalendarza
+
+Po zalogowaniu otwórz **Limity i saldo** (`/balances`). Administrator wybiera osobę,
+rok i **Ustaw dane początkowe**: datę startu, limit roczny, wykorzystanie bieżącej
+puli przed startem i pozostałości starszych pul UoP. Kolejne lata otrzymują ręczny
+limit. Kierownik może robić to dla innych osób własnego zespołu; jego własny limit
+zmienia administrator. Zastępca ma odczyt. Pracownik widzi własne saldo.
+
+Korekty wymagają powodu i pozostają w historii. Ujemne saldo jest jawne i nie
+anuluje zatwierdzonych urlopów. Szczegóły oraz wzór: [rozliczenia](docs/ACCOUNTING.md).
+
+Administrator zarządza przyszłymi firmowymi dniami wolnymi przez
+`/calendar-settings`: najpierw podgląd wpływu na wnioski, potem potwierdzenie.
+Polskie święta wyliczane są lokalnie dla lat 2025–2100 według opisanych reguł;
+firmowe dni zastępcze wpisuje administrator. [Zasady kalendarza](docs/CALENDAR.md).
 
 ## Codzienna praca
 
@@ -163,7 +181,7 @@ Build frontendu:
 docker compose exec -T node npm run build
 ```
 
-GitHub Actions w `.github/workflows/checks.yml` definiuje kontrole startu, API, bazy, powtórzenia migracji, zgodności schematu, ponownego ładowania demo, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli. Scenariusze przeglądarkowe logowania i administracji w Chrome używają jawnie syntetycznych odpowiedzi API i sprawdzają zachowanie ekranów; prawdziwy backend jest sprawdzany osobnymi testami HTTP z MySQL. Dodatkowy przebieg logowania przez Nginx i PHP-FPM potwierdza działanie cookie, CSRF, wymuszonej zmiany hasła, tworzenia słowników/kont, konfliktów wersji, odmowy administracji pracownikowi i wylogowania w uruchomionym stosie. Narzędzie `playwright-core@1.62.1` jest instalowane tylko na czas kontroli CI, poza zależnościami aplikacji.
+GitHub Actions w `.github/workflows/checks.yml` definiuje kontrole startu, API, bazy, powtórzenia migracji, zgodności schematu, ponownego ładowania demo, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli. Scenariusze przeglądarkowe logowania, administracji, salda i kalendarza firmowego w Chrome używają jawnie syntetycznych odpowiedzi API i sprawdzają zachowanie ekranów; prawdziwy backend jest sprawdzany osobnymi testami HTTP z MySQL. Dodatkowy przebieg logowania przez Nginx i PHP-FPM potwierdza działanie cookie, CSRF, wymuszonej zmiany hasła, tworzenia słowników/kont, konfliktów wersji, danych początkowych, korekt, niedoboru, zmiany kalendarza, izolacji pracownika i wylogowania w uruchomionym stosie. Narzędzie `playwright-core@1.62.1` jest instalowane tylko na czas kontroli CI, poza zależnościami aplikacji.
 
 Opcjonalne procesy Messenger/Scheduler uruchamia `make workers`. Używają transportów `async` i `scheduler_default`; nie wykonują jeszcze zadań urlopowych. Biblioteka `symfony/amqp-messenger` zapewnia obsługę istniejącego transportu RabbitMQ. Zwykły start aplikacji nie wymaga uruchamiania workerów.
 
@@ -172,6 +190,9 @@ Faktyczne wyniki i ograniczenia środowiska opisano w [planie testów](docs/TEST
 ## Dokumentacja i dalsza praca
 
 - [Wymagania i macierz uprawnień](docs/REQUIREMENTS.md)
+- [Limity, rozliczenia i wzór salda](docs/ACCOUNTING.md)
+- [API salda i kalendarza](docs/BALANCES_API.md)
+- [Kalendarz roboczy i kontrolowane zmiany](docs/CALENDAR.md)
 - [Administracja, pierwsza konfiguracja i API](docs/ADMINISTRATION.md)
 - [Model danych i granice etapu 2](docs/DATA_MODEL.md)
 - [Logowanie, API i obsługa haseł](docs/AUTHENTICATION.md)
