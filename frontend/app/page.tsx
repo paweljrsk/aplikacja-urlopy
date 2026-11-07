@@ -1,5 +1,5 @@
-import { AuthScreen } from "./components/auth-screen";
+import { TeamCalendarScreen } from "./components/team-calendar-screen";
 
 export default function Home() {
-  return <AuthScreen screen="home" />;
+  return <TeamCalendarScreen />;
 }

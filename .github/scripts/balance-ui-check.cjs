@@ -55,7 +55,8 @@ function balanceFor(id, selectedYear) {
       if (method === 'GET' && match) return reply(200, { balance: balanceFor(Number(match[1]), Number(match[2])) });
       match = path.match(/^\/api\/calendar\/(\d+)$/);
       if (method === 'GET' && match) { calendarReads++; return reply(200, { year: Number(match[1]), timezone: 'Europe/Warsaw', hoursPerDay: 8, minimumYear: 2025, maximumYear: 2100, holidays }); }
-      assert.equal(request.headers()['x-csrf-token'], 'synthetic-balance-csrf');
+      assert.equal(method, 'POST', `Unexpected synthetic API request: ${method} ${path}`);
+      assert.equal(request.headers()['x-csrf-token'], 'synthetic-balance-csrf', `Missing CSRF header: ${method} ${path}`);
       const data = request.postDataJSON();
       if (path.startsWith('/api/balances/') && method === 'POST') {
         operationKeys.push(data.operationKey);
@@ -101,6 +102,10 @@ function balanceFor(id, selectedYear) {
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(`${baseUrl}/balances`);
     await page.waitForURL(url => url.pathname === '/login');
+    // The URL commits before the login screen finishes checking its session.
+    // Keep this session anonymous until that check settles; otherwise the login
+    // screen can redirect to the home page while the next navigation is starting.
+    await page.getByRole('heading', { name: 'Zaloguj się', exact: true }).waitFor();
     session = admin;
     await page.goto(`${baseUrl}/balances`);
     await page.getByLabel('Osoba', { exact: true }).selectOption('2');

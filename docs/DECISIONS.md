@@ -86,6 +86,19 @@ Użytkownik potwierdził obie przedstawione propozycje odpowiedzią „Tak”.
 | B32 | Q2 — korekty rozpoczętych/przeszłych wniosków | Uprawniony kierownik, zastępca lub administrator wykonuje korektę bezpośrednio po podglądzie i jawnym potwierdzeniu, z obowiązkowym powodem, decyzją i historią. Kierownik może poprawić własny wniosek; własny wniosek zastępcy poprawia kierownik albo administrator. Zachowujemy zakres zespołów i B22–B24. Dzisiejsze/przyszłe zmiany stosują zwykłą propozycję i decyzję; granica dnia według B30. Przeszłość sprzed początku ewidencji nadal poprawiana przez dane początkowe B28. |
 | B33 | Q4 — korekta historycznego wniosku i niedobór | Korektę zwiększającą niedobór, także po wykorzystaniu przeniesionej puli w kolejnym roku, dopuszcza wyłącznie administrator po podglądzie i jawnym potwierdzeniu niedoboru, z uzasadnieniem. Nie anuluje innych urlopów; zachowuje pochodzenie godzin i audyt. Nowe obciążenia zwiększające niedobór są blokowane. Kierownik/zastępca koryguje w swoim zakresie bez zwiększenia niedoboru; uprawnienia do limitów z B26/B27 bez zmian. |
 
+## Doprecyzowanie przed etapem 8 — 7 listopada 2026 r.
+
+| ID | Decyzja użytkownika | Konsekwencja |
+|---|---|---|
+| B34 | Aplikacja ma być prosta i intuicyjna. Po logowaniu kalendarz urlopów pracowników, pod nim przyszłe nieobecności na około dwa miesiące i dostępny przycisk dodania wniosku. | Podstawowy kalendarz i lista powstają już w etapie 8. Użytkownik pozostawił wykonawcy wybór jednego/dwóch tygodni oraz ocenę modalu; zakres danych pozostaje według B15 i B22–B24. |
+
+Decyzja UX wykonawcy: dwa tygodnie na komputerze, jeden na telefonie, przełącznik
+1/2 tygodnie i nawigacja okresu. Nowy wniosek w krótkim modalu na komputerze,
+pełnoekranowym dialogu na telefonie; bez kreatora wielu kroków. Formularz pokazuje
+podgląd obliczony przez backend, a zapis ponownie sprawdza reguły. Dane kalendarza
+współpracowników pochodzą z osobnego, ograniczonego DTO, bez sald i rodzajów.
+To decyzje realizacyjne w udzielonym zakresie, nie dodatkowe odpowiedzi biznesowe.
+
 ## Ustalony sposób realizacji
 
 | ID | Zasada | Status |
@@ -199,6 +212,35 @@ testów pozostają w TEST_PLAN. Sam wpis nie oznacza zaliczenia odbioru.
 | DT50 | Zatwierdzona zmiana ma własny zakres uprawnień, a zastąpiona wersja jest osobną historią. | Oczekująca propozycja wymaga dostępu do starego i nowego zakresu. Odczyt osobno filtruje wersję obowiązującą i oczekującą. Podgląd nie ujawnia pul przełożonemu uprawnionemu tylko do dawnego wniosku, bez prawa do bieżącego salda. |
 
 ## Problemy i ograniczenia
+
+### E13 — pozycja dialogu na komputerze
+
+Po zielonym CI #28 odbiór zrzutów wykrył dialog przy lewej górnej krawędzi:
+reset CSS usunął domyślny margines okna. Dialog ma teraz jawne `inset: 0`
+i `margin: auto`; telefon nadal używa pełnego ekranu z marginesem 0.
+Test Chrome sprawdza wyśrodkowanie względem okna, oprócz dotychczasowych
+kontroli rozmiaru i klawiatury.
+
+### E12 — nawigacja klawiaturą w dialogu
+
+CI #27 wykrył wyjście fokusu z dialogu przy Shift+Tab. Samo natywne `showModal()`
+zapewnia nieaktywne tło, ale w Chrome nie gwarantowało oczekiwanego zawinięcia
+klawiatury. Dodano jawne zawijanie Tab/Shift+Tab między widocznymi aktywnymi
+kontrolkami, z obsługą początkowego nagłówka i wyłączonych fieldsetów. Zachowano
+natywne Escape, nieaktywne tło i przywrócenie fokusu; asercja pozostaje bez zmian.
+
+### E11 — wyścig syntetycznej sesji w regresji Chrome
+
+[CI #25](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42402053433),
+uruchomione po samym dopisaniu raportu etapu 7, zatrzymało test ekranu salda.
+Test przełączał syntetyczną sesję na administratora po samej zmianie URL na login,
+przed zakończeniem odczytu sesji przez formularz. Login wracał wtedy na stronę
+główną i wykonywał GET, którego matcher błędnie oczekiwał jako zapisu z CSRF.
+Mechanizm odtworzono na rzeczywistym komponencie React i kliencie API w lokalnym DOM.
+Testy czekają teraz na gotowy anonimowy formularz przed zmianą sesji. Asercje CSRF
+zapisów pozostają ścisłe; dodano diagnostykę metody i ścieżki. Produkcyjny klient
+już pobierał świeży token dla każdej mutacji i odmawiał pustego tokenu, więc nie
+wymagał zmiany. Odtworzenie i test klienta PASS; Chrome zostanie sprawdzony z etapem 8.
 
 ### E01 — środowisko testowe PHPUnit w Compose
 

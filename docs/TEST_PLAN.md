@@ -647,3 +647,63 @@ zapisu wymagają sesji i tokenu CSRF; w etapie 7 nie dodano formularzy frontendu
 
 Automatyczne odtworzenie: `make test`; pełny stos sprawdza workflow GitHub Actions.
 Nie uruchamiać skryptu HTTP CI na rzeczywistych kontach i danych użytkowych.
+
+## Etap 8 — weryfikacja i zakres odbioru
+
+7 listopada 2026 r. PHP 8.4.24 + MySQL 8.0.32, UTC i kontrolowany czas Warszawy:
+**420 testów / 18 015 asercji — PASS**, 83,8 s, 268,5 MB. Nowe 19 testów preview
+(1634 asercje) i 10 testów kalendarza (1290 asercji) przeszły też osobno.
+PHPStan pełnego backendu, ESLint, TypeScript i produkcyjny build Next — PASS.
+Bez nowych zależności aplikacji i migracji. Fonty oraz ich licencje zapisano lokalnie.
+
+Nowe kontrole backendu obejmują rollback całego podglądu, 8→3 h, 16→24 h,
+przełom roku, saldo, limit 8 h, nieaktualne wersje, CSRF, odwołany dostęp,
+ograniczony kalendarz, transfery, ukryte propozycje, 102 wpisy bez obcinania i święta.
+
+**[CI #29 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42409969383)**
+na kodzie `95bf3874336b5d47e978d6756f248ecdf25e7fb7`, PHP 8.3.36 + MySQL 8.0.32:
+**420 testów / 18 015 asercji**, 33,2 s, 62,5 MB. Migracje i aktualizacja danych,
+PHPStan, lint YAML/container, ESLint, TypeScript, build Next, restart zachowujący
+dane i oba workery — PASS. Nie są to deklaracje na podstawie samego odczytu kodu.
+
+Regresje Chrome wcześniejszych ekranów oraz nowy scenariusz pracownika — PASS:
+8→3 h, podgląd bez zapisu, Tab/Shift+Tab/Escape i powrót fokusu, wyśrodkowany
+dialog, `?new=1`, podwójne kliknięcie i utrata odpowiedzi po zapisie, stabilny klucz
+ponowienia, edycja/wycofanie, wersja obowiązująca i proponowana 16→24 h,
+anulowanie bez zwrotu przed decyzją, walidacja, konflikt i ponowny odczyt,
+kalendarz 7/14 dni i dwa miesiące, przełom roku, prywatność oraz cofnięcie sesji.
+Te scenariusze UI używają syntetycznych odpowiedzi API.
+
+Osobny rzeczywisty E2E Chrome → Nginx → PHP-FPM → MySQL również PASS:
+logowanie pracownika, formularz 8→3 h, rollback podglądu, rezerwacja 3 h i odczyt
+po odświeżeniu, akceptacja w oddzielnej sesji przełożonego przez API, widoczny
+zaakceptowany urlop, propozycja 5 h z rezerwacją wyłącznie dodatkowych 2 h oraz
+wycofanie propozycji zachowujące pierwotne 3 h. Dotychczasowy rzeczywisty HTTP
+wniosków, rozliczeń, korekt, autoryzacji i administracji też PASS.
+
+Odbiór wizualny zrzutów 1440 px / 390 px — PASS: kalendarz, lista, długie nazwiska,
+przełom roku, szczegóły wersji, formularz i walidacja; brak obcięć i nakładania.
+Artefakt `synthetic-ui-screenshots` zawiera 17 zrzutów, w tym 8 nowych ekranów.
+CI #25 ujawnił wyścig testowej sesji (E11), CI #27 wyjście fokusu (E12), a kontrola
+zrzutów po zielonym CI #28 pozycję dialogu po resecie CSS (E13). Poprawki są objęte
+zielonym CI #29; nie pominięto ani nie osłabiono wcześniejszych asercji.
+
+### Ręczny odbiór etapu 8
+
+1. Zaktualizuj projekt według README, zachowując dane. Zaloguj się syntetycznym
+   pracownikiem z przypisaniem i skonfigurowanym saldem.
+2. Na ekranie głównym sprawdź kalendarz dwóch tygodni, na telefonie jednego,
+   przełącznik okresu, strzałki i „Dzisiaj”. Lista poniżej pokazuje kolejne dwa
+   miesiące. Współpracownik nie widzi cudzego rodzaju nieobecności ani salda.
+3. „Złóż wniosek” otwiera krótki dialog. Wybierz przyszły dzień roboczy: podgląd
+   powinien pokazać 8 h. Zmień na „Część dnia” i 3 h; podgląd nie zmienia salda.
+4. Wyślij. W „Moich wnioskach” odśwież stronę, otwórz szczegóły i sprawdź 3 h
+   oczekującej rezerwacji. Edytuj na 5 h lub wycofaj i sprawdź zmianę salda.
+5. Po zatwierdzeniu przez istniejące API przełożonego sprawdź zaakceptowany status,
+   zgłoś zmianę terminu/wymiaru i porównaj obowiązującą oraz proponowaną wersję.
+   Anulowanie pozostawia dotychczasowy urlop i saldo do decyzji.
+6. Przejdź Tab/Shift+Tab przez dialog, zamknij Escape (zmieniony formularz wymaga
+   potwierdzenia zamknięcia), sprawdź powrót fokusu. Sprawdź telefon oraz komunikaty
+   braku salda, konfliktu, wygasłej sesji i bezpiecznego ponowienia po utracie odpowiedzi.
+
+Kolejka decyzji i formularze korekt przełożonego pozostają w etapie 10.

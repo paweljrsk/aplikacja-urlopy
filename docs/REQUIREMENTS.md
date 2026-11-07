@@ -1,6 +1,6 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.5 • stan uzgodnień z 7 listopada 2026 r., po odpowiedziach przed etapem 7.
+Wersja 1.6 • stan uzgodnień z 7 listopada 2026 r., po doprecyzowaniu ekranu głównego przed etapem 8.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
 [decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
@@ -158,6 +158,13 @@ Historia obejmuje autora operacji, czas, zmienione wartości, decyzję i powiąz
 ### 1.8. Interfejs
 
 Głównym ekranem jest kalendarz zespołu. Wygląd powinien korzystać ze stylistyki https://notus.pl i https://notus.pl/banki/ oraz zapewniać prostą, czytelną obsługę. Widok ma rozróżniać oczekujące i zaakceptowane nieobecności, także bez polegania wyłącznie na kolorze.
+
+Już w etapie 8 ekran po zalogowaniu pokazuje kalendarz nieobecności pracowników,
+pod nim listę nadchodzących nieobecności na około dwa miesiące oraz wyraźny przycisk
+„Złóż wniosek”. Prostota i intuicyjność mają pierwszeństwo przed rozbudowanym panelem.
+Podstawowy kalendarz przeniesiono z etapu 9 do 8 zgodnie z poleceniem użytkownika.
+Przedział jednego lub dwóch tygodni i sposób otwierania krótkiego formularza
+pozostawiono ocenie wykonawcy; nie zmienia to zasad uprawnień i rozliczeń.
 
 Potrzebne widoki: logowanie i zmiana hasła, kalendarz, formularz, moje wnioski i szczegóły, moje saldo, kolejka decyzji przełożonego, salda zespołu oraz administracja. Widoki mają działać na telefonie i komputerze. Dane z innych zespołów lub prywatne dane kolegów nie mogą trafiać do nieuprawnionego klienta przez API.
 

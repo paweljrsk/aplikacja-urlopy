@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { AppHeader } from "./app-shell";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { getCurrentUser, redirectForAuthError, roleLabel, type CurrentUser } from "@/lib/auth-api";
+import { getCurrentUser, redirectForAuthError, type CurrentUser } from "@/lib/auth-api";
 import { balanceError } from "@/lib/balance-api";
 
 export function AccountingNotice({ children, kind = "error" }: { children: ReactNode; kind?: "error" | "success" | "info" }) {
@@ -54,7 +55,7 @@ export function AccountingGate({ screen, children }: { screen: "balances" | "cal
   }, [screen]);
   return <div className="workspace admin-workspace accounting-workspace">
     <a className="skip-link" href="#main">Przejdź do treści</a>
-    <header className="workspace-header"><Link href="/" prefetch={false} className="brand"><span className="brand-mark" aria-hidden="true">u</span><div>Urlopy<span>Zespół IT</span></div></Link><div className="header-account">{actor && <span>{actor.firstName} {actor.lastName} · {roleLabel(actor)}</span>}<Link href="/" prefetch={false} className="button button-secondary button-small">Moje konto</Link></div></header>
+    <AppHeader user={actor} active={screen === "balances" ? "balances" : "calendar-settings"} />
     <main id="main" className="workspace-main accounting-main">
       <div className="workspace-heading"><div><span className="eyebrow">Rozliczenia nieobecności</span><h1>{screen === "balances" ? "Limity i saldo" : "Firmowe dni wolne"}</h1><p>{screen === "balances" ? "Godziny dostępne, zaplanowane i wykorzystane — z historią zmian." : "Zaplanuj dni wolne i sprawdź ich wpływ na złożone wnioski."}</p></div></div>
       {actor && <nav className="accounting-nav" aria-label="Rozliczenia"><Link href="/balances" prefetch={false} aria-current={screen === "balances" ? "page" : undefined}>Limity i saldo</Link>{actor.isAdministrator && <><Link href="/calendar-settings" prefetch={false} aria-current={screen === "calendar" ? "page" : undefined}>Firmowe dni wolne</Link><Link href="/admin" prefetch={false}>Administracja</Link></>}</nav>}

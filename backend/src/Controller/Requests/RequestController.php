@@ -51,6 +51,24 @@ final class RequestController extends AbstractController
         return $this->execute(fn (User $actor): JsonResponse => $this->json(['operation' => $this->workflow->create($actor, $this->read($request))], 201));
     }
 
+    #[Route('/api/requests/preview', methods: ['POST'])]
+    public function previewCreate(Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['preview' => $this->workflow->previewCreate($actor, $this->read($request))]));
+    }
+
+    #[Route('/api/requests/{id}/edit-preview', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]
+    public function previewEdit(int $id, Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['preview' => $this->workflow->previewEdit($actor, $id, $this->read($request))]));
+    }
+
+    #[Route('/api/requests/{id}/change-preview', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]
+    public function previewChange(int $id, Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['preview' => $this->workflow->previewChange($actor, $id, $this->read($request))]));
+    }
+
     #[Route('/api/requests/{id}/edit', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]
     public function edit(int $id, Request $request): JsonResponse
     {

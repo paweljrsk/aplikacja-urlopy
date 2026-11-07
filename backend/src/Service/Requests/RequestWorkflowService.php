@@ -67,6 +67,49 @@ final class RequestWorkflowService
     /** @param array<string, mixed> $data
      * @return array<string, mixed>
      */
+    public function previewCreate(User $actor, array $data): array
+    {
+        return $this->previewApplication($actor, null, 'created', $data);
+    }
+
+    /** @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public function previewEdit(User $actor, int $id, array $data): array
+    {
+        return $this->previewApplication($actor, $id, 'edited', $data);
+    }
+
+    /** @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public function previewChange(User $actor, int $id, array $data): array
+    {
+        return $this->previewApplication($actor, $id, 'change_proposed', $data);
+    }
+
+    /** Run the actual workflow and accounting inside an always-rolled-back transaction.
+     * A successful preview neither reserves hours nor authorizes a later submission.
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function previewApplication(User $actor, ?int $id, string $action, array $data): array
+    {
+        $input = RequestInput::applicationPreview($data, null !== $id);
+        $actorId = $actor->getId() ?? throw new \LogicException('A persisted actor is required.');
+        $connection = $this->em->getConnection();
+        $connection->beginTransaction();
+        try {
+            return $this->execute($actorId, $id, $action, $input, true);
+        } finally {
+            $connection->rollBack();
+            $this->em->clear();
+        }
+    }
+
+    /** @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
     public function proposeCancellation(User $actor, int $id, array $data): array
     {
         return $this->perform($actor, $id, 'cancellation_proposed', RequestInput::decision($data));
@@ -183,8 +226,18 @@ final class RequestWorkflowService
             }
         }
         $before = null === $previous ? [] : $this->snapshot($previous);
+        $beforeBalances = [];
         if (\in_array($action, ['created', 'edited', 'change_proposed'], true)) {
             [$policy, $mode, $start, $end, $days] = $this->application($subject, $data, $request, $previous);
+            if ($preview) {
+                $years = [];
+                foreach ($days as $day) { $years[(int) $day->date->format('Y')] = true; }
+                foreach ($previous?->getDays() ?? [] as $day) { $years[(int) $day->getDate()->format('Y')] = true; }
+                ksort($years, SORT_NUMERIC);
+                foreach (array_keys($years) as $year) {
+                    $beforeBalances[$year] = $this->accounting->getBalance($subject, $year);
+                }
+            }
             $request ??= new LeaveRequest($subject, $this->clock->now());
             $event = $this->event($actor, $subject, $request, $action, $before, $this->applicationSnapshot($policy, $mode, $start, $end, $days));
             if ('edited' === $action && null !== $pending) { $this->em->persist(new RequestDecision($pending, DecisionOutcome::SUPERSEDED, $event)); }
@@ -212,6 +265,21 @@ final class RequestWorkflowService
             $revision = $pending;
         }
         $this->accounting->reconcileRequest($request, $event);
+        if ($preview) {
+            $years = [];
+            foreach ($beforeBalances as $year => $balance) {
+                $after = $this->accounting->getBalance($subject, $year);
+                $years[] = ['year' => $year,
+                    'beforeAvailableHours' => $balance['availableHours'], 'afterAvailableHours' => $after['availableHours'],
+                    // Reservation belongs to the leave year, while available pools may be shared.
+                    // Never derive this value by subtracting/summing available balances across years.
+                    'additionalReservedHours' => max(0, $after['reservedHours'] + $after['changeReservedHours']
+                        - $balance['reservedHours'] - $balance['changeReservedHours'])];
+            }
+            return ['totalHours' => $revision->getTotalHours(),
+                'days' => array_map(static fn ($day): array => ['date' => $day->getDate()->format('Y-m-d'), 'hours' => $day->getHours()], $revision->getDays()),
+                'deductsBalance' => $revision->getPolicy()->deductsBalance(), 'years' => $years, 'timezone' => 'Europe/Warsaw'];
+        }
         return $this->receipt($actor, $subject, $request, $revision, $key, $hash, $action);
     }
 

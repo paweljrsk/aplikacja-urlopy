@@ -101,6 +101,8 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(`${baseUrl}/admin`);
     await page.waitForURL(url => url.pathname === '/login');
+    // A committed URL does not mean the redirected screen's session check is done.
+    await page.getByRole('heading', { name: 'Zaloguj się', exact: true }).waitFor();
     session = { ...admin, isAdministrator: false };
     const beforeDenied = adminReads;
     await page.goto(`${baseUrl}/admin`);
@@ -109,6 +111,7 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
     session = { ...admin, mustChangePassword: true };
     await page.goto(`${baseUrl}/admin`);
     await page.waitForURL(url => url.pathname === '/change-password');
+    await page.getByRole('heading', { name: 'Ustaw własne hasło', exact: true }).waitFor();
     session = admin;
     await page.goto(`${baseUrl}/admin`);
     await page.getByRole('button', { name: 'Dodaj słowniki startowe' }).click();

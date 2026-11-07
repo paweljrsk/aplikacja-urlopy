@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AppHeader } from "./app-shell";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, errorMessage, getApi, getCurrentUser, mutateApi, postApi, redirectForAuthError, roleLabel, type CurrentUser, type TeamRole } from "@/lib/auth-api";
 import { displayDate, warsawToday, type AbsenceType, type AdminUser, type Catalog, type DictionaryItem, type EmploymentType, type TemporaryCredential } from "@/lib/admin-api";
@@ -158,7 +159,7 @@ export function AdminScreen() {
 
   return <div className="workspace admin-workspace">
     <a className="skip-link" href="#main">Przejdź do treści</a>
-    <header className="workspace-header"><Link className="brand" href="/" prefetch={false}><span className="brand-mark" aria-hidden="true">u</span><div>Urlopy<span>Zespół IT</span></div></Link><div className="header-account">{actor && <span>{actor.firstName} {actor.lastName}</span>}<Link className="button button-secondary button-small" href="/" prefetch={false}>Moje konto</Link>{actor && <button className="button button-secondary button-small" onClick={() => void logout()} disabled={busy}>Wyloguj się</button>}</div></header>
+    <AppHeader user={actor} active="admin" onLogout={() => void logout()} logoutBusy={busy} />
     <main id="main" className="workspace-main admin-main">
       <div className="workspace-heading"><div><span className="eyebrow">Ustawienia aplikacji</span><h1>Administracja</h1><p>Użytkownicy, struktura zespołów i rodzaje nieobecności.</p></div>{actor && <span className="account-badge">Administrator</span>}</div>
       {loading ? <p role="status">Wczytywanie administracji…</p> : forbidden ? <section className="profile-card"><h2>Brak dostępu</h2><p>Ten obszar jest dostępny wyłącznie dla administratora.</p><Link href="/" prefetch={false}>Wróć do konta</Link></section> : <>
