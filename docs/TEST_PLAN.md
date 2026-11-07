@@ -758,7 +758,7 @@ pól, zachowując wszystkie asercje danych. CI #32 zaliczył cały przebieg.
 5. Na telefonie sprawdź filtry, listę dni i pełnoekranowe szczegóły. Administrator
    po zmianie zespołu rozpoczyna z wyczyszczonymi filtrami.
 
-## Etap 10 — weryfikacja w toku
+## Etap 10 — raport odbioru
 
 Lokalne wyniki PHP 8.4.24 + MySQL 8.0.32, UTC:
 
@@ -771,5 +771,43 @@ Sprawdzono rollback rzeczywistych podglądów, decyzje i wszystkie role, widoczn
 historii po transferze, brak ujawnienia bieżącego salda, granice lat, wersje,
 idempotencję i konkurencyjną decyzję; historię administracji z zagnieżdżonymi
 markerami sekretów. Nie dodano migracji ani zależności.
-Nowe regresje Chrome i pełne CI pozostają do wykonania; sam zapis skryptów nie
-potwierdza odbioru. Ręczny odbiór jest opisany w README, sekcja etapu 10.
+Pierwsze przebiegi CI #34–36 zaliczyły **437 testów / 20 849 asercji** na PHP 8.3.36
+i MySQL 8.0.32, kontrole statyczne oraz build. CI #34–35 wykryły mobilne przepełnienie
+od ukrytej etykiety tabeli (E16). CI #36 zaliczył poprawkę, administrację i wszystkie
+wcześniejsze ekrany, po czym wykrył utratę fokusu w nowym dialogu (E18).
+Nie oznaczamy tych przebiegów jako pełnego odbioru. Podczas przeglądu dodano także
+ochronę przed spóźnionym podglądem po utracie dostępu (E17) i osobne regresje.
+
+Pełny [CI #37 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42417402132)
+dla kodu `ed777e033e1a04341a87157bf4efad864897f096`, PHP 8.3.36 + MySQL 8.0.32:
+
+- **437 testów / 20 849 asercji**; migracje, zgodność schematu, powtarzalne demo — PASS.
+- PHPStan, lint YAML/Twig, ESLint, TypeScript i produkcyjny build — PASS.
+- Chrome: wcześniejsze ekrany logowania, administracji, rozliczeń, pracownika i kalendarza — PASS.
+- Salda zespołu: zakres ról, rok i wyszukiwanie, brak limitu a zero, przejście do osoby,
+  mobilne przewijanie; edytory z podglądem, potwierdzeniem, konfliktem i ponowieniem — PASS.
+- Historia administracji: autor/czas/dozwolone zmiany, stronicowanie, błędy/ponowienie,
+  odświeżenie i odebranie dostępu; bez sekretów w odczycie i UI — PASS.
+- Nowy `managed-requests-ui-check.cjs`: wszystkie role, własna decyzja kierownika,
+  zakaz własnej zastępcy, drugi zespół admina, porównanie wersji, powód odrzucenia,
+  podgląd i jawne potwierdzenie, historia autora/decydującego, korekty i niedobór — PASS.
+- Dwie decyzje/stara wersja, niepełne potwierdzenie 200, utrata odpowiedzi,
+  podwójne kliknięcie, ten sam klucz ponowienia, pusta strona z kursorem — PASS.
+- Ponowna autoryzacja bez utraty roboczej korekty, spóźnione podglądy po 403,
+  brak starych danych i akcji, klawiatura i mobile — PASS.
+- Rzeczywisty HTTP przez Nginx/PHP-FPM oraz dotychczasowy E2E pracownika — PASS.
+- Nowy `managed-requests-e2e-check.cjs`, bez przechwytywania API: kierownik akceptuje
+  własne 3 h; zastępca dostaje 403 dla własnego wniosku i akceptuje cudze 5 h;
+  administrator zatwierdza 4 h w drugim zespole. Podglądy nie zapisują zmian,
+  korekta historyczna 6 h → 3 h zwraca dokładnie 3 h, rewizje i audyt są trwałe — PASS.
+- Restart z zachowaniem danych i stabilne workery Messenger/Scheduler — PASS.
+
+Zrzuty kolejki i szczegółów desktop/mobile, decyzji desktop, korekty mobile,
+historii administracji oraz mobilnych sald sprawdzono wizualnie. Dialog decyzji
+jest wyśrodkowany, korekta telefonu wypełnia ekran i przewija treść; przyciski
+potwierdzenia pozostają czytelne. Tabela przewija się we własnym panelu.
+Regresje ekranów używają danych syntetycznych; dodatkowe E2E wykonują prawdziwe
+zapisy przez API i MySQL. To odbiór etapu 10; pełny audyt systemu jest zakresem
+osobno zlecanego etapu 11, konfiguracja produkcji etapu 12.
+
+Ręczny odbiór jest opisany w README, sekcja etapu 10. PR #10 pozostaje niescalony.

@@ -238,6 +238,9 @@ Q7 dotyczy konfiguracji przed produkcją. Zachowujemy B22–B33.
 
 ## Problemy i ograniczenia
 
+Poprawki E15–E18 zweryfikowano w pełnym [CI #37](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42417402132)
+dla kodu `ed777e033e1a04341a87157bf4efad864897f096`: SUCCESS, w tym Chrome i rzeczywisty E2E.
+
 ### E18 — klawiatura po wymianie przycisku podglądu
 
 CI #36 zaliczył salda mobilne i wcześniejsze ekrany, ale wykrył opuszczenie

@@ -2,7 +2,7 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 10 — obsługa zespołu, salda i historia — weryfikacja.**
+**Bieżący zakres: etap 10 — obsługa zespołu, salda i historia — ukończony.**
 W `/management` jest kolejka nowych wniosków, zmian i anulowań oraz dostępna historia.
 Decyzję poprzedza podgląd wpływu na saldo; odrzucenie wymaga uzasadnienia.
 Przeszłe wnioski można skorygować po podglądzie i jawnym potwierdzeniu, zgodnie
@@ -11,8 +11,15 @@ z dotychczasowymi uprawnieniami. Kierownik obsługuje też własne wnioski, zast
 początkowych wymagają podglądu oraz potwierdzenia. W administracji jest karta „Historia”.
 
 Gałąź `codex/etap-10-obsluga-zespolu` bazuje na końcowym etapie 9
-`207ee253ab1ca2900d1affd24e053948915efeaf`. Lokalne testy nowych podglądów i historii,
-kontrole statyczne oraz build przeszły; pełne CI i odbiór Chrome są w toku.
+`207ee253ab1ca2900d1affd24e053948915efeaf`, [PR #10](https://github.com/paweljrsk/aplikacja-urlopy/pull/10).
+[CI #37 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42417402132)
+dla kodu `ed777e033e1a04341a87157bf4efad864897f096`: **437 testów / 20 849 asercji**,
+kontrole statyczne, build i wszystkie regresje Chrome — PASS. Rzeczywisty proces
+obejmuje własną decyzję kierownika, odmowę własnej decyzji zastępcy, obsługę drugiego
+zespołu przez administratora i historyczną korektę 6 h → 3 h z poprawnym zwrotem
+oraz historią autora/uzasadnienia. Restart z zachowaniem danych i workery — PASS.
+Sprawdzono zrzuty desktop/mobile, klawiaturę, konflikty i utracone odpowiedzi.
+PR pozostaje niescalony. Szczegółowy raport jest w [TEST_PLAN.md](docs/TEST_PLAN.md).
 Bez nowych bibliotek ani migracji. Etap 11 wymaga kolejnego polecenia użytkownika.
 
 **Ukończony wcześniej etap 9 — filtry i dopracowanie kalendarza.**
