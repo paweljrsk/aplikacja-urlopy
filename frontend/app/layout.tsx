@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./notus.css";
 
 export const metadata: Metadata = {
   title: "Urlopy zespołu",

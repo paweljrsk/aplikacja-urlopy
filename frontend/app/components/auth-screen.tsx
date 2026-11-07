@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { AppShell, NotusBrand } from "./app-shell";
 import {
   ApiError,
   errorMessage,
@@ -16,7 +17,7 @@ import {
 type Screen = "login" | "change-password" | "home";
 
 function Brand() {
-  return <div className="brand"><span className="brand-mark" aria-hidden="true">u</span><div>Urlopy<span>Zespół IT</span></div></div>;
+  return <NotusBrand />;
 }
 
 function Message({ children, kind = "error" }: { children: ReactNode; kind?: "error" | "success" | "info" }) {
@@ -139,16 +140,13 @@ export function AuthScreen({ screen }: { screen: Screen }) {
   if (screen === "change-password") return <AuthFrame>
     <PasswordChangeForm user={user} />
     <div className="form-footer">
-      {!user.mustChangePassword && <Link href="/" prefetch={false}>Wróć do konta</Link>}
+      {!user.mustChangePassword && <Link href="/account" prefetch={false}>Wróć do konta</Link>}
       <button className="text-button" disabled={loggingOut} onClick={() => void logout()}>{loggingOut ? "Wylogowywanie…" : "Wyloguj się"}</button>
     </div>
     {logoutError && <Message>{logoutError}</Message>}
   </AuthFrame>;
 
-  return <div className="workspace">
-    <a className="skip-link" href="#main">Przejdź do treści</a>
-    <header className="workspace-header"><Brand /><div className="header-account"><span>{user.firstName} {user.lastName}</span><button className="button button-secondary button-small" onClick={() => void logout()} disabled={loggingOut}>{loggingOut ? "Wylogowywanie…" : "Wyloguj się"}</button></div></header>
-    <main id="main" className="workspace-main">
+  return <AppShell user={user} active="account">
       <div className="workspace-heading"><div><span className="eyebrow">Twoje miejsce w zespole</span><h1>Cześć, {user.firstName}.</h1><p>Jesteś zalogowany. Poniżej znajdziesz dane swojego konta.</p></div><span className="account-badge"><span className="status-dot" />{roleLabel(user)}</span></div>
       {logoutError && <Message>{logoutError}</Message>}
       <section className="profile-card" aria-labelledby="profile-title">
@@ -156,12 +154,10 @@ export function AuthScreen({ screen }: { screen: Screen }) {
         <dl className="profile-details"><div><dt>Adres e-mail</dt><dd>{user.email}</dd></div><div><dt>Zespół</dt><dd>{user.team?.name ?? "Brak bieżącego przypisania"}</dd></div><div><dt>Rola</dt><dd>{roleLabel(user)}</dd></div></dl>
       </section>
       <section className="admin-setup"><div><h2>Limity i saldo godzinowe</h2><p>Sprawdź dostępne godziny oraz historię rozliczeń.</p></div><Link href="/balances" className="button button-primary" prefetch={false}>Przejdź do salda</Link></section>
-      <section className="coming-card"><div className="coming-icon" aria-hidden="true">↗</div><div><h2>Przestrzeń na plany zespołu</h2><p>Kalendarz i obsługa wniosków nie są jeszcze dostępne.</p></div></section>
+      <section className="admin-setup"><div><h2>Plany Twojego zespołu</h2><p>Sprawdź nadchodzące nieobecności lub złóż nowy wniosek.</p></div><Link href="/" className="button button-secondary" prefetch={false}>Przejdź do kalendarza</Link></section>
       {user.isAdministrator && <section className="admin-setup"><div><h2>Zarządzanie aplikacją</h2><p>Dodawaj użytkowników, zarządzaj zespołami i rodzajami nieobecności.</p></div><Link href="/admin" className="button button-primary" prefetch={false}>Przejdź do administracji</Link></section>}
       {user.isAdministrator && <AdminPasswords currentUser={user} />}
-    </main>
-    <footer className="workspace-footer">Urlopy zespołu<span>Twoja sesja jest chroniona</span></footer>
-  </div>;
+  </AppShell>;
 }
 
 function LoginForm({ notice, initialError }: { notice: string; initialError: string }) {

@@ -1,4 +1,4 @@
-# API wniosków — etapy 6–7
+# API wniosków — etapy 6–8
 
 Reguły biznesowe: [REQUIREMENTS.md](REQUIREMENTS.md), B18–B33 w
 [DECISIONS.md](DECISIONS.md). Rozliczenia: [ACCOUNTING.md](ACCOUNTING.md).
@@ -37,8 +37,8 @@ liczbę godzin bez pory dnia. Uprawniony przełożony nadal może zdecydować o 
 oczekującym wniosku; rezerwacja nie wygasa przy zmianie dnia ani roku.
 
 Etap 7 dodaje zmiany zatwierdzonego urlopu, anulowanie oraz bezpośrednie korekty
-przeszłości według B32–B33. Formularz i docelowe widoki powstają w dalszych etapach;
-proces jest dostępny przez API, bez nowego ekranu frontendu.
+przeszłości według B32–B33. Etap 8 dodaje podgląd zwykłego formularza obliczany
+przez ten sam backend przed złożeniem, edycją lub propozycją zmiany.
 
 ## Endpointy
 
@@ -51,6 +51,9 @@ HTTP `200`. Utworzenie zwraca `201`, także przy identycznym ponowieniu operacji
 | `GET /api/requests` | Lista własna albo obsługiwanych wniosków |
 | `GET /api/requests/{id}` | Szczegóły i dozwolone wersje historii |
 | `POST /api/requests` | Nowy własny wniosek i rezerwacja |
+| `POST /api/requests/preview` | Podgląd nowego własnego wniosku bez zapisu; wymaga CSRF |
+| `POST /api/requests/{id}/edit-preview` | Podgląd edycji własnego oczekującego wniosku bez zapisu; wymaga CSRF |
+| `POST /api/requests/{id}/change-preview` | Podgląd propozycji zmiany własnego zatwierdzonego urlopu bez zapisu; wymaga CSRF |
 | `POST /api/requests/{id}/edit` | Zastąpienie oczekującej wersji nową, z atomową korektą rezerwacji |
 | `POST /api/requests/{id}/change` | Propozycja zmiany zatwierdzonego urlopu; zabezpieczenie dodatkowych godzin |
 | `POST /api/requests/{id}/cancel` | Propozycja anulowania; dotychczasowy urlop nadal obowiązuje |
@@ -115,6 +118,55 @@ konflikt. `expectedVersion` chroni nowy zapis; nie zmienia tożsamości ponawian
 operacji. Odtwarzanie potwierdzenia nadal wymaga aktualnego dostępu do odpowiedniej
 wersji wniosku. Potwierdzenie dotyczy wykonanego zapisu; późniejsze zmiany odczytaj
 przez `GET /api/requests/{id}`.
+
+## Podgląd formularza przed złożeniem lub zmianą
+
+Trzy endpointy `/preview`, `/{id}/edit-preview` i `/{id}/change-preview` przyjmują
+te same pola aplikacji co odpowiadające im zapisy, z wyłączeniem `operationKey`.
+Podgląd edycji/zmiany wymaga `expectedVersion`; podgląd nowego wniosku nie
+przyjmuje wersji. Nieznane pola, w tym `userId` i klucz operacji, są odrzucane.
+Podglądy są dostępne wyłącznie dla właściciela i wymagają aktywnej sesji oraz CSRF.
+Uprawnienie kierownika do szczegółów cudzego wniosku nie daje prawa do podglądu
+cudzej samoobsługowej edycji ani odczytania w ten sposób salda.
+
+Odpowiedź HTTP `200`:
+
+```json
+{
+  "preview": {
+    "totalHours": 8,
+    "days": [{ "date": "2026-11-10", "hours": 8 }],
+    "deductsBalance": true,
+    "years": [{
+      "year": 2026,
+      "beforeAvailableHours": 80,
+      "afterAvailableHours": 72,
+      "additionalReservedHours": 8
+    }],
+    "timezone": "Europe/Warsaw"
+  }
+}
+```
+
+`days` i `totalHours` zawierają wyłącznie rzeczywiste dni robocze oraz pełne godziny
+wyliczone przez backend. `years` obejmuje lata starego i nowego zakresu, rosnąco.
+`beforeAvailableHours`/`afterAvailableHours` są saldami właściwego roku przed i po
+symulowanej operacji. Nie sumuj ich między latami: starsze pule UoP mogą być wspólne.
+`additionalReservedHours` to nieujemny przyrost rezerwacji przypisanej do danego
+roku nieobecności, nie różnica całego wspólnego salda. Przy edycji 8 h → 3 h pole
+wynosi 0, a zwrot 5 h widać we wzroście `afterAvailableHours`. Przy propozycji
+skrócenia zatwierdzonego urlopu saldo nie rośnie, bo zwrot wymaga osobnej decyzji.
+Przeniesienie 8 h z grudnia na styczeń wymaga nowej styczniowej rezerwacji 8 h.
+
+Podgląd uruchamia rzeczywistą walidację i rozliczenie w transakcji, którą zawsze
+wycofuje. Nie zmienia wersji, decyzji, salda, zajętości dnia ani audytu; nie zapisuje
+potwierdzenia idempotencji. Może pozostawić przerwy w technicznej sekwencji
+identyfikatorów MySQL, tak samo jak wycofana transakcja. Nie zwraca tymczasowego ID.
+Nie przyznaje prawa do późniejszego zapisu: złożenie ponownie sprawdza aktualne
+saldo, godziny, zasady, uprawnienia i wersję. Błąd podglądu ma ten sam kod i status
+co niepoprawny zapis; niewystarczające saldo albo konflikt dnia nie daje poprawnego
+podglądu do potwierdzenia. Frontend nie powinien przechowywać starego podglądu po
+zmianie pól lub błędzie.
 
 ## Przejścia stanu
 

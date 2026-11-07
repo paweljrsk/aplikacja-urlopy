@@ -77,6 +77,9 @@ mkdirSync(screenshotDir, { recursive: true });
  await page.getByLabel('Hasło',{exact:true}).fill('admin accepted');
  await page.getByRole('button',{name:'Zaloguj się',exact:true}).click();
  await page.waitForURL(atPath('/'));
+ // The post-login landing page is the team calendar. Account/password controls
+ // retain their own regression coverage at the dedicated account route.
+ await page.goto(`${baseUrl}/account`);
  await page.getByRole('heading',{name:'Cześć, Paweł.'}).waitFor();
  await page.getByRole('heading',{name:'Dostęp do kont'}).waitFor();
  assert.equal(await page.getByRole('button',{name:'Ustaw hasło tymczasowe: Paweł Testowy'}).count(),0);
@@ -98,6 +101,7 @@ mkdirSync(screenshotDir, { recursive: true });
  await page.setViewportSize({width:1366,height:1000});
  await page.screenshot({path:join(screenshotDir, 'stage3-admin-desktop.png'),fullPage:true});
  assert.equal(await page.evaluate(()=>localStorage.length+sessionStorage.length),0);
+ await page.getByLabel('Menu konta',{exact:true}).click();
  await page.getByRole('button',{name:'Wyloguj się',exact:true}).click();
  await page.waitForURL(atPath('/login'));
  await page.getByRole('heading',{name:'Zaloguj się'}).waitFor();

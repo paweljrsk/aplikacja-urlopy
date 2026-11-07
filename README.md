@@ -2,15 +2,31 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 7 — zmiany, anulowania i korekty wniosków — ukończony.**
+**Bieżący zakres: etap 8 — formularz, widoki pracownika i kalendarz Notus — weryfikacja.**
+Dostępny jest nowy ekran główny z kalendarzem zespołu (dwa tygodnie na komputerze,
+jeden na telefonie, z przełącznikiem), listą kolejnych dwóch miesięcy i przyciskiem
+„Złóż wniosek”. Krótki formularz otwiera się w dialogu, na telefonie na pełnym ekranie.
+Podgląd godzin i wpływu na saldo liczy backend. W `/requests` są własne wnioski,
+szczegóły, historia, edycja oczekującego, wycofanie i propozycje zmiany/anulowania.
+Konto jest pod `/account`. Nawigacja, logowanie i wcześniejsze ekrany mają wspólną
+stylistykę Notus; logo i fonty są lokalne, bez zewnętrznych skryptów marketingowych.
+
+Gałąź: `codex/etap-8-formularz-kalendarz-notus`, oparta na etapie 7.
+Podstawowy kalendarz przeniesiono z etapu 9 na prośbę użytkownika (B34).
+Etap 9 pozostaje do dalszego doskonalenia kalendarza; kolejka decyzji i widoki
+przełożonego są zakresem etapu 10. Dotychczasowe API decyzji pozostaje dostępne.
+Kontrakt kalendarza: [TEAM_CALENDAR_API.md](docs/TEAM_CALENDAR_API.md),
+formularza: [REQUESTS_API.md](docs/REQUESTS_API.md), zasoby: [VISUAL_ASSETS.md](docs/VISUAL_ASSETS.md).
+Lokalnie 420 testów / 18 015 asercji, lint/TypeScript/build — PASS. Końcowy CI w toku.
+
+**Ukończony wcześniej etap 7.**
 Dostępne są logowanie, panel administracji `/admin`, limity i saldo `/balances`
 oraz zarządzanie firmowymi dniami wolnymi `/calendar-settings`. Rozliczenia
 obejmują dane początkowe, rezerwacje, obciążenia, korekty i wspólne pule zaległości.
 API umożliwia złożenie, odczyt, edycję oczekującego wniosku, wycofanie, akceptację
 i odrzucenie z uzasadnieniem. Etap 7 dodaje propozycję zmiany/anulowania zatwierdzonego
 urlopu oraz bezpośrednie korekty przeszłości po podglądzie i potwierdzeniu. Proces
-jest dostępny przez API; formularz i
-pełna stylistyka Notus powstaną w etapie 8, główny kalendarz zespołu w etapie 9.
+etapu 7 był dostępny przez API. Obecny zakres interfejsu opisano powyżej.
 
 Etap 7 ukończony w [PR #7](https://github.com/paweljrsk/aplikacja-urlopy/pull/7).
 Gałąź `codex/etap-7-zmiany-anulowania-korekty` jest oparta na etapie 6; PR pozostaje niescalony.
@@ -55,7 +71,7 @@ Wersje pakietów zapisane są w `backend/composer.lock` i `frontend/package-lock
 - Docker Engine / Docker Desktop z pluginem Compose v2 obsługującym `--wait`.
 - Git i GNU Make.
 - Na Windows używaj terminala WSL, np. w PHPStorm, z działającym Dockerem w tej dystrybucji. Polecenia wykonuj w katalogu głównym projektu.
-- Dostęp do rejestrów obrazów i pakietów podczas pierwszego budowania. Interfejs używa fontów systemowych i nie pobiera fontów Google przy starcie ani buildzie.
+- Dostęp do rejestrów obrazów i pakietów podczas pierwszego budowania. Interfejs używa lokalnych fontów Inter i Host Grotesk; nie pobiera fontów Google przy starcie ani buildzie.
 
 Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem projektu są kontenery.
 
@@ -64,7 +80,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/etap-7-zmiany-anulowania-korekty
+git switch codex/etap-8-formularz-kalendarz-notus
 make init
 make verify
 make db-validate
@@ -72,7 +88,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 7, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–7 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 8, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–8 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 
@@ -140,6 +156,19 @@ Polskie święta wyliczane są lokalnie dla lat 2025–2100 według opisanych re
 firmowe dni zastępcze wpisuje administrator. [Zasady kalendarza](docs/CALENDAR.md).
 
 ## Codzienna praca
+
+Po logowaniu `/` pokazuje kalendarz. Przełącz tydzień/dwa tygodnie, przesuń okres
+strzałkami lub wróć do dzisiaj. Współpracownicy widzą jedynie nazwiska, daty, status
+i godziny; rodzaje nieobecności i salda są prywatne. Administrator może wybrać zespół.
+Lista pod kalendarzem obejmuje najbliższe dwa miesiące niezależnie od przesunięcia
+górnego widoku. Przycisk „Złóż wniosek” jest w głównej nawigacji.
+
+W formularzu wybierz rodzaj i daty. Domyślnie są pełne dni po 8 h; „Część dnia”
+pozwala wybrać 1–7 h w jednym dniu. Podsumowanie pokazuje godziny i saldo przed/po,
+osobno dla lat. Sam podgląd nie zapisuje wniosku. Po wysłaniu wniosek znajdziesz
+w „Moich wnioskach”; oczekujący można edytować/wycofać, zatwierdzony zmienić
+lub poprosić o anulowanie. Powód odrzucenia i wcześniejsze wersje są w szczegółach.
+Zatwierdzony urlop i jego oczekująca propozycja mają osobne oznaczenia.
 
 Proces wniosków etapów 6–7 jest dostępny w `/api/requests`. Wymaga sesji logowania,
 CSRF, przypisania pracownika oraz jego danych początkowych; rodzaj obciążający

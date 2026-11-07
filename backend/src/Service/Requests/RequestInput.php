@@ -12,6 +12,20 @@ use App\Service\CredentialsException;
 /** Strict JSON-domain input; calendar and authorization checks belong inside the transaction. */
 final class RequestInput
 {
+    /** The public preview accepts the same application, but never an operation key.
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public static function applicationPreview(array $data, bool $editing = false): array
+    {
+        AdminInput::only($data, $editing
+            ? ['expectedVersion', 'absenceTypeId', 'startDate', 'endDate', 'mode', 'hours']
+            : ['absenceTypeId', 'startDate', 'endDate', 'mode', 'hours']);
+        $input = self::application(['operationKey' => 'preview'] + $data, $editing);
+        unset($input['operationKey']);
+        return $input;
+    }
+
     /** @param array<string, mixed> $data
      * @return array{operationKey: string, absenceTypeId: int, startDate: string, endDate: string, mode: string, hours?: int, expectedVersion?: int}
      */

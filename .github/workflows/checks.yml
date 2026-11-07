@@ -78,6 +78,8 @@ jobs:
         run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/admin-ui-check.cjs
       - name: Browser balance and company calendar screens with synthetic API responses
         run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/balance-ui-check.cjs
+      - name: Browser employee requests and calendar with synthetic API responses
+        run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/requests-ui-check.cjs
       - name: Write synthetic persistence marker outside the application schema
         run: |
           docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root' <<'SQL'
@@ -95,6 +97,8 @@ jobs:
           test "$marker" = 'stage1-stop-start'
       - name: Real HTTP authentication through Nginx and PHP-FPM
         run: BASE_URL=http://localhost:8080 node .github/scripts/auth-http-check.cjs
+      - name: Real employee request process through Chrome and Nginx
+        run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/requests-e2e-check.cjs
       - name: Verify optional Messenger and Scheduler workers
         run: |
           make workers

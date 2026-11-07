@@ -7,6 +7,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 5 — kalendarz roboczy, limity i saldo — zakończony.**
 **Etap 6 — wnioski, rezerwacje i decyzje — zakończony.** Q2 o dzisiaj i Q10 zatwierdzone jako B30–B31.
 **Etap 7 — zmiany, anulowania i korekty — zakończony.** Q2/Q4: B32–B33.
+**Etap 8 — formularz, widoki pracownika i podstawowy kalendarz Notus — w trakcie.** B34.
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -97,6 +98,15 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Sprawdzić zmiany rodzaju i roku, transfery, niedobór, zwroty, ponowienia i rzeczywistą współbieżność na MySQL.
 - [x] Uzupełnić kontrakt API, dokumentację i faktyczne wyniki odbioru; lokalnie i w Docker CI #24: 391 testów / 15 091 asercji, rzeczywisty HTTP i pozostałe kontrole PASS. Opublikowano PR #7.
 
+## Etap 8 — w trakcie
+
+- [x] Sprawdzić wymagania i zapisać B34 przed implementacją; widoczność danych jest już rozstrzygnięta.
+- [-] Dodać ograniczone API kalendarza oraz bezpieczny podgląd zwykłego formularza na istniejącym silniku.
+- [-] Przygotować wspólny layout Notus, ekran główny 1/2 tygodnie i nadchodzące nieobecności.
+- [-] Dodać dostępny dialog wniosku, moje wnioski, szczegóły i operacje pracownika.
+- [ ] Sprawdzić backend, dostęp, formularze, telefon/desktop, klawiaturę, błędy i ponowienia.
+- [ ] Zweryfikować w CI, uzupełnić dokumentację i instrukcję odbioru.
+
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
@@ -105,7 +115,7 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
 - [x] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
 - [x] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
-- [ ] Etap 8 — formularz i widoki pracownika w stylistyce Notus.
+- [-] Etap 8 — formularz i widoki pracownika w stylistyce Notus, podstawowy kalendarz i lista według B34.
 - [ ] Etap 9 — główny kalendarz zespołu i lista nieobecności.
 - [ ] Etap 10 — widoki przełożonego/administratora, salda i historia.
 - [ ] Etap 11 — weryfikacja pełnych procesów, bezpieczeństwa i wydajności.
@@ -246,7 +256,7 @@ Użytkownik potwierdził obie propozycje. B32–B33 i REQUIREMENTS 1.5 są obowi
 Wznowić implementację i testy etapu 7 na tej gałęzi. Wcześniejsza blokada pytań i
 niedostępność środowiska opisują stan historyczny, nie aktualne przeszkody.
 
-### Bieżący punkt wznowienia — po ukończeniu etapu 7
+### Historyczny punkt wznowienia — po ukończeniu etapu 7
 
 Etap 7 odebrano na kodzie `c08755da94e587c10e2ba9b7b5c5dd528e8f5bf9`:
 [CI #24 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42401371870),
@@ -262,3 +272,12 @@ obu terminów, granicę ewidencji i prywatność historii. Kontrakt: REQUESTS_AP
 
 Etap 8 — formularz i widoki pracownika w stylistyce Notus — uruchomić dopiero na
 kolejne polecenie użytkownika. PR-y pozostają niescalone; nie scalać automatycznie.
+
+### Bieżący punkt wznowienia — etap 8
+
+Użytkownik zlecił etap 8 i doprecyzował ekran główny (B34). Gałąź
+`codex/etap-8-formularz-kalendarz-notus` bazuje na `a523fea65119f533aaa9224a6d950255e6f1e23b`.
+CI #24 kodu etapu 7 jest zielone; kolejny CI #25 po samych zmianach dokumentacji
+ujawnił wyścig syntetycznej sesji w teście Chrome salda. Odtworzono i poprawiono
+synchronizację bez zmiany produkcyjnego CSRF i bez osłabienia asercji.
+Kontynuować implementację i odbiór etapu 8; nie scalać PR ani nie uruchamiać etapu 9.

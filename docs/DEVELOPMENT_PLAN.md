@@ -312,6 +312,12 @@ pracownik/kierownik/zastępca/admin. Zapisuj kompletną historię starych i nowy
 
 ### Prompt 8 — formularz i widoki pracownika
 
+Aktualizacja zakresu 7 listopada 2026 r. (B34): podstawowy kalendarz jako ekran
+startowy i lista nadchodzących nieobecności przechodzą z etapu 9 do 8. Domyślnie
+dwa tygodnie desktop / jeden mobile, przełącznik 1/2 tygodnie, lista dwóch miesięcy,
+wyraźny przycisk „Złóż wniosek”, krótki dialog formularza. Zachować reguły widoczności
+z promptu 9. Etap 9 obejmie dalsze udoskonalenia, filtrowanie i odbiór kalendarza.
+
 ```text
 Wykonaj etap 8 zgodnie ze wspólnym protokołem. Korzystaj z gotowych API i reguł,
 nie buduj drugiego niezależnego silnika salda w frontendzie. Sprawdź odpowiedź na Q1.
@@ -334,7 +340,8 @@ błąd walidacji, brak uprawnień, wygaśnięcie sesji i konflikt równoczesnej 
 Odbiór: na komputerze i telefonie użytkownik składa wniosek domyślnie na 8 h,
 zmienia go na 3 h, widzi rezerwację i decyzję, zgłasza zmianę/anulowanie oraz rozumie
 saldo. Sprawdź klawiaturę, etykiety pól i brak ponownego wysłania po podwójnym kliknięciu.
-Główny kalendarz zespołu zostanie ukończony w etapie 9.
+Podstawowy kalendarz zespołu i lista powstają w tym etapie według B34; etap 9
+rozwinie i zweryfikuje scenariusze kalendarza zgodnie z aktualnym stanem wdrożenia.
 ```
 
 ### Prompt 9 — kalendarz zespołu
