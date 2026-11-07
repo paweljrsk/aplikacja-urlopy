@@ -30,7 +30,8 @@ class RequestAssignmentContext
     ) {
         $this->validFrom = DateValue::local($validFrom);
         $this->validUntil = null === $validUntil ? null : DateValue::local($validUntil);
-        if ($assignment->getUser() !== $revision->getRequest()->getUser() || (null !== $validUntil && $validUntil <= $validFrom)) {
+        if ($assignment->getUser() !== $revision->getRequest()->getUser()
+            || (null !== $this->validUntil && $this->validUntil->format('Y-m-d') <= $this->validFrom->format('Y-m-d'))) {
             throw new \InvalidArgumentException('Captured assignment must concern this employee and an ordered period.');
         }
     }

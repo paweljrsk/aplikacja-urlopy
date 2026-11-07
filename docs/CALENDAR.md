@@ -43,6 +43,9 @@ dla obliczenia zakresu, ale nie tworzy nowego pustego wniosku.
 Arytmetyka działa na datach kalendarzowych, przez dodawanie kolejnych dni.
 Nie dzielimy różnic znaczników czasu przez 86400; zmiana czasu nie zmienia liczby
 dni ani godzin urlopu. Podział grudzień/styczeń zachowuje rok każdej daty.
+Pola SQL `DATE` porównujemy jako `Y-m-d`, również gdy Doctrine odczyta je
+z domyślną strefą PHP inną niż Warszawa. Testy zapisu/odczytu wymuszają UTC,
+aby wykryć nieprawidłowe porównanie tej samej daty jako dwóch różnych chwil.
 
 ## Zmiana firmowego dnia wolnego — B29 / Q9
 

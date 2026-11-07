@@ -236,6 +236,20 @@ wykonać `make stop`, aby instalatory nie zmieniały zależności działających
 Potwierdzenie użytkownika dotyczy lokalnego odzyskania działania, nie odbioru
 produkcji ani nowego wyniku testów automatycznych.
 
+### E08 — daty kalendarzowe po odczycie z bazy
+
+[CI #18](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42356593584)
+zaliczyło uruchomienie, migracje i zachowanie danych, lecz jeden z 268 testów
+zatrzymał korektę dnia wolnego po transferze pracownika. Błąd odtworzono lokalnie
+przy domyślnej strefie PHP `UTC`: DBAL odczytał SQL DATE jako północ UTC, a model
+normalizował datę do północy Europe/Warsaw. Porównanie obiektów czasu uznawało
+identyczną datę kalendarzową za inną chwilę.
+
+Walidacja zakresów i granic przypisań porównuje teraz wartości `Y-m-d`, zgodnie
+z semantyką dat nieobecności. Nie osłabiono kontroli tożsamości ani wersji zasad.
+Testy integracyjne kalendarza jawnie używają domyślnego UTC i przywracają poprzednią
+strefę. Pełny wynik kolejnego odbioru pozostaje w TEST_PLAN; CI #18 nie jest zaliczeniem.
+
 ## Format kolejnego wpisu
 
 Każdy wpis zawiera datę, identyfikator, decyzję lub problem, uzasadnienie, zakres

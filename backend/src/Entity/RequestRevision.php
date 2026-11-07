@@ -108,7 +108,8 @@ class RequestRevision
         }
         if (null !== $calendarSource) {
             if ($calendarSource->getRequest() !== $request || !\in_array($calendarSource, $request->getRevisions(), true)
-                || $calendarSource->getStartDate() != $this->startDate || $calendarSource->getEndDate() != $this->endDate
+                || $calendarSource->getStartDate()->format('Y-m-d') !== $this->startDate->format('Y-m-d')
+                || $calendarSource->getEndDate()->format('Y-m-d') !== $this->endDate->format('Y-m-d')
                 || $calendarSource->getPolicy() !== $policy || $calendarSource->getMode() !== $mode) {
                 throw new \DomainException('A calendar correction must retain a previous revision’s range and rules.');
             }
@@ -123,7 +124,8 @@ class RequestRevision
                 foreach ($days as $day) {
                     if (!$this->preservesAssignment($day->assignment, $day->date)) {
                         $known = array_filter($calendarSource->getDays(), static fn (RequestDay $captured): bool => $captured->getAssignment() === $day->assignment);
-                        if ([] === $known || $day->date < $day->assignment->getValidFrom() || (null !== $day->assignment->getValidUntil() && $day->date >= $day->assignment->getValidUntil())) {
+                        if ([] === $known || $day->date->format('Y-m-d') < $day->assignment->getValidFrom()->format('Y-m-d')
+                            || (null !== $day->assignment->getValidUntil() && $day->date->format('Y-m-d') >= $day->assignment->getValidUntil()->format('Y-m-d'))) {
                             throw new \DomainException('Legacy calendar correction lacks an unambiguous captured assignment.');
                         }
                         $this->assignmentContexts->add(new RequestAssignmentContext($this, $day->assignment, $day->date, $day->date->modify('+1 day')));
@@ -137,7 +139,8 @@ class RequestRevision
             }
         } else {
             foreach ($request->getUser()->getAssignments() as $assignment) {
-                if ($assignment->getValidFrom() <= $this->endDate && (null === $assignment->getValidUntil() || $assignment->getValidUntil() > $this->startDate)) {
+                if ($assignment->getValidFrom()->format('Y-m-d') <= $this->endDate->format('Y-m-d')
+                    && (null === $assignment->getValidUntil() || $assignment->getValidUntil()->format('Y-m-d') > $this->startDate->format('Y-m-d'))) {
                     $this->assignmentContexts->add(new RequestAssignmentContext($this, $assignment, $assignment->getValidFrom(), $assignment->getValidUntil()));
                 }
             }

@@ -46,10 +46,14 @@ final class CompanyCalendarTest extends KernelTestCase
     private AbsenceTypeVersion $paid;
     private AbsenceTypeVersion $unpaid;
     private string $prefix;
+    private string $originalTimezone;
     private const PASSWORD = 'Synthetic calendar administrator password 23!';
 
     protected function setUp(): void
     {
+        $this->originalTimezone = date_default_timezone_get();
+        // Doctrine DATE hydrates in PHP's timezone; domain dates must stay Warsaw calendar dates.
+        date_default_timezone_set('UTC');
         self::bootKernel();
         $this->em = self::getContainer()->get('doctrine')->getManager();
         $this->connection = $this->em->getConnection();
@@ -78,8 +82,12 @@ final class CompanyCalendarTest extends KernelTestCase
 
     protected function tearDown(): void
     {
-        while ($this->connection->isTransactionActive()) { $this->connection->rollBack(); }
-        parent::tearDown();
+        try {
+            while ($this->connection->isTransactionActive()) { $this->connection->rollBack(); }
+        } finally {
+            date_default_timezone_set($this->originalTimezone);
+            parent::tearDown();
+        }
     }
 
     public function testAddingFreeDayReconcilesApprovedAndPendingChangeWithoutDoubleRefund(): void

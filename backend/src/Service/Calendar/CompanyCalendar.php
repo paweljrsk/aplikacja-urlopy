@@ -248,7 +248,8 @@ final class CompanyCalendar
         if ([] === $revision->getAssignmentContexts()) {
             foreach ($revision->getDays() as $day) {
                 $assignment = $day->getAssignment();
-                if ($assignment->getValidFrom() <= $date && (null === $assignment->getValidUntil() || $date < $assignment->getValidUntil())) {
+                if ($assignment->getValidFrom()->format('Y-m-d') <= $date->format('Y-m-d')
+                    && (null === $assignment->getValidUntil() || $date->format('Y-m-d') < $assignment->getValidUntil()->format('Y-m-d'))) {
                     $candidates[$assignment->getId() ?? spl_object_id($assignment)] = $assignment;
                 }
             }

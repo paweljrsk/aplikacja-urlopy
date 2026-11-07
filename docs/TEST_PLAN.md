@@ -420,3 +420,13 @@ w lokalnym DOM również przeszły; Chrome wymaga CI.
 Lokalny serwer PHP nie zastępuje Nginx/PHP-FPM ani docelowego PHP 8.3. Pełny odbiór
 Docker, Chrome, build, restart i workery zostanie zapisany po rzeczywistym CI dla
 konkretnego commita. Nie oznaczamy tego etapu jako zakończonego przed odbiorem.
+
+
+### Pierwszy odbiór Docker etapu 5 — CI #18
+
+[CI #18](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42356593584)
+na `8b4db305a943d361036e22234e480f3cc7e0316f` zakończyło się błędem jednego testu
+kalendarza przy odczycie dat po transferze. Uruchomienie, migracje i zachowanie
+starych danych przeszły. Przyczynę i poprawkę porównywania SQL DATE niezależnie
+od domyślnej strefy PHP opisuje E08 w DECISIONS. Testów późniejszych kroków tego
+przebiegu nie oznaczamy jako wykonanych.
