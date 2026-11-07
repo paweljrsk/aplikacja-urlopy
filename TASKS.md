@@ -7,7 +7,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 5 — kalendarz roboczy, limity i saldo — zakończony.**
 **Etap 6 — wnioski, rezerwacje i decyzje — zakończony.** Q2 o dzisiaj i Q10 zatwierdzone jako B30–B31.
 **Etap 7 — zmiany, anulowania i korekty — zakończony.** Q2/Q4: B32–B33.
-**Etap 8 — formularz, widoki pracownika i podstawowy kalendarz Notus — w trakcie.** B34.
+**Etap 8 — formularz, widoki pracownika i podstawowy kalendarz Notus — ukończony.** B34; CI #29 SUCCESS.
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -98,14 +98,14 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Sprawdzić zmiany rodzaju i roku, transfery, niedobór, zwroty, ponowienia i rzeczywistą współbieżność na MySQL.
 - [x] Uzupełnić kontrakt API, dokumentację i faktyczne wyniki odbioru; lokalnie i w Docker CI #24: 391 testów / 15 091 asercji, rzeczywisty HTTP i pozostałe kontrole PASS. Opublikowano PR #7.
 
-## Etap 8 — w trakcie
+## Etap 8 — ukończony
 
 - [x] Sprawdzić wymagania i zapisać B34 przed implementacją; widoczność danych jest już rozstrzygnięta.
-- [-] Dodać ograniczone API kalendarza oraz bezpieczny podgląd zwykłego formularza na istniejącym silniku.
-- [-] Przygotować wspólny layout Notus, ekran główny 1/2 tygodnie i nadchodzące nieobecności.
-- [-] Dodać dostępny dialog wniosku, moje wnioski, szczegóły i operacje pracownika.
-- [ ] Sprawdzić backend, dostęp, formularze, telefon/desktop, klawiaturę, błędy i ponowienia.
-- [ ] Zweryfikować w CI, uzupełnić dokumentację i instrukcję odbioru.
+- [x] Dodać ograniczone API kalendarza oraz bezpieczny podgląd zwykłego formularza na istniejącym silniku.
+- [x] Przygotować wspólny layout Notus, ekran główny 1/2 tygodnie i nadchodzące nieobecności.
+- [x] Dodać dostępny dialog wniosku, moje wnioski, szczegóły i operacje pracownika.
+- [x] Sprawdzić backend, dostęp, formularze, telefon/desktop, klawiaturę, błędy i ponowienia.
+- [x] Zweryfikować w CI #29 (420 testów / 18 015 asercji, Chrome i real E2E), obejrzeć zrzuty, uzupełnić dokumentację i instrukcję odbioru.
 
 ## Kolejne etapy
 
@@ -115,8 +115,8 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
 - [x] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
 - [x] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
-- [-] Etap 8 — formularz i widoki pracownika w stylistyce Notus, podstawowy kalendarz i lista według B34.
-- [ ] Etap 9 — główny kalendarz zespołu i lista nieobecności.
+- [x] Etap 8 — formularz i widoki pracownika w stylistyce Notus, podstawowy kalendarz i lista według B34.
+- [ ] Etap 9 — dalsze doskonalenie kalendarza zespołu i listy nieobecności; podstawowy ekran już w etapie 8.
 - [ ] Etap 10 — widoki przełożonego/administratora, salda i historia.
 - [ ] Etap 11 — weryfikacja pełnych procesów, bezpieczeństwa i wydajności.
 - [ ] Etap 12 — przygotowanie produkcji, backup/restore i pilotaż.
@@ -273,11 +273,29 @@ obu terminów, granicę ewidencji i prywatność historii. Kontrakt: REQUESTS_AP
 Etap 8 — formularz i widoki pracownika w stylistyce Notus — uruchomić dopiero na
 kolejne polecenie użytkownika. PR-y pozostają niescalone; nie scalać automatycznie.
 
-### Bieżący punkt wznowienia — etap 8
+### Historyczny punkt rozpoczęcia — etap 8
 
 Użytkownik zlecił etap 8 i doprecyzował ekran główny (B34). Gałąź
 `codex/etap-8-formularz-kalendarz-notus` bazuje na `a523fea65119f533aaa9224a6d950255e6f1e23b`.
 CI #24 kodu etapu 7 jest zielone; kolejny CI #25 po samych zmianach dokumentacji
 ujawnił wyścig syntetycznej sesji w teście Chrome salda. Odtworzono i poprawiono
 synchronizację bez zmiany produkcyjnego CSRF i bez osłabienia asercji.
-Kontynuować implementację i odbiór etapu 8; nie scalać PR ani nie uruchamiać etapu 9.
+Implementację i odbiór zakończono zgodnie z poniższym aktualnym punktem wznowienia.
+
+### Bieżący punkt wznowienia — po ukończeniu etapu 8
+
+Kod `95bf3874336b5d47e978d6756f248ecdf25e7fb7`:
+[CI #29 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42409969383),
+PHP 8.3.36 + MySQL 8.0.32, **420 testów / 18 015 asercji**, kontrole statyczne,
+build, wszystkie regresje Chrome, rzeczywisty E2E wniosku, restart z zachowaniem
+danych i workery. Odbiór zrzutów desktop/mobile PASS; wyśrodkowanie dialogu po
+resecie CSS i zawijanie fokusu są objęte regresją (E12–E13).
+
+[PR #8](https://github.com/paweljrsk/aplikacja-urlopy/pull/8), gałąź
+`codex/etap-8-formularz-kalendarz-notus`, oparta na niescalonym PR #7.
+Bez nowych zależności aplikacji ani migracji. B34, REQUESTS_API i TEAM_CALENDAR_API
+opisują zakres. Preview zawsze wycofuje zmiany i nie zastępuje walidacji zapisu;
+kalendarz udostępnia wyłącznie dozwolone dni i ograniczone metadane.
+
+Kolejny punkt to odbiór użytkownika, następnie etap 9 wyłącznie na osobne polecenie.
+Panel decyzji i korekt przełożonego pozostaje w etapie 10. Nie scalać PR automatycznie.

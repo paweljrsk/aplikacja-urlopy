@@ -2,7 +2,7 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 8 — formularz, widoki pracownika i kalendarz Notus — weryfikacja.**
+**Bieżący zakres: etap 8 — formularz, widoki pracownika i kalendarz Notus — ukończony.**
 Dostępny jest nowy ekran główny z kalendarzem zespołu (dwa tygodnie na komputerze,
 jeden na telefonie, z przełącznikiem), listą kolejnych dwóch miesięcy i przyciskiem
 „Złóż wniosek”. Krótki formularz otwiera się w dialogu, na telefonie na pełnym ekranie.
@@ -11,13 +11,19 @@ szczegóły, historia, edycja oczekującego, wycofanie i propozycje zmiany/anulo
 Konto jest pod `/account`. Nawigacja, logowanie i wcześniejsze ekrany mają wspólną
 stylistykę Notus; logo i fonty są lokalne, bez zewnętrznych skryptów marketingowych.
 
-Gałąź: `codex/etap-8-formularz-kalendarz-notus`, oparta na etapie 7.
+Gałąź: `codex/etap-8-formularz-kalendarz-notus`, [PR #8](https://github.com/paweljrsk/aplikacja-urlopy/pull/8), oparta na etapie 7.
 Podstawowy kalendarz przeniesiono z etapu 9 na prośbę użytkownika (B34).
 Etap 9 pozostaje do dalszego doskonalenia kalendarza; kolejka decyzji i widoki
 przełożonego są zakresem etapu 10. Dotychczasowe API decyzji pozostaje dostępne.
 Kontrakt kalendarza: [TEAM_CALENDAR_API.md](docs/TEAM_CALENDAR_API.md),
 formularza: [REQUESTS_API.md](docs/REQUESTS_API.md), zasoby: [VISUAL_ASSETS.md](docs/VISUAL_ASSETS.md).
-Lokalnie 420 testów / 18 015 asercji, lint/TypeScript/build — PASS. Końcowy CI w toku.
+[CI #29 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42409969383)
+dla kodu `95bf3874336b5d47e978d6756f248ecdf25e7fb7`: **420 testów / 18 015 asercji**,
+kontrole statyczne, build, regresja Chrome, rzeczywisty E2E formularza przez
+Nginx/PHP-FPM, zachowanie danych po restarcie i workery — PASS.
+Sprawdzono wizualnie desktop/mobile; dialog na komputerze jest wyśrodkowany.
+Lokalne kontrole również PASS. Bez nowych zależności aplikacji i migracji.
+PR pozostaje niescalony; dalszy rozwój kalendarza wymaga polecenia etapu 9.
 
 **Ukończony wcześniej etap 7.**
 Dostępne są logowanie, panel administracji `/admin`, limity i saldo `/balances`
