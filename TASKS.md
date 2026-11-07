@@ -5,6 +5,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 3 — logowanie lokalne i kontrola dostępu — zakończony**.
 **Etap 4 — administracja — zakończony.** Q5 rozstrzygnięto w B22–B24.
 **Etap 5 — kalendarz roboczy, limity i saldo — zakończony.**
+**Etap 6 — rozpoczęty na polecenie użytkownika; analiza i doprecyzowanie reguł.**
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -75,13 +76,23 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Sprawdzić obliczenia, uprawnienia, współbieżność, migracje i zachowanie istniejących danych. CI #20: 268 testów / 6832 asercje, SUCCESS.
 - [x] Uzupełnić dokumentację, wzór salda i rzeczywisty raport odbioru.
 
+## Etap 6 — w trakcie
+
+- [x] Sprawdzić aktualne wymagania, prompt 6, model wniosków, zasady dostępu i stan PR #5.
+- [-] Rozstrzygnąć Q2 o dzisiejszym dniu oraz Q10 o uzasadnieniu odrzucenia przed zależną implementacją.
+- [ ] Dodać publiczne API tworzenia, odczytu, edycji oczekującego wniosku, wycofania i decyzji.
+- [ ] Połączyć walidację kalendarza, rodzaju, zatrudnienia, godzin i salda z atomowym zapisem historii.
+- [ ] Zachować zapisane zasady przy edycji, kontrolę dostępu po transferze, idempotencję i ochronę nieaktualnych wersji.
+- [ ] Sprawdzić scenariusze ról, przełomu roku, współbieżnych wniosków i decyzji oraz zachowanie dotychczasowych danych.
+- [ ] Uzupełnić kontrakt API, README, plan testów i rzeczywisty raport odbioru; opublikować PR i zweryfikować CI.
+
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
 - [x] Etap 3 — logowanie lokalne i kontrola dostępu w API.
 - [x] Etap 4 — administracja użytkownikami, zespołami i słownikami.
 - [x] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
-- [ ] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
+- [-] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
 - [ ] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
 - [ ] Etap 8 — formularz i widoki pracownika w stylistyce Notus.
 - [ ] Etap 9 — główny kalendarz zespołu i lista nieobecności.
@@ -160,9 +171,12 @@ Nowe ekrany: `/balances` i `/calendar-settings`. Aktualizacja lokalna:
 `make stop`, pobranie gałęzi, `make init`, `make verify`, `make db-validate`.
 Dotychczasowe konto administratora i dane pozostają zachowane.
 
-Punkt wznowienia: **etap 6 — wnioski, rezerwacje, decyzje i wycofanie**, dopiero
-po kolejnym poleceniu użytkownika. Przed wdrożeniem reguł dat rozstrzygnąć Q2
-o wnioskach na dzisiejszy dzień. Przeczytać prompt 6 i aktualne OPEN_QUESTIONS.
+Użytkownik polecił rozpoczęcie etapu 6. Przygotowano gałąź
+`codex/etap-6-wnioski-decyzje` z końcowego commita etapu 5
+`12e66f3fb76a25ea72ab4bd9d6b815f7091c905e` (CI #21 również SUCCESS).
+Punkt wznowienia: uzyskać i zapisać odpowiedzi na Q2 dotyczące dzisiejszego dnia
+oraz Q10 dotyczące powodu odrzucenia, następnie wdrożyć prompt 6.
+Analiza kodu nie stanowi zaliczenia implementacji ani nowych testów.
 Nie scalać PR bez osobnego polecenia.
 
 Usługi wniosków w etapach 6–7 mają korzystać z `RequestAccessPolicy`, blokować
@@ -170,3 +184,10 @@ agregat użytkownika przed zapisem i zachowywać pełny `RequestAssignmentContex
 Samo `RequestDay.assignment` nie określa uprawnień. Przygotowane operacje rozliczeń
 przyjmują zwalidowane, zapisane wersje; publiczny proces musi sprawdzać daty,
 kalendarz, dostępność rodzaju i zatrudnienie przed ich utworzeniem.
+
+Wnioski z przeglądu przed etapem 6: edycja oczekującej wersji ma zachować kontekst
+dotychczasowego zakresu, także pierwotnie wolnych dni; nowe daty poza nim wymagają
+przypisania z daty nieobecności. Nie rozciągać starego otwartego przypisania poza
+utrwalony zakres. Poprzednią oczekującą wersję zastępować nową w jednej transakcji,
+rozliczając tylko końcowy stan. Uprawnienia do historii sprawdzać osobno dla każdej
+wersji; dostęp do obecnego wniosku nie pozwala ujawnić całej historii innego zespołu.

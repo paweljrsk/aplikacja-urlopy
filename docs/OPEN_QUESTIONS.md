@@ -1,8 +1,8 @@
 # Otwarte pytania
 
-Stan: 7 listopada 2026 r., po odpowiedziach przed etapem 5. Q1, Q3, Q5, Q6, Q8
-i Q9 rozstrzygnięte; Q4 rozstrzygnięte dla etapu 5. Otwarte pozostają Q2, Q7
-oraz szczegóły korekt wniosków w etapie 7.
+Stan: 7 listopada 2026 r., rozpoczęcie etapu 6. Q1, Q3, Q5, Q6, Q8
+i Q9 rozstrzygnięte; Q4 rozstrzygnięte dla etapu 5. Otwarte pozostają Q2, Q7,
+Q10 oraz szczegóły korekt wniosków w etapie 7.
 
 Pytania nie blokują audytu i dokumentacji w etapie 1. Należy je zadać przed pracą,
 której wynik zależy od odpowiedzi. Jeżeli wpływ na model ujawni się wcześniej,
@@ -27,6 +27,15 @@ Nie blokują przedstawienia planu, ale blokują implementację zależnego zachow
 | Q7 | Przed wdrożeniem produkcji | Docelowy adres i TLS, odpowiedzialny za serwer, miejsce i retencja backupów, retencja historii, wymagania firmowych skanerów i sposób przekazywania haseł tymczasowych. Ustalić konkretną konfigurację bez publikowania sekretów. |
 | Q8 | Rozstrzygnięte — B21 i B28 | Dane początkowe według daty rozpoczęcia: limit, wykorzystanie bieżącej puli, pozostałości starszych pul. Korekty z uzasadnieniem i audytem, bez ponownego obciążania historycznymi wnioskami. Data startu zablokowana po rozpoczęciu rozliczeń wniosków. |
 | Q9 | Rozstrzygnięte — B29 | Przyszłe daty, podgląd wpływu i potwierdzenie administratora; jawne korekty istniejących wniosków, zwrot/zwiększenie godzin, anulowanie lub wycofanie przy zerze. Brak zbiorczego przeliczania przeszłości. |
+| Q10 | Przed odrzucaniem wniosków w etapie 6 | Czy powód odrzucenia jest obowiązkowy? Propozycja do potwierdzenia: tak, z widocznością dla właściciela wniosku i osób uprawnionych do jego szczegółów. |
+
+### Propozycja Q2 dla etapu 6 — jeszcze niezatwierdzona
+
+Własny wniosek można złożyć na dzisiaj. Do końca dnia w Europe/Warsaw można też
+edytować lub wycofać własny oczekujący wniosek, jeżeli nie obejmuje wcześniejszych
+dni. Brak godzin zegarowych oznacza brak kontroli pory rozpoczęcia dzisiejszej
+nieobecności. Wcześniejsze daty pozostają zablokowane dla samoobsługi pracownika.
+Indywidualne korekty rozpoczętych i przeszłych wniosków pozostają zakresem etapu 7.
 
 Zarządzanie firmowymi dniami wolnymi oraz obowiązkowe uzasadnienie korekt limitów,
 danych początkowych i kalendarza rozstrzygnięto dla etapu 5. Do ustalenia przy
