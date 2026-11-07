@@ -42,6 +42,19 @@ zależnego modelu. Nie rozstrzygają niewymienionych procedur z późniejszych e
 | B20 | Q5 — wpływ rodzaju na saldo | Zmiana ustawienia „pomniejsza saldo” obowiązuje tylko nowe wnioski; już złożone zachowują dotychczasowe zasady. | Wniosek zachowuje zasady z momentu złożenia. Edycja słownika nie zmienia automatycznie dotychczasowych rozliczeń. |
 | B21 | Q8 — stan początkowy | Dla pracownika ustalamy datę rozpoczęcia ewidencji, limit bieżącego roku, wykorzystanie z bieżącej rocznej puli do dnia poprzedniego oraz pozostałość wcześniejszych pul osobno według roku pochodzenia. | Starsze nieobecności są już uwzględnione w stanie początkowym i nie mogą pomniejszyć salda drugi raz. Pozostałości starszych pul nie pomniejszamy ponownie o historyczne wykorzystanie. Szczegółowa procedura korekt sprzed daty granicznej pozostaje w Q8. |
 
+## Doprecyzowania przed etapem 4 — 7 listopada 2026 r.
+
+Użytkownik potwierdził trzy propozycje odpowiedzią „tak dla wszystkich”. Q5 jest zamknięte.
+
+| ID | Decyzja | Konsekwencja |
+|---|---|---|
+| B22 | Przełożeni starego zespołu widzą nieobecności sprzed przeniesienia, nowego — od daty przeniesienia; właściciel i administrator całą historię. | Daty nieobecności wyznaczają widoczność; nie ujawniamy pozostałych dni ani szczegółów obcego zespołu. |
+| B23 | Od dnia przeniesienia przyszłe oczekujące wnioski obsługuje nowy przełożony. Wcześniejsze akceptacje pozostają ważne. Wnioski obejmujące obie strony przeniesienia obsługuje administrator. | Bez automatycznego podziału lub ponownej akceptacji. Zaplanowane przeniesienie nie daje nowemu przełożonemu dostępu przed datą wejścia w życie. |
+| B24 | Już złożone wnioski zachowują zasady rozliczeń po zmianie formy zatrudnienia; nowe stosują formę z dnia nieobecności. | Przypisania zapisane w dniach wniosków pozostają niezmienne; edycja kartoteki nie przelicza limitów i rozliczeń. |
+
+Użytkownik potwierdził także pozostawienie tymczasowego interfejsu na tym etapie.
+Pełne dopasowanie wszystkich ekranów do notus.pl i notus.pl/banki pozostaje w etapie 8.
+
 ## Ustalony sposób realizacji
 
 | ID | Zasada | Status |
@@ -113,6 +126,17 @@ testów pozostają w TEST_PLAN. Sam wpis nie oznacza zaliczenia odbioru.
 | DT28 | Pierwszego administratora inicjalizuje jawna, interaktywna komenda na serwerze. | Brak stałego hasła i parametru CLI zawierającego hasło. Bootstrap może zachować dane aktywnego administratora demo bez hasła. Osobna komenda odzyskania dostępu dotyczy tylko istniejącego, aktywnego administratora z wcześniej ustawionym hasłem; nie aktywuje kont ani nie nadaje uprawnień. Reset przez API wymaga administratora i jego obecnego hasła; własne hasło zmienia zwykłym formularzem. |
 | DT29 | W etapie 3 API uprawnień obejmuje bieżące profile, a nie historię nieobecności po przeniesieniu. | Pracownik czyta własny profil; kierownik i zastępca także profile bieżącego zespołu; administrator wszystkie. Polityka decyzji zachowuje wyjątek kierownika i zakaz własnej akceptacji zastępcy, lecz nie wykonuje decyzji urlopowych. Historyczny zakres dostępu i przenoszenie otwartych wniosków pozostają w Q5. |
 | DT30 | Dodajemy komponenty bezpieczeństwa zgodne z linią Symfony 7.4. | Bezpośrednie zależności: `security-bundle`, `security-csrf`, `rate-limiter`, `lock`. Lockfile dodaje łącznie 10 pakietów MIT, bez zmiany wersji lub usunięcia pozostałych. Instalacja nie zgłosiła advisories. Dokładne wersje i przeznaczenie są w AUTHENTICATION. |
+
+## Decyzje techniczne etapu 4 — 7 listopada 2026 r.
+
+| ID | Decyzja i uzasadnienie | Zakres i granice |
+|---|---|---|
+| DT31 | Administracyjne zapisy są transakcyjne, serializowane rekordem `administration_lock` i chronione wersją obiektu. | Ponowne sprawdzenie aktualnych uprawnień pod blokadą, brak nadpisania nieaktualnego formularza, ochrona ostatniego aktywnego administratora z docelowym hasłem. |
+| DT32 | Słowniki startowe powstają przez jawną idempotentną operację administratora. | `POST /api/admin/catalog/initialize` uzupełnia brakujące UoP/B2B i trzy rodzaje; nie nadpisuje ustawień i nie uruchamia demo. |
+| DT33 | Nazwy rodzaju zależne od formy zatrudnienia należą do niezmiennej wersji zasad. | Nowa kolumna JSON ma bezpieczną pustą mapę dla istniejących wersji. Zmiana słownika nie dotyka wcześniejszych wniosków. |
+| DT34 | Przypisania dopisujemy chronologicznie; nieużywane ostatnie przypisanie można skorygować od tej samej daty z audytem. | Gdy wskazuje je `RequestDay`, korekta treści jest blokowana; nowy okres zachowuje stare referencje. Przyszła usługa wniosków musi blokować agregat użytkownika przed zapisem przypisań dni. |
+| DT35 | Uprawnienia wniosków po transferze są osobną polityką od zapisanych zasad rozliczenia. | `RequestAccessPolicy` rozdziela dni kalendarza, szczegóły wersji i decyzję. Mieszany zakres wymaga administratora także przy zaplanowanym transferze; nowe API wniosków wykorzysta politykę później. |
+| DT36 | Zachowujemy stack i zależności, dodając funkcjonalny panel `/admin`. | Bez nowych pakietów runtime; pełny projekt wizualny Notus pozostaje w etapie 8. Testy backendu, przeglądarki ze sztucznym API i rzeczywistego HTTP są raportowane osobno. |
 
 ## Problemy i ograniczenia
 

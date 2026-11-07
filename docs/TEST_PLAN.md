@@ -301,3 +301,95 @@ użytkownika nie zalicza całego scenariusza wniosków, kalendarza czy rozlicze�
 | T21 | Oczekująca zmiana 8 h poniedziałek → 8 h wtorek albo 3 h → 5 h tego samego dnia | Ochrona obu dni w pierwszym przypadku; zajęte 5 h, nie 8 h, w drugim; zwolnienie starego terminu dopiero po decyzji |
 | T22 | Dodanie/usunięcie dnia wolnego z istniejącymi wnioskami | Kontrolowany wpływ na godziny, saldo i historię zgodnie z Q9 |
 | T23 | Dwa równoczesne wnioski po 6 h na ten sam dzień, także nieobciążające salda | Tylko jeden może przejść; suma aktywnych nieobecności nie przekracza 8 h |
+
+## Etap 4 — odbiór zakończony, 7 listopada 2026 r.
+
+Zakres: administracja kontami, przypisaniami, zespołami i wersjonowanymi słownikami,
+Q5 oraz aktualizacja istniejącej bazy. Testy UI ze sztucznym API i rzeczywistego
+HTTP są osobnymi kontrolami.
+
+Wykonane lokalnie na PHP 8.4.24 i MySQL **8.0.32**, w odizolowanej bazie syntetycznej:
+
+- pełny PHPUnit: **198 testów / 4599 asercji — OK**;
+- PHPStan (poziom 6), mapowanie Doctrine, lint kontenera — OK;
+- migracje 1–3 na MySQL — OK;
+- frontend: ESLint, TypeScript, build produkcyjny — OK.
+
+Nowe testy obejmują rzeczywiste logowanie i wymuszoną zmianę hasła utworzonego
+konta; odmowę administracji pracownikowi/kierownikowi/zastępcy; CSRF; walidację
+i wycofanie nieudanych zapisów; konflikty wersji; aktywację/dezaktywację i zmianę
+globalnych uprawnień wraz z unieważnieniem sesji; ostatniego administratora;
+pierwsze przypisanie konta bootstrap; wersje zasad i historyczne nazwy;
+powtórzenie inicjalizacji katalogu; zachowanie wniosków i akceptacji po transferze.
+
+Testy polityki Q5 obejmują granicę dnia Europe/Warsaw, przyszłe zaplanowane
+przeniesienie, wnioski przekraczające granicę zespołów, przeszłość i kolejne
+przeniesienia, brak przypisania, role oraz propozycję zmiany wraz z wersją zastępowaną.
+Nie są odbiorem nieistniejącego jeszcze procesu wniosków.
+
+Lokalny Chromium nie wystartował z powodu ograniczenia socketów środowiska.
+Testów przeglądarkowych nie zaliczono lokalnie; wykonano je później w Chrome na CI,
+łącznie z kontrolą PHP 8.3, migracją historycznych słowników, rzeczywistym HTTP
+przez Nginx/PHP-FPM, restartem i workerami. Wyniki końcowe są poniżej.
+
+### Odbiór ręczny etapu 4
+
+1. Zaloguj się administratorem i otwórz Administrację.
+2. Na pustej bazie dodaj słowniki startowe, zespół, pracownika i jego przypisanie.
+3. Zaloguj się nowym kontem w osobnej przeglądarce, zmień hasło tymczasowe i
+   sprawdź odmowę dostępu do `/admin` oraz API administracji.
+4. Zmień nazwę zespołu i aktywność pozycji, sprawdź filtrowanie.
+5. Zmień rodzaj nieobecności i jego dostępność; wcześniejsza wersja pozostaje w bazie.
+6. Dodaj datowaną zmianę przypisania i sprawdź historię okresów.
+7. Otwórz dwa formularze tego samego rekordu; po zapisie jednego drugi powinien
+   pokazać konflikt i wymagać odświeżenia.
+8. Sprawdź ochronę ostatniego administratora; konto z samym hasłem tymczasowym
+   nie jest wystarczającym zastępstwem.
+
+Nie używaj danych produkcyjnych do testów ani `make demo` na bazie z własnymi kontami.
+
+### Dodatkowa weryfikacja lokalna
+
+- Migracja nowej izolowanej bazy do etapu 3, zapis historycznych słowników, migracja
+  etapu 4 i sprawdzenie starych nazw/aktywności/reguł/dostępności/wersji — **OK**.
+  Ponowne migracje bez zmian i pełne `doctrine:schema:validate` — **OK**.
+- Rzeczywisty HTTP na wbudowanym serwerze PHP 8.4.24 i MySQL 8.0.32 — **OK**:
+  bootstrap, CSRF, cookie, wymuszona zmiana, wylogowanie, inicjalizacja słowników,
+  tworzenie zespołu i konta, edycja, konflikt wersji oraz odmowa administracji
+  pracownikowi. To sprawdzenie nie zastępuje Nginx/PHP-FPM w Dockerze.
+- Dodatkowy test rzeczywistego komponentu React w DOM (scratch-only jsdom/esbuild)
+  — **OK**: payloady/CSRF, tworzenie, filtrowanie, konflikty, aktywność, przypisania,
+  wersje słowników, prywatne dane po odebraniu uprawnień, czyszczenie haseł.
+  Nie jest to test wizualny ani wykonanie Chrome.
+
+### Końcowy odbiór w Dockerze i Chrome
+
+Commit implementacji: `4b1f4f42fd02c7550d17974f1dee6de465f4008d`.
+[CI #16 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42349188537),
+7 listopada 2026 r., PHP **8.3.36**, MySQL **8.0.32**.
+
+| Kontrola | Wynik |
+|---|---|
+| Uruchomienie kontenerów i HTTP/baza | PASS |
+| Migracje świeżej bazy, ponowienie, zgodność schematu | PASS |
+| Migracja istniejących kont etapu 2 i słowników etapu 3 | PASS — zachowane nazwy, aktywność, reguły, dostępność i wersje |
+| Jawne demo uruchomione dwukrotnie | PASS — bez duplikacji |
+| PHPUnit | **198 testów / 4599 asercji — PASS** |
+| Rzeczywiste komendy bootstrap i recovery administratora | PASS |
+| PHPStan, YAML/container lint, ESLint, TypeScript | PASS |
+| Produkcyjny build frontendu | PASS |
+| Chrome: logowanie oraz administracja ze sztucznym API | PASS — uprawnienia, formularze, CSRF, wersje, filtry, hasła, przypisania, słowniki, desktop/mobile |
+| Restart i zachowanie danych | PASS |
+| HTTP przez Nginx/PHP-FPM | PASS — sesja, hasła, słowniki/konta, konflikty i odmowa administracji pracownikowi |
+| Messenger i Scheduler | PASS — stabilne procesy |
+| Zrzuty ekranu 1366 px / 390 px | Przejrzane: czytelne formularze/listy, brak poziomego przepełnienia; układ roboczy |
+
+Zrzuty `stage4-users-desktop.png` i `stage4-dictionary-mobile.png` są w artefakcie
+`synthetic-ui-screenshots` przebiegu CI (retencja 7 dni). Korzystają z danych
+syntetycznych. Widoczne znaczniki developerskie Next i zachowanie elementów
+przy zrzucie całej przewiniętej strony nie są elementem projektu produkcyjnego.
+
+Test przeglądarkowy ze sztucznym API oraz rzeczywiste testy backendu/HTTP są
+oddzielnymi kontrolami — nie deklarujemy pełnego przeglądarkowego E2E wszystkich
+procesów urlopowych. Wnioski, kalendarz, limity i saldo należą do kolejnych etapów.
+Końcowy styl Notus pozostaje w etapie 8; wdrożenie produkcyjne w etapie 12.

@@ -27,3 +27,7 @@ access_controllers:
 password_controller:
     resource: ../src/Controller/PasswordController.php
     type: attribute
+
+admin_controllers:
+    resource: ../src/Controller/Admin/
+    type: attribute

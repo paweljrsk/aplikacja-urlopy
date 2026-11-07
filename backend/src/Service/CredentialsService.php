@@ -119,6 +119,27 @@ final class CredentialsService
         });
     }
 
+    /** The administration service holds the transaction and account locks. */
+    public function confirmAdministrator(User $actor, #[\SensitiveParameter] string $password): void
+    {
+        if (!$actor->isActive() || !$actor->isAdministrator() || $actor->mustChangePassword()) {
+            throw new CredentialsException('FORBIDDEN', 'Brak uprawnień administratora.', 403);
+        }
+        $this->requireUsablePassword($actor, $password);
+    }
+
+    /**
+     * @internal Only for a new account in an authorized, audited administration transaction.
+     * @return array{temporaryPassword: string, expiresAt: \DateTimeImmutable}
+     */
+    public function initializeAccountPassword(User $user): array
+    {
+        if (null !== $user->getPasswordHash() || null !== $user->getId()) {
+            throw new \LogicException('Initial credentials require a newly created account.');
+        }
+        return $this->setTemporaryPassword($user);
+    }
+
     private function requireUsablePassword(User $user, #[\SensitiveParameter] string $password): void
     {
         $hash = $user->getPasswordHash();

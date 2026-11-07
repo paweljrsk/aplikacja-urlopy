@@ -58,14 +58,22 @@ export function getAdminUsers() {
   return request<{ users: CurrentUser[] }>("/api/admin/users");
 }
 
-export async function postApi<T>(path: string, body: Record<string, string> = {}): Promise<T> {
+export function getApi<T>(path: string): Promise<T> {
+  return request<T>(path);
+}
+
+export function postApi<T>(path: string, body: Record<string, unknown> = {}): Promise<T> {
+  return mutateApi<T>(path, "POST", body);
+}
+
+export async function mutateApi<T>(path: string, method: "POST" | "PATCH", body: Record<string, unknown> = {}): Promise<T> {
   // Read again after login/session rotation; never persist CSRF or credentials.
   const { csrfToken } = await request<{ csrfToken: string }>("/api/auth/csrf");
   if (typeof csrfToken !== "string" || csrfToken.length === 0) {
     throw new ApiError(0, "INVALID_RESPONSE");
   }
   return request<T>(path, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
     body: JSON.stringify(body),
   });
@@ -85,6 +93,12 @@ export function errorMessage(error: unknown): string {
     VALIDATION_FAILED: "Sprawdź dane formularza i dostępność konta. Jeśli problem się powtarza, skontaktuj się z administratorem.",
     CREDENTIAL_THROTTLED: "Zbyt wiele prób potwierdzenia hasła. Odczekaj minutę i spróbuj ponownie.",
     CONFLICT: "Stan konta zmienił się podczas operacji. Odśwież stronę i spróbuj ponownie.",
+    LAST_ADMINISTRATOR: "Musi pozostać co najmniej jeden aktywny administrator z działającym dostępem. Najpierw przygotuj inne konto administratora.",
+    DUPLICATE_EMAIL: "Ten adres e-mail jest już przypisany do konta. Użyj innego adresu.",
+    DUPLICATE_CODE: "Ten kod jest już używany. Wprowadź unikalny kod.",
+    DUPLICATE_VALUE: "Podany adres e-mail lub kod jest już używany. Wprowadź unikalną wartość.",
+    INACTIVE_REFERENCE: "Wybrany zespół lub forma zatrudnienia są nieaktywne. Odśwież dane i wybierz aktywną pozycję.",
+    ASSIGNMENT_CONFLICT: "Termin koliduje z istniejącym przypisaniem. Sprawdź historię i datę obowiązywania zmiany.",
     NOT_FOUND: "Nie znaleziono wskazanego konta. Odśwież listę użytkowników.",
     NETWORK_ERROR: "Brak połączenia z aplikacją. Sprawdź połączenie i spróbuj ponownie.",
     INVALID_RESPONSE: "Aplikacja nie zwróciła prawidłowej odpowiedzi. Spróbuj ponownie później.",

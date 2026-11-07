@@ -156,6 +156,7 @@ export function AuthScreen({ screen }: { screen: Screen }) {
         <dl className="profile-details"><div><dt>Adres e-mail</dt><dd>{user.email}</dd></div><div><dt>Zespół</dt><dd>{user.team?.name ?? "Brak bieżącego przypisania"}</dd></div><div><dt>Rola</dt><dd>{roleLabel(user)}</dd></div></dl>
       </section>
       <section className="coming-card"><div className="coming-icon" aria-hidden="true">↗</div><div><h2>Przestrzeń na plany zespołu</h2><p>Kalendarz i obsługa wniosków nie są jeszcze dostępne.</p></div></section>
+      {user.isAdministrator && <section className="admin-setup"><div><h2>Zarządzanie aplikacją</h2><p>Dodawaj użytkowników, zarządzaj zespołami i rodzajami nieobecności.</p></div><Link href="/admin" className="button button-primary" prefetch={false}>Przejdź do administracji</Link></section>}
       {user.isAdministrator && <AdminPasswords currentUser={user} />}
     </main>
     <footer className="workspace-footer">Urlopy zespołu<span>Twoja sesja jest chroniona</span></footer>

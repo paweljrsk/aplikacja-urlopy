@@ -25,6 +25,10 @@ class EmploymentType
     #[ORM\Column]
     private bool $active = true;
 
+    #[ORM\Version]
+    #[ORM\Column(type: 'integer')]
+    private int $version = 1;
+
     public function __construct(string $code, string $name, bool $carriesUnusedHours)
     {
         if (!preg_match('/^[a-z][a-z0-9_]{0,63}$/D', $code)) {
@@ -64,6 +68,21 @@ class EmploymentType
     public function isActive(): bool
     {
         return $this->active;
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
+    }
+
+    public function update(string $name, bool $active): void
+    {
+        $name = trim($name);
+        if ('' === $name || mb_strlen($name) > 255) {
+            throw new \InvalidArgumentException('A name of 1–255 characters is required.');
+        }
+        $this->name = $name;
+        $this->active = $active;
     }
 
     public function deactivate(): void

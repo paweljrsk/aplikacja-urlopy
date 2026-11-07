@@ -66,7 +66,7 @@ try {
   class Client {
     constructor(cookies = new Map()) { this.cookies = new Map(cookies); }
 
-    async request(path, status, body, csrfToken) {
+    async request(path, status, body, csrfToken, method) {
       const headers = { Accept: 'application/json' };
       if (this.cookies.size) headers.Cookie = [...this.cookies].map(([key, value]) => `${key}=${value}`).join('; ');
       if (body !== undefined) {
@@ -74,7 +74,7 @@ try {
         headers['X-CSRF-Token'] = csrfToken;
       }
       const response = await fetch(new URL(path, base), {
-        method: body === undefined ? 'GET' : 'POST',
+        method: method || (body === undefined ? 'GET' : 'POST'),
         headers,
         body: body === undefined ? undefined : JSON.stringify(body),
         redirect: 'error',
@@ -134,12 +134,57 @@ try {
   const listed = await fresh.request('/api/admin/users', 200);
   check(Array.isArray(listed.users) && listed.users.some(user => user.id === userId), 'Admin list unavailable');
 
+  step = 'administration dictionaries and real API mutations';
+  async function mutate(path, body, status = 200, method = 'POST') {
+    const { csrfToken } = await fresh.request('/api/auth/csrf', 200);
+    return fresh.request(path, status, body, csrfToken, method);
+  }
+  const catalog = await mutate('/api/admin/catalog/initialize', {});
+  const employment = catalog.employmentTypes.find(item => item.code === 'b2b');
+  check(employment && catalog.absenceTypes.length >= 3, 'Starter dictionaries missing');
+  const suffix = randomBytes(6).toString('hex');
+  const teamResult = await mutate('/api/admin/teams', { code: `http_${suffix}`, name: 'Synthetic HTTP team', active: true }, 201);
+  const team = teamResult.item;
+  check(team && team.active === true, 'Team creation failed');
+  const localDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const created = await mutate('/api/admin/users', {
+    firstName: 'Synthetic', lastName: 'AdminHttp', email: `admin-http-${suffix}@example.test`,
+    isAdministrator: false, teamId: team.id, employmentTypeId: employment.id,
+    role: 'employee', validFrom: localDate, adminPassword: newPassword,
+  }, 201);
+  check(created.user?.team?.id === team.id && typeof created.temporaryPassword === 'string', 'Assigned account creation failed');
+  check(!JSON.stringify(created.user).includes(created.temporaryPassword), 'Secret leaked into user DTO');
+  const detail = await fresh.request(`/api/admin/users/${created.user.id}`, 200);
+  check(detail.user.assignments.length === 1, 'Assignment history missing');
+  const updated = await mutate(`/api/admin/teams/${team.id}`, {
+    version: team.version, name: 'Synthetic renamed team', active: true,
+  }, 200, 'PATCH');
+  check(updated.item.name === 'Synthetic renamed team', 'Team edit failed');
+  const conflict = await mutate(`/api/admin/teams/${team.id}`, {
+    version: team.version, name: 'Stale name', active: true,
+  }, 409, 'PATCH');
+  check(conflict.error?.code === 'CONFLICT', 'Stale update was not rejected');
+
+  step = 'new account forced change and denied administration';
+  const employeeClient = new Client();
+  const employeeLogin = await employeeClient.post('/api/auth/login', {
+    email: created.user.email, password: created.temporaryPassword,
+  });
+  check(employeeLogin.user.mustChangePassword === true, 'New account did not require password change');
+  const employeePassword = randomBytes(32).toString('base64url');
+  await employeeClient.post('/api/auth/change-password', { currentPassword: created.temporaryPassword, newPassword: employeePassword });
+  const employeeFresh = new Client();
+  await employeeFresh.post('/api/auth/login', { email: created.user.email, password: employeePassword });
+  const forbidden = await employeeFresh.request('/api/admin/catalog', 403);
+  check(forbidden.error?.code === 'FORBIDDEN', 'Employee can access administration');
+  await employeeFresh.post('/api/auth/logout', {});
+
   step = 'logout and session revocation';
   const loggedOut = await fresh.post('/api/auth/logout', {});
   check(loggedOut.status === 'logged_out', 'Logout failed');
   const anonymous = await fresh.request('/api/auth/me', 401);
   check(anonymous.error?.code === 'AUTH_REQUIRED', 'Logout did not revoke session');
-  console.log('Real HTTP auth smoke passed: CSRF, session persistence, forced change, revocation, admin access and logout.');
+  console.log('Real HTTP auth smoke passed: CSRF, session persistence, forced change, revocation, admin access, dictionary/account CRUD, stale version, employee isolation and logout.');
 }
 
 main().catch(() => {

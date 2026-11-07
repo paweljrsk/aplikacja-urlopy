@@ -2,9 +2,21 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 3 — lokalne logowanie i kontrola dostępu.** Dostępne są ekrany logowania, zmiany hasła i chronionego profilu oraz reset haseł przez administratora. Backend korzysta z modelu etapu 2 (19 tabel) i dodatkowej migracji danych uwierzytelniania. Składanie wniosków, kalendarz i pełne rozliczenia powstaną w kolejnych etapach. `GET /api/health` zwraca `{"status":"ok"}` i sprawdza uruchomienie aplikacji oraz routingu, nie dostępność bazy. Zakres i ograniczenia opisuje [model danych](docs/DATA_MODEL.md).
+**Bieżący zakres: etap 4 — administracja użytkownikami, zespołami i słownikami.**
+Dostępne są logowanie, zmiana hasła i panel `/admin`: tworzenie kont z hasłami
+jednorazowymi, edycja i aktywność kont, datowane przypisania zespołu/roli/formy,
+zespoły i wersjonowane rodzaje nieobecności. Kontrolę dostępu, audyt i konflikty
+zapisów egzekwuje backend. Wygląd jest tymczasowy — stylistyka Notus w etapie 8.
+Wnioski, kalendarz i pełne rozliczenia powstaną w kolejnych etapach.
+`GET /api/health` sprawdza kernel/routing, nie gotowość bazy. Zakres opisują
+[administracja](docs/ADMINISTRATION.md) i [model danych](docs/DATA_MODEL.md).
 
-Kod etapu 3 jest w [PR #3](https://github.com/paweljrsk/aplikacja-urlopy/pull/3), w gałęzi `codex/etap-3-logowanie-uprawnienia`, opartej na etapie 2 z [PR #2](https://github.com/paweljrsk/aplikacja-urlopy/pull/2). Poprzednie PR pozostają niescalone.
+Kod etapu 4: [PR #4](https://github.com/paweljrsk/aplikacja-urlopy/pull/4), gałąź
+`codex/etap-4-administracja`, oparta na [PR #3](https://github.com/paweljrsk/aplikacja-urlopy/pull/3). Poprzednie etapy pozostają
+niescalone; instrukcja poniżej wybiera pełną gałąź etapu 4.
+[CI #16](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42349188537) przeszło:
+198 testów / 4599 asercji, migracje, kontrole kodu, build, Chrome, HTTP, restart i workery.
+
 
 ## Technologie
 
@@ -32,7 +44,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/etap-3-logowanie-uprawnienia
+git switch codex/etap-4-administracja
 make init
 make verify
 make db-validate
@@ -40,7 +52,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 3, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracja etapu 3 zachowuje istniejące konta; nie nadaje im automatycznie haseł. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 4, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 4 dodaje wersje zespołów i form zatrudnienia, historyczne nazwy rodzajów oraz blokadę transakcyjną administracji. Istniejące słowniki, wnioski i ich zasady pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 
@@ -64,10 +76,16 @@ Hasło tymczasowe pokaże raz; jest ważne 24 h. Otwórz `http://localhost:8080/
 zaloguj się i zmień hasło (15–128 znaków, można używać spacji). Zmiana hasła kończy
 wszystkie sesje, także bieżącą, więc zaloguj się ponownie nowym hasłem.
 
-Po zalogowaniu administrator zobaczy listę kont i reset hasła. Reset wymaga jego
-obecnego hasła; nowe hasło tymczasowe pracownika jest pokazywane tylko raz.
-Zakładanie kolejnych kont i pełna administracja to etap 4. Po inicjalizacji haseł
-nie uruchamiaj ponownie `make demo` jako sposobu aktualizacji danych.
+Po zalogowaniu administrator może otworzyć **Administrację** (`/admin`). Na pustej
+bazie wybierz **Dodaj słowniki startowe**, dodaj zespół i konta pracowników. Ta jawna
+operacja uzupełnia brakujące słowniki bez nadpisywania istniejących ustawień.
+Administrator utworzony przez terminal może otrzymać własne przypisanie do zespołu.
+
+Utworzenie/edycja konta, zmiana przypisania i reset wymagają obecnego hasła
+administratora. Hasło tymczasowe pracownika jest pokazywane raz; następnie można je
+tylko zresetować. Nie można wyłączyć ostatniego administratora z działającym,
+zmienionym hasłem. Instrukcja i kontrakt API: [administracja](docs/ADMINISTRATION.md).
+Po inicjalizacji haseł nie używaj `make demo` jako sposobu aktualizacji danych.
 
 Gdy administrator utraci hasło lub jego pierwsze hasło wygaśnie, operator mający
 dostęp do terminala serwera może uruchomić:
@@ -145,7 +163,7 @@ Build frontendu:
 docker compose exec -T node npm run build
 ```
 
-GitHub Actions w `.github/workflows/checks.yml` definiuje kontrole startu, API, bazy, powtórzenia migracji, zgodności schematu, ponownego ładowania demo, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli. Scenariusz przeglądarkowy w Chrome używa jawnie syntetycznych odpowiedzi API i sprawdza zachowanie ekranów; prawdziwy backend jest sprawdzany osobnymi testami HTTP z MySQL. Dodatkowy przebieg logowania przez Nginx i PHP-FPM potwierdza działanie cookie, CSRF, wymuszonej zmiany hasła i wylogowania w uruchomionym stosie. Narzędzie `playwright-core@1.62.1` jest instalowane tylko na czas kontroli CI, poza zależnościami aplikacji.
+GitHub Actions w `.github/workflows/checks.yml` definiuje kontrole startu, API, bazy, powtórzenia migracji, zgodności schematu, ponownego ładowania demo, testów, lintowania, builda, zachowania danych po stop/start oraz opcjonalnych workerów. Wynik workflow należy sprawdzić dla konkretnego commita. Samo istnienie konfiguracji CI nie oznacza zaliczenia kontroli. Scenariusze przeglądarkowe logowania i administracji w Chrome używają jawnie syntetycznych odpowiedzi API i sprawdzają zachowanie ekranów; prawdziwy backend jest sprawdzany osobnymi testami HTTP z MySQL. Dodatkowy przebieg logowania przez Nginx i PHP-FPM potwierdza działanie cookie, CSRF, wymuszonej zmiany hasła, tworzenia słowników/kont, konfliktów wersji, odmowy administracji pracownikowi i wylogowania w uruchomionym stosie. Narzędzie `playwright-core@1.62.1` jest instalowane tylko na czas kontroli CI, poza zależnościami aplikacji.
 
 Opcjonalne procesy Messenger/Scheduler uruchamia `make workers`. Używają transportów `async` i `scheduler_default`; nie wykonują jeszcze zadań urlopowych. Biblioteka `symfony/amqp-messenger` zapewnia obsługę istniejącego transportu RabbitMQ. Zwykły start aplikacji nie wymaga uruchamiania workerów.
 
@@ -154,6 +172,7 @@ Faktyczne wyniki i ograniczenia środowiska opisano w [planie testów](docs/TEST
 ## Dokumentacja i dalsza praca
 
 - [Wymagania i macierz uprawnień](docs/REQUIREMENTS.md)
+- [Administracja, pierwsza konfiguracja i API](docs/ADMINISTRATION.md)
 - [Model danych i granice etapu 2](docs/DATA_MODEL.md)
 - [Logowanie, API i obsługa haseł](docs/AUTHENTICATION.md)
 - [Etapy i prompty developmentu](docs/DEVELOPMENT_PLAN.md)

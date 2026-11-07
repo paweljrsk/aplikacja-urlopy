@@ -89,6 +89,15 @@ class StaffAssignment
         return $this->validUntil;
     }
 
+    /** @internal Administration checks that no RequestDay references this assignment, under locks. */
+    public function correctUnreferenced(Team $team, EmploymentType $employmentType, TeamRole $role): void
+    {
+        $this->team = $team;
+        $this->employmentType = $employmentType;
+        $this->role = $role;
+        $this->user->markAssignmentChanged($this);
+    }
+
     public function closeAt(\DateTimeImmutable $exclusiveEnd): void
     {
         $exclusiveEnd = DateValue::local($exclusiveEnd);

@@ -40,7 +40,10 @@ jobs:
           docker compose exec -T -e APP_ENV=test php php bin/console doctrine:database:create --if-not-exists --no-interaction
           docker compose exec -T -e APP_ENV=test php php bin/console doctrine:migrations:migrate 'DoctrineMigrations\Version20261106210000' --no-interaction
           docker compose exec -T -e APP_ENV=test php php bin/console doctrine:query:sql "INSERT INTO app_user (first_name,last_name,email,active,is_administrator,must_change_password,version,assignment_revision) VALUES ('Synthetic','Upgrade','stage3-upgrade@example.test',1,0,1,1,0)"
+          docker compose exec -T -e APP_ENV=test php php bin/console doctrine:migrations:migrate 'DoctrineMigrations\Version20261106233000' --no-interaction
+          docker compose exec -T -e APP_ENV=test php php tests/Support/admin-upgrade-check.php seed
           make test-prepare
+          docker compose exec -T -e APP_ENV=test php php tests/Support/admin-upgrade-check.php verify
           docker compose exec -T -e APP_ENV=test php php tests/Support/credentials-cli-check.php
           make test
           docker compose exec -T -e APP_ENV=test php php <<'PHP'
@@ -68,6 +71,8 @@ jobs:
         run: |
           npm install --prefix /tmp/urlopy-ui --no-package-lock --ignore-scripts playwright-core@1.62.1
           NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/auth-ui-check.cjs
+      - name: Browser administration screens with synthetic API responses
+        run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/admin-ui-check.cjs
       - name: Write synthetic persistence marker outside the application schema
         run: |
           docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root' <<'SQL'
@@ -119,6 +124,14 @@ jobs:
           else:
               raise SystemExit('Workers failed to become stable: ' + repr(previous))
           PY
+      - name: Save synthetic browser screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: synthetic-ui-screenshots
+          path: /tmp/urlopy-ui-screens/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Diagnostics on failure
         if: failure()
         run: |

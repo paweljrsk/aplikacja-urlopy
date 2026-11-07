@@ -60,13 +60,21 @@ class AbsenceType
         return $this->version;
     }
 
-    /** @param list<EmploymentType> $employmentTypes */
-    public function createVersion(string $name, bool $deductsBalance, array $employmentTypes): AbsenceTypeVersion
+    /**
+     * @param list<EmploymentType> $employmentTypes
+     * @param array<int|string, string> $namesByEmploymentType
+     */
+    public function createVersion(string $name, bool $deductsBalance, array $employmentTypes, array $namesByEmploymentType = []): AbsenceTypeVersion
     {
-        $version = new AbsenceTypeVersion($this, $this->latestRevision + 1, $name, $deductsBalance, $employmentTypes);
+        $version = new AbsenceTypeVersion($this, $this->latestRevision + 1, $name, $deductsBalance, $employmentTypes, $namesByEmploymentType);
         ++$this->latestRevision;
 
         return $version;
+    }
+
+    public function setActive(bool $active): void
+    {
+        $this->active = $active;
     }
 
     public function deactivate(): void

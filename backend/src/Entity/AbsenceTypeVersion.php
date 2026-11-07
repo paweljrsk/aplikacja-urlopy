@@ -29,6 +29,10 @@ class AbsenceTypeVersion
     #[ORM\Column]
     private bool $deductsBalance;
 
+    /** @var array<int|string, string> */
+    #[ORM\Column(type: 'json')]
+    private array $namesByEmploymentType = [];
+
     /** @var Collection<int, EmploymentType> */
     #[ORM\ManyToMany(targetEntity: EmploymentType::class)]
     #[ORM\JoinTable(name: 'absence_type_availability')]
@@ -40,8 +44,9 @@ class AbsenceTypeVersion
      * @internal create through AbsenceType::createVersion() to advance the aggregate version
      *
      * @param list<EmploymentType> $employmentTypes
+     * @param array<int|string, string> $namesByEmploymentType
      */
-    public function __construct(AbsenceType $type, int $revision, string $name, bool $deductsBalance, array $employmentTypes)
+    public function __construct(AbsenceType $type, int $revision, string $name, bool $deductsBalance, array $employmentTypes, array $namesByEmploymentType = [])
     {
         if ($revision < 1) {
             throw new \InvalidArgumentException('An absence type revision must be positive.');
@@ -63,6 +68,13 @@ class AbsenceTypeVersion
             $uniqueEmploymentTypes[spl_object_id($employmentType)] = $employmentType;
         }
         $this->employmentTypes = new ArrayCollection(array_values($uniqueEmploymentTypes));
+        $allowedIds = array_map(static fn (EmploymentType $item): string => (string) $item->getId(), $employmentTypes);
+        foreach ($namesByEmploymentType as $key => $value) {
+            if (!\in_array((string) $key, $allowedIds, true) || '' === trim($value) || mb_strlen(trim($value)) > 255) {
+                throw new \InvalidArgumentException('A display name must refer to an allowed employment type.');
+            }
+            $this->namesByEmploymentType[(string) $key] = trim($value);
+        }
     }
 
     public function getId(): ?int
@@ -94,6 +106,17 @@ class AbsenceTypeVersion
     public function getEmploymentTypes(): array
     {
         return array_values($this->employmentTypes->toArray());
+    }
+
+    /** @return array<int|string, string> */
+    public function getNamesByEmploymentType(): array
+    {
+        return $this->namesByEmploymentType;
+    }
+
+    public function getNameFor(EmploymentType $employmentType): string
+    {
+        return $this->namesByEmploymentType[(string) $employmentType->getId()] ?? $this->name;
     }
 
     public function allowsEmploymentType(EmploymentType $employmentType): bool
