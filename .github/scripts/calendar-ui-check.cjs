@@ -149,8 +149,10 @@ let step = 'launch';
     page = await context.newPage(); page.setDefaultTimeout(10000);
     page.on('pageerror', error => errors.push(error.message));
     await page.clock.setFixedTime(new Date('2026-11-09T10:00:00Z'));
-    const person = page.getByLabel('Pracownik', { exact: true });
-    const status = page.getByLabel('Status nieobecności', { exact: true });
+    // These wrapping labels contain the select options too, so exact label text
+    // is not a stable Playwright selector. Keep all option/data assertions below.
+    const person = page.locator('#calendar-person');
+    const status = page.locator('#calendar-status');
     const groups = page.locator('.upcoming-list > li[data-request-id]');
     const group = id => page.locator(`.upcoming-list > li[data-request-id="${id}"]`);
     const ids = async () => (await groups.evaluateAll(elements => elements.map(element => Number(element.dataset.requestId)))).sort((a, b) => a - b);
