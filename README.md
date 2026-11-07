@@ -10,8 +10,12 @@ API umożliwia złożenie, odczyt, edycję oczekującego wniosku, wycofanie, akc
 i odrzucenie z uzasadnieniem. Etap 6 udostępnia proces przez API; formularz i
 pełna stylistyka Notus powstaną w etapie 8, główny kalendarz zespołu w etapie 9.
 
-Gałąź etapu 6: `codex/etap-6-wnioski-decyzje`, oparta na ukończonym etapie 5.
-Trwa końcowa weryfikacja; stan i zakres kontroli opisuje [plan testów](docs/TEST_PLAN.md).
+Etap 6 ukończony w [PR #6](https://github.com/paweljrsk/aplikacja-urlopy/pull/6).
+Gałąź `codex/etap-6-wnioski-decyzje` jest oparta na ukończonym etapie 5.
+[CI #22 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42360588801):
+337 testów / 10 662 asercje na PHP 8.3.36 i MySQL 8.0.32, kontrole statyczne,
+build, regresja Chrome, rzeczywisty HTTP, restart z zachowaniem danych i workery.
+Zakres kontroli i ręczny odbiór API opisuje [plan testów](docs/TEST_PLAN.md).
 
 Etap 5 ukończony w [PR #5](https://github.com/paweljrsk/aplikacja-urlopy/pull/5),
 gałąź `codex/etap-5-kalendarz-limity-saldo`, oparta na ukończonym

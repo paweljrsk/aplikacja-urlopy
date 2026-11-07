@@ -498,7 +498,7 @@ Tworzenie i obsługa wniosków nie mają jeszcze publicznego formularza. Rezerwa
 przełom roku, niedobory, korekty kalendarza na istniejących wnioskach i współbieżność
 są na tym etapie sprawdzane testami usług/API na syntetycznych danych.
 
-## Etap 6 — lokalna weryfikacja przed odbiorem CI
+## Etap 6 — lokalna weryfikacja
 
 7 listopada 2026 r., PHP **8.4.24**, MySQL **8.0.32**, domyślna strefa PHP `UTC`
 i kontrolowane zegary testowe w Europe/Warsaw.
@@ -521,11 +521,34 @@ potwierdzają zarówno odmowę tej operacji, jak i zachowanie dopuszczalnych prz
 Testy porównują potwierdzenia jako mapy o tych samych wartościach i typach — MySQL
 może inaczej uporządkować klucze JSON; kolejność pól obiektu nie jest częścią API.
 
-Lokalny serwer PHP nie zastępuje Nginx/PHP-FPM ani docelowego PHP 8.3. Wynik pełnego
-Docker CI zostanie zapisany po jego wykonaniu. Etap 6 nie zmienia frontendu;
-dotychczasowe testy Chrome pozostają regresją ekranów z poprzednich etapów.
+Lokalny serwer PHP nie zastępuje Nginx/PHP-FPM ani docelowego PHP 8.3. Pełny
+Docker CI opisano poniżej. Etap 6 nie zmienia frontendu; dotychczasowe testy Chrome
+pozostają regresją ekranów z poprzednich etapów.
 Nie dodano bibliotek ani migracji. Publiczne zapisy korzystają z dotychczasowego
 schematu, a uruchomienie nie resetuje danych.
+
+### Końcowy odbiór Docker i regresji Chrome etapu 6 — CI #22
+
+7 listopada 2026 r., commit `58f30102b85567952f5967663ad8f04028d79384`,
+[CI #22 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42360588801).
+Docelowy PHP **8.3.36**, MySQL **8.0.32**. Wszystkie wymagane kroki zakończone sukcesem.
+
+| Kontrola | Wynik |
+|---|---|
+| Inicjalizacja stosu, HTTP, ponowienie migracji i schemat Doctrine | PASS; zgodny schemat, bez nowej migracji etapu 6 |
+| Dwukrotne demo i próby aktualizacji wcześniejszych danych | PASS; brak duplikacji, zachowana historia |
+| CLI administratora i pełny PHPUnit | PASS; **337 testów / 10 662 asercje**, w tym procesy konkurujące o saldo i decyzje |
+| PHPStan, lint Symfony, ESLint/TypeScript i produkcyjny build | PASS |
+| Chrome: logowanie, administracja, salda i kalendarz firmowy | PASS; syntetyczne odpowiedzi API, regresja istniejących ekranów desktop/mobile |
+| Rzeczywiste API przez Nginx/PHP-FPM i MySQL | PASS; sesje/CSRF, administracja, rozliczenia oraz cały nowy proces wniosków, ponowienia i konflikty |
+| Stop/start z kontrolą znacznika zachowania danych | PASS; wolumeny zachowane |
+| Messenger i Scheduler | PASS; start procesów w tle |
+
+Testy Chrome nie obejmują formularza wniosków, który powstaje w etapie 8.
+Nowy proces jest sprawdzony przez rzeczywiste API oraz testy funkcjonalne,
+integracyjne i współbieżności. Nie weryfikowano jeszcze środowiska produkcyjnego
+ani uruchomienia na komputerze użytkownika. Zrzuty regresji są artefaktem
+`synthetic-ui-screenshots` przebiegu CI; retencja 7 dni.
 
 ### Ręczny odbiór API etapu 6
 
