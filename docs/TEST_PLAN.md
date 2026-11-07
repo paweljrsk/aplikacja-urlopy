@@ -497,3 +497,79 @@ Scenariusze wykonuj na syntetycznym pracowniku, bez zmieniania rzeczywistych sal
 Tworzenie i obsługa wniosków nie mają jeszcze publicznego formularza. Rezerwacje,
 przełom roku, niedobory, korekty kalendarza na istniejących wnioskach i współbieżność
 są na tym etapie sprawdzane testami usług/API na syntetycznych danych.
+
+## Etap 6 — lokalna weryfikacja
+
+7 listopada 2026 r., PHP **8.4.24**, MySQL **8.0.32**, domyślna strefa PHP `UTC`
+i kontrolowane zegary testowe w Europe/Warsaw.
+
+- Pełny PHPUnit: **337 testów / 10 662 asercje — PASS**.
+- Nowy publiczny workflow: 38 testów / 1386 asercji; API: 13 / 2179.
+- Współbieżność: 6 testów / 248 asercji. Niezależne procesy PHP i połączenia MySQL
+  oczekują na rzeczywistej blokadzie, następnie konkurują o 8 h salda lub zajętości,
+  decyzję albo to samo ponowienie. Nie są to mocki kolejności operacji.
+- Testy modelu po rozszerzeniu kontekstu: 27 / 71; ścisłe wejście: 8 / 8.
+- PHPStan, lint YAML/kontenera Symfony i składnia skryptu HTTP — PASS.
+- Rzeczywisty HTTP przez lokalny serwer PHP i świeży MySQL — PASS: logowanie,
+  administracja, saldo/kalendarz, złożenie, atomowa edycja, wycofanie, akceptacja,
+  odrzucenie, obowiązkowe uzasadnienie, ponowienia, nieaktualna wersja, brak drugiego
+  potrącenia i limit 8 h także dla niepłatnej nieobecności.
+
+Regresja E09 w DECISIONS najpierw potwierdziła niedozwolone utworzenie niedoboru
+przy przeniesieniu godzin ze starej puli UoP na nowy termin B2B. Po poprawce testy
+potwierdzają zarówno odmowę tej operacji, jak i zachowanie dopuszczalnych przypadków.
+Testy porównują potwierdzenia jako mapy o tych samych wartościach i typach — MySQL
+może inaczej uporządkować klucze JSON; kolejność pól obiektu nie jest częścią API.
+
+Lokalny serwer PHP nie zastępuje Nginx/PHP-FPM ani docelowego PHP 8.3. Pełny
+Docker CI opisano poniżej. Etap 6 nie zmienia frontendu; dotychczasowe testy Chrome
+pozostają regresją ekranów z poprzednich etapów.
+Nie dodano bibliotek ani migracji. Publiczne zapisy korzystają z dotychczasowego
+schematu, a uruchomienie nie resetuje danych.
+
+### Końcowy odbiór Docker i regresji Chrome etapu 6 — CI #22
+
+7 listopada 2026 r., commit `58f30102b85567952f5967663ad8f04028d79384`,
+[CI #22 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42360588801).
+Docelowy PHP **8.3.36**, MySQL **8.0.32**. Wszystkie wymagane kroki zakończone sukcesem.
+
+| Kontrola | Wynik |
+|---|---|
+| Inicjalizacja stosu, HTTP, ponowienie migracji i schemat Doctrine | PASS; zgodny schemat, bez nowej migracji etapu 6 |
+| Dwukrotne demo i próby aktualizacji wcześniejszych danych | PASS; brak duplikacji, zachowana historia |
+| CLI administratora i pełny PHPUnit | PASS; **337 testów / 10 662 asercje**, w tym procesy konkurujące o saldo i decyzje |
+| PHPStan, lint Symfony, ESLint/TypeScript i produkcyjny build | PASS |
+| Chrome: logowanie, administracja, salda i kalendarz firmowy | PASS; syntetyczne odpowiedzi API, regresja istniejących ekranów desktop/mobile |
+| Rzeczywiste API przez Nginx/PHP-FPM i MySQL | PASS; sesje/CSRF, administracja, rozliczenia oraz cały nowy proces wniosków, ponowienia i konflikty |
+| Stop/start z kontrolą znacznika zachowania danych | PASS; wolumeny zachowane |
+| Messenger i Scheduler | PASS; start procesów w tle |
+
+Testy Chrome nie obejmują formularza wniosków, który powstaje w etapie 8.
+Nowy proces jest sprawdzony przez rzeczywiste API oraz testy funkcjonalne,
+integracyjne i współbieżności. Nie weryfikowano jeszcze środowiska produkcyjnego
+ani uruchomienia na komputerze użytkownika. Zrzuty regresji są artefaktem
+`synthetic-ui-screenshots` przebiegu CI; retencja 7 dni.
+
+### Ręczny odbiór API etapu 6
+
+Kontrakt i przykłady JSON są w [REQUESTS_API.md](REQUESTS_API.md). Używaj
+syntetycznego pracownika; dane początkowe i przydział można ustawić w `/balances`.
+Pełny formularz składania wniosków powstaje w etapie 8.
+
+1. Po zalogowaniu sprawdź `GET /api/requests/options` oraz `GET /api/requests`.
+   Wywołania zapisu wymagają tej samej sesji i `X-CSRF-Token` z `/api/auth/csrf`.
+2. Przy 80 h dostępnych złóż wniosek na dwa kolejne dni robocze. Powinien mieć
+   `pending`, 16 h i pozostawić 64 h. Ponów identyczny JSON z tym samym kluczem:
+   odpowiedź powinna potwierdzić ten sam wniosek bez kolejnego potrącenia.
+3. Jako uprawniony przełożony zaakceptuj go z odczytaną `expectedVersion`.
+   Dostępne pozostaje 64 h. Nieaktualna nowa operacja ma dać konflikt.
+4. Na innym dniu utwórz oczekujące 3 h, zmień na 5 h, następnie wycofaj.
+   Po wycofaniu dostępne wraca do 64 h, a wszystkie wersje pozostają w historii.
+5. Odrzuć kolejny wniosek: puste uzasadnienie jest odrzucane, prawidłowy powód
+   widzi właściciel w szczegółach. Rezerwacja zostaje zwolniona.
+6. Sprawdź własny wniosek na dzisiaj oraz odmowę wcześniejszej daty. Pracownik
+   nie może zaakceptować własnego wniosku ani odczytać cudzych szczegółów.
+
+Automatyczne odtworzenie: `make test`. Skrypt CI `auth-http-check.cjs` wykonuje
+rozszerzony przebieg HTTP na jednorazowej bazie CI; nie uruchamiaj go na swoich
+kontach i danych użytkowych.

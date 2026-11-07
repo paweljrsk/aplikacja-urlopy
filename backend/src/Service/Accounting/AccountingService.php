@@ -97,7 +97,8 @@ final class AccountingService
         }
         $history = [];
         foreach ($this->em->getRepository(AuditEvent::class)->findBy(['subject' => $subject], ['id' => 'DESC'], 100) as $event) {
-            if (!str_starts_with($event->getAction(), 'balance.') && !str_starts_with($event->getAction(), 'opening.') && !str_starts_with($event->getAction(), 'accounting.') && !str_starts_with($event->getAction(), 'calendar.')) {
+            if ('request.operation_completed' === $event->getAction()
+                || (!str_starts_with($event->getAction(), 'balance.') && !str_starts_with($event->getAction(), 'opening.') && !str_starts_with($event->getAction(), 'accounting.') && !str_starts_with($event->getAction(), 'calendar.') && !str_starts_with($event->getAction(), 'request.'))) {
                 continue;
             }
             $after = $event->getAfterData();
@@ -356,9 +357,13 @@ final class AccountingService
         }
         $oldLedger = $this->requestLedger($request);
         $oldBudget = [];
+        $oldCurrentPoolFunding = [];
         foreach ($oldLedger as $row) {
             $year = $row['account']->getYear();
             $oldBudget[$year] = ($oldBudget[$year] ?? 0) + $row['reserved'] + $row['charged'];
+            if ($row['pool']->getOriginYear() === $year) {
+                $oldCurrentPoolFunding[$year] = ($oldCurrentPoolFunding[$year] ?? 0) + $row['reserved'] + $row['charged'];
+            }
             if (0 !== $row['reserved'] || 0 !== $row['charged']) {
                 $this->line($row['account'], $row['pool'], $event, LedgerEntryKind::ADJUSTMENT, 0, -$row['reserved'], -$row['charged'], $row['day']);
             }
@@ -394,10 +399,14 @@ final class AccountingService
             }
         }
         $newBudget = [];
+        $newNonCarryBudget = [];
         foreach ($desired as $item) {
             $day = $item['day'];
             $year = (int) $day->getDate()->format('Y');
             $newBudget[$year] = ($newBudget[$year] ?? 0) + $item['amount'];
+            if (!$day->getAssignment()->getEmploymentType()->carriesUnusedHours()) {
+                $newNonCarryBudget[$year] = ($newNonCarryBudget[$year] ?? 0) + $item['amount'];
+            }
             if (null === $opening || $day->getDate()->format('Y-m-d') < $opening['effectiveDate']) {
                 throw new CredentialsException('BEFORE_OPENING', 'Nieobecności sprzed rozpoczęcia ewidencji popraw przez dane początkowe.');
             }
@@ -408,8 +417,11 @@ final class AccountingService
         usort($desired, static fn (array $a, array $b): int => [$a['day']->getDate()->format('Y-m-d'), !$a['charged']] <=> [$b['day']->getDate()->format('Y-m-d'), !$b['charged']]);
         foreach ($desired as $item) {
             $year = (int) $item['day']->getDate()->format('Y');
-            // Conversion/release of an existing reservation must remain possible after an explicit deficit correction.
-            $preservesCommitment = ($newBudget[$year] ?? 0) <= ($oldBudget[$year] ?? 0);
+            // An existing deficit may be retained, but changing to non-carry employment
+            // cannot turn an old carry-funded commitment into an unfunded annual one.
+            // Both the whole year's commitment and its restricted current-pool subset matter.
+            $preservesCommitment = ($newBudget[$year] ?? 0) <= ($oldBudget[$year] ?? 0)
+                && ($newNonCarryBudget[$year] ?? 0) <= ($oldCurrentPoolFunding[$year] ?? 0);
             $this->allocate($item['day'], $item['amount'], $item['charged'], $event, $allowDeficit || $preservesCommitment);
         }
         foreach (array_unique([...array_keys($state->getOccupancy()), ...array_keys($desiredOccupancy)]) as $date) {

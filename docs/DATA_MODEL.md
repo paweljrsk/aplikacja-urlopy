@@ -161,14 +161,12 @@ Ponowne ładowanie rozpoznaje marker zestawu, sprawdza liczności i kluczowe
 identyfikatory, po czym pozostawia dane bez zmian. Nie nadpisuje istniejących
 rekordów; kontrola zestawu nie jest porównaniem wszystkich wartości jego pól.
 
-## Granica etapu
+## Granice modelu
 
-Model nie zastępuje przyszłych procesów ani kontroli dostępu. Nadal trzeba uzyskać
-odpowiedzi z [OPEN_QUESTIONS](OPEN_QUESTIONS.md): Q2 (dzisiaj/korekty), Q3 (zmiana
-roku), Q4 (niedobór), pozostała część Q5 (historia i przyszłe wnioski), Q6 (własny
-limit kierownika), Q7 (produkcja), pozostała część Q8 (korekty przed startem)
-oraz Q9 (zmiana kalendarza). Nie interpretujemy pól i enumów jako odpowiedzi
-na te pytania. Etapy logowania, API i właściwych rozliczeń pozostają osobnymi pracami.
+Sam model nie zastępuje procesów ani kontroli dostępu. Decyzje biznesowe kolejnych
+etapów zapisano w REQUIREMENTS i DECISIONS; aktualnie nierozstrzygnięte kwestie
+określa [OPEN_QUESTIONS](OPEN_QUESTIONS.md). Nie interpretujemy pól ani enumów jako
+odpowiedzi na pytania o korekty lub produkcję.
 
 ## Rozszerzenie etapu 4
 
@@ -201,3 +199,23 @@ wniosku. Starsze wersje nie otrzymują wymyślonej historii.
 Obie migracje są addytywne i zachowują źródłowe dane. Nie cofamy ich przez usunięcie
 historii. Schemat nadal powstaje przez Doctrine Migrations. Rozliczenia i granice
 projekcji opisują [ACCOUNTING.md](ACCOUNTING.md) oraz [CALENDAR.md](CALENDAR.md).
+
+## Rozszerzenie etapu 6
+
+Proces wykorzystuje istniejące encje i kolumny; nie dodaje migracji ani nie
+przepisuje zapisanej historii. Złożenie tworzy `LeaveRequest` i wersję `INITIAL`.
+Edycja oczekującego wniosku kończy poprzednią wersję decyzją `SUPERSEDED` i tworzy
+nową `INITIAL` w tej samej transakcji. Nie zmienia zaakceptowanej wersji.
+
+`RequestRevision.editSource` jest wejściem konstruktora, nie nową kolumną. Wymaga
+ostatniej wersji początkowej tego samego wniosku, zastąpionej w dokładnie tej samej
+operacji audytowej. Kontekst starego zakresu jest kopiowany z przyciętymi granicami;
+nowe daty poza zakresem otrzymują przypisanie obowiązujące w tych dniach.
+Nie można rozszerzyć starego otwartego kontekstu na nowe daty ani podmienić zasad
+wewnątrz zachowanego zakresu. Reguła obejmuje również pierwotnie wolne dni.
+
+Właściwe zdarzenie audytu jest źródłem wersji/decyzji i księgowania. Dodatkowy wpis
+`request.operation_completed` przechowuje niezmienne potwierdzenie po nadaniu ID
+i wersji optymistycznej; nie jest finansowym ruchem. Oba wpisy zapisują się wraz
+z wnioskiem, rozliczeniem i zajętością w jednej transakcji. Nieudana operacja nie
+pozostawia częściowej wersji ani historii. Szczegóły: [REQUESTS_API.md](REQUESTS_API.md).

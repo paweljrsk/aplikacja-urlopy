@@ -267,6 +267,73 @@ final class RequestModelTest extends TestCase
         self::assertSame(8, $occupancy->getHours());
     }
 
+    public function testEditedRangeRetainsExcludedDaysButDoesNotExtendOldEmploymentOutsideItsRange(): void
+    {
+        $seed = $this->seed();
+        $b2b = new EmploymentType('b2b', 'B2B', false);
+        $seed['policy'] = $seed['type']->createVersion('Both employment forms', true, [$seed['assignment']->getEmploymentType(), $b2b]);
+        $original = $this->revision($seed, '2026-12-15', '2026-12-17', [['2026-12-15', 8], ['2026-12-17', 8]]);
+        $seed['assignment']->closeAt($this->date('2026-12-01'));
+        $new = new StaffAssignment($seed['user'], $seed['assignment']->getTeam(), $b2b, TeamRole::EMPLOYEE, $this->date('2026-12-01'));
+        $event = $this->event($seed, 'edit');
+        new RequestDecision($original, DecisionOutcome::SUPERSEDED, $event);
+        $edited = new RequestRevision($seed['request'], RequestChangeKind::INITIAL, $seed['policy'], RequestMode::FULL_DAYS,
+            $this->date('2026-12-15'), $this->date('2026-12-18'), [
+                new RequestedDay($seed['assignment'], $this->date('2026-12-15'), 8),
+                new RequestedDay($seed['assignment'], $this->date('2026-12-17'), 8),
+                new RequestedDay($new, $this->date('2026-12-18'), 8),
+            ], $event, editSource: $original);
+
+        self::assertSame($seed['assignment'], $edited->capturedAssignmentFor($this->date('2026-12-16')));
+        self::assertSame($new, $edited->capturedAssignmentFor($this->date('2026-12-18')));
+        self::assertFalse($edited->preservesAssignment($seed['assignment'], $this->date('2026-12-18')));
+        self::assertNull($edited->capturedAssignmentFor($this->date('2026-12-19')));
+        self::assertSame($original, $seed['request']->getRevisions()[0]);
+        self::assertSame($edited, $seed['request']->getPendingRevision());
+    }
+
+    public function testEditCannotUseOldOpenEndedSnapshotOnANewDateAfterEmploymentTransfer(): void
+    {
+        $seed = $this->seed();
+        $original = $this->revision($seed, '2026-12-15', '2026-12-15', [['2026-12-15', 8]]);
+        $seed['assignment']->closeAt($this->date('2026-12-01'));
+        new StaffAssignment($seed['user'], $seed['assignment']->getTeam(), $seed['assignment']->getEmploymentType(), TeamRole::EMPLOYEE, $this->date('2026-12-01'));
+        $event = $this->event($seed, 'forged_edit');
+        new RequestDecision($original, DecisionOutcome::SUPERSEDED, $event);
+
+        $this->expectException(\DomainException::class);
+        new RequestRevision($seed['request'], RequestChangeKind::INITIAL, $seed['policy'], RequestMode::FULL_DAYS,
+            $this->date('2026-12-16'), $this->date('2026-12-16'),
+            [new RequestedDay($seed['assignment'], $this->date('2026-12-16'), 8)], $event, editSource: $original);
+    }
+
+    public function testEditCannotSwapCapturedAssignmentInsidePreviousRange(): void
+    {
+        $seed = $this->seed();
+        $original = $this->revision($seed, '2026-12-15', '2026-12-15', [['2026-12-15', 8]]);
+        $seed['assignment']->closeAt($this->date('2026-12-01'));
+        $new = new StaffAssignment($seed['user'], $seed['assignment']->getTeam(), $seed['assignment']->getEmploymentType(), TeamRole::EMPLOYEE, $this->date('2026-12-01'));
+        $event = $this->event($seed, 'changed_context');
+        new RequestDecision($original, DecisionOutcome::SUPERSEDED, $event);
+
+        $this->expectException(\DomainException::class);
+        new RequestRevision($seed['request'], RequestChangeKind::INITIAL, $seed['policy'], RequestMode::FULL_DAYS,
+            $this->date('2026-12-15'), $this->date('2026-12-15'),
+            [new RequestedDay($new, $this->date('2026-12-15'), 8)], $event, editSource: $original);
+    }
+
+    public function testEditSourceMustHaveBeenSupersededInTheSameAuditedOperation(): void
+    {
+        $seed = $this->seed();
+        $original = $this->revision($seed, '2026-12-15', '2026-12-15', [['2026-12-15', 8]]);
+        new RequestDecision($original, DecisionOutcome::REJECTED, $this->event($seed, 'reject'));
+
+        $this->expectException(\DomainException::class);
+        new RequestRevision($seed['request'], RequestChangeKind::INITIAL, $seed['policy'], RequestMode::FULL_DAYS,
+            $this->date('2026-12-15'), $this->date('2026-12-15'),
+            [new RequestedDay($seed['assignment'], $this->date('2026-12-15'), 8)], $this->event($seed, 'edit_rejected'), editSource: $original);
+    }
+
     /** @return Seed */
     private function seed(): array
     {

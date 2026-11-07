@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Enum\RequestChangeKind;
 use App\Enum\RequestMode;
+use App\Enum\DecisionOutcome;
 use App\Model\DateValue;
 use App\Model\RequestedDay;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -68,7 +69,7 @@ class RequestRevision
     private bool $building = false;
 
     /** @param list<RequestedDay> $days */
-    public function __construct(LeaveRequest $request, RequestChangeKind $kind, AbsenceTypeVersion $policy, RequestMode $mode, \DateTimeImmutable $startDate, \DateTimeImmutable $endDate, array $days, AuditEvent $source, ?self $baseRevision = null, ?self $calendarSource = null)
+    public function __construct(LeaveRequest $request, RequestChangeKind $kind, AbsenceTypeVersion $policy, RequestMode $mode, \DateTimeImmutable $startDate, \DateTimeImmutable $endDate, array $days, AuditEvent $source, ?self $baseRevision = null, ?self $calendarSource = null, ?self $editSource = null)
     {
         $this->request = $request;
         $this->kind = $kind;
@@ -106,7 +107,29 @@ class RequestRevision
                 break;
             }
         }
-        if (null !== $calendarSource) {
+        if (null !== $calendarSource && null !== $editSource) {
+            throw new \DomainException('A revision cannot be both a calendar correction and a pending edit.');
+        }
+        if (null !== $editSource) {
+            $previous = $request->getRevisions();
+            if (RequestChangeKind::INITIAL !== $kind || RequestChangeKind::INITIAL !== $editSource->getKind()
+                || $editSource->getRequest() !== $request || ($previous[array_key_last($previous)] ?? null) !== $editSource
+                || DecisionOutcome::SUPERSEDED !== $editSource->getDecision()?->getOutcome()
+                || $editSource->getDecision()->getEvent() !== $source) {
+                throw new \DomainException('A pending edit must replace the latest initial revision in the same audited operation.');
+            }
+            $this->captureEditedContext($editSource);
+            foreach ($days as $day) {
+                $key = $day->date->format('Y-m-d');
+                if ($key >= $editSource->getStartDate()->format('Y-m-d') && $key <= $editSource->getEndDate()->format('Y-m-d')
+                    && $editSource->capturedAssignmentFor($day->date) !== $day->assignment) {
+                    throw new \DomainException('A pending edit must retain the captured assignment inside its previous range.');
+                }
+                if (!$this->preservesAssignment($day->assignment, $day->date)) {
+                    throw new \DomainException('A pending edit needs a captured or currently valid assignment for every date.');
+                }
+            }
+        } elseif (null !== $calendarSource) {
             if ($calendarSource->getRequest() !== $request || !\in_array($calendarSource, $request->getRevisions(), true)
                 || $calendarSource->getStartDate()->format('Y-m-d') !== $this->startDate->format('Y-m-d')
                 || $calendarSource->getEndDate()->format('Y-m-d') !== $this->endDate->format('Y-m-d')
@@ -239,6 +262,68 @@ class RequestRevision
             }
         }
         return false;
+    }
+
+    /** Exact rules retained inside this revision's requested range, never beyond it. */
+    public function capturedAssignmentFor(\DateTimeImmutable $date): ?StaffAssignment
+    {
+        $key = $date->format('Y-m-d');
+        if ($key < $this->startDate->format('Y-m-d') || $key > $this->endDate->format('Y-m-d')) { return null; }
+        $matches = [];
+        foreach ($this->assignmentContexts as $context) {
+            if ($context->covers($date)) { $matches[spl_object_id($context->getAssignment())] = $context->getAssignment(); }
+        }
+        if ([] !== $this->assignmentContexts->toArray()) {
+            return 1 === count($matches) ? array_values($matches)[0] : null;
+        }
+        // Legacy data has no complete range snapshot. Actual captured dates are authoritative.
+        foreach ($this->days as $day) {
+            if ($day->getDate()->format('Y-m-d') === $key) { return $day->getAssignment(); }
+        }
+        foreach ($this->days as $day) {
+            $assignment = $day->getAssignment();
+            if ($key >= $assignment->getValidFrom()->format('Y-m-d')
+                && (null === $assignment->getValidUntil() || $key < $assignment->getValidUntil()->format('Y-m-d'))) {
+                $matches[spl_object_id($assignment)] = $assignment;
+            }
+        }
+        return 1 === count($matches) ? array_values($matches)[0] : null;
+    }
+
+    private function captureEditedContext(self $previous): void
+    {
+        $start = $this->startDate->format('Y-m-d');
+        $until = $this->endDate->modify('+1 day')->format('Y-m-d');
+        $oldStart = $previous->getStartDate()->format('Y-m-d');
+        $oldUntil = $previous->getEndDate()->modify('+1 day')->format('Y-m-d');
+        foreach ($previous->getAssignmentContexts() as $context) {
+            $this->addClippedContext($context->getAssignment(), max($start, $oldStart, $context->getValidFrom()->format('Y-m-d')),
+                min($until, $oldUntil, $context->getValidUntil()?->format('Y-m-d') ?? '9999-12-31'));
+        }
+        if ([] === $previous->getAssignmentContexts()) {
+            foreach ($previous->getDays() as $day) {
+                $assignment = $day->getAssignment();
+                $this->addClippedContext($assignment, max($start, $oldStart, $assignment->getValidFrom()->format('Y-m-d')),
+                    min($until, $oldUntil, $assignment->getValidUntil()?->format('Y-m-d') ?? '9999-12-31'));
+                $this->addClippedContext($assignment, max($start, $day->getDate()->format('Y-m-d')),
+                    min($until, $day->getDate()->modify('+1 day')->format('Y-m-d')));
+            }
+        }
+        // The original context may have an open end, but it cannot claim newly requested dates.
+        foreach ($this->request->getUser()->getAssignments() as $assignment) {
+            $from = max($start, $assignment->getValidFrom()->format('Y-m-d'));
+            $to = min($until, $assignment->getValidUntil()?->format('Y-m-d') ?? '9999-12-31');
+            $this->addClippedContext($assignment, $from, min($to, $oldStart));
+            $this->addClippedContext($assignment, max($from, $oldUntil), $to);
+        }
+    }
+
+    private function addClippedContext(StaffAssignment $assignment, string $from, string $until): void
+    {
+        if ($from >= $until) { return; }
+        $zone = new \DateTimeZone('Europe/Warsaw');
+        $this->assignmentContexts->add(new RequestAssignmentContext($this, $assignment,
+            new \DateTimeImmutable($from, $zone), new \DateTimeImmutable($until, $zone)));
     }
 
     /** @internal The immutable daily snapshot is constructed with the revision. */

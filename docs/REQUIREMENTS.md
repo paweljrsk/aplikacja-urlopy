@@ -1,6 +1,6 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.3 • stan uzgodnień z 7 listopada 2026 r., po odpowiedziach przed etapem 5.
+Wersja 1.4 • stan uzgodnień z 7 listopada 2026 r., po odpowiedziach przed etapem 6.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
 [decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
@@ -126,9 +126,15 @@ Przeszłości nie przeliczamy zbiorczo (B29).
 
 Podstawowy przebieg: pracownik składa wniosek → system weryfikuje uprawnienia, kalendarz, godziny i saldo → rezerwuje godziny → uprawniona osoba akceptuje lub odrzuca. Oczekujący wniosek można edytować lub wycofać. Kierownik może osobno zaakceptować własny wniosek; nie przyjmujemy automatycznej akceptacji tylko z powodu jego roli.
 
+Własny wniosek można składać na dzisiaj. Do końca dnia w Europe/Warsaw można też
+edytować lub wycofać własny oczekujący wniosek, jeśli nie obejmuje wcześniejszych
+dni. Nie określamy pory rozpoczęcia dzisiejszej nieobecności; wcześniejsze daty
+pozostają zablokowane dla samoobsługi (B30). Odrzucenie wymaga uzasadnienia,
+widocznego dla właściciela oraz osób uprawnionych do szczegółów wniosku (B31).
+
 Zmiana zaakceptowanego urlopu oraz jego anulowanie wymagają decyzji. Do czasu decyzji obowiązuje dotychczas zatwierdzony termin i wymiar. Odrzucenie proponowanej zmiany zachowuje pierwotny urlop. Anulowanie nie zwraca salda przed akceptacją anulowania.
 
-Do obsługi rozpoczętych i przeszłych nieobecności uprawnieni są kierownik, zastępca i administrator. Zastępca nie otrzymuje przy tym prawa do zatwierdzania własnych wniosków. Szczegóły korekty bezpośredniej albo zmiany oczekującej na decyzję wymagają rozstrzygnięcia Q2.
+Do obsługi rozpoczętych i przeszłych nieobecności uprawnieni są kierownik, zastępca i administrator. Zastępca nie otrzymuje przy tym prawa do zatwierdzania własnych wniosków. Decyzja o istniejącym oczekującym wniosku może nastąpić po jego terminie, z zachowaniem rezerwacji (B25). Szczegóły indywidualnej korekty bezpośredniej albo zmiany oczekującej na decyzję wymagają rozstrzygnięcia pozostałej części Q2 przed etapem 7.
 
 Historia obejmuje autora operacji, czas, zmienione wartości, decyzję i powiązanie z wnioskiem/limitem. Rejestrujemy historię od pierwszych mutacji, a nie dopiero przy budowie ekranu historii.
 

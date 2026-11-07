@@ -1,4 +1,4 @@
-# Limity i rozliczenia godzinowe — etap 5
+# Limity i rozliczenia godzinowe — etapy 5–6
 
 Zasady biznesowe: B21 oraz B25–B29 w [DECISIONS.md](DECISIONS.md).
 Kontrakt HTTP: [BALANCES_API.md](BALANCES_API.md).
@@ -93,6 +93,12 @@ dane początkowe. Daty startu nie można zmienić po wprowadzeniu wniosków; prz
 dopuszczona jest korekta w obrębie tego samego roku. Zmiana roku startu wymaga
 osobnej migracji rozliczeń, której ten etap nie wykonuje.
 
+Przy edycji wniosku sprawdzamy również źródło godzin. Zmiana terminu z UoP na B2B
+nie może zastąpić finansowania zaległością niepokrytym obciążeniem bieżącej puli,
+nawet jeśli łączny wymiar się nie zmienia. Ochrona istniejącego zobowiązania obejmuje
+zarówno sumę danego roku, jak i godziny wymagające finansowania wyłącznie jego
+roczną pulą. Akceptacja istniejącej rezerwacji po korekcie limitu nadal jest możliwa.
+
 Historia salda w API ogranicza zakres informacji według uprawnień. Przełożony
 obecnego zespołu nie otrzymuje tą drogą szczegółów wniosków poprzedniego zespołu.
 
@@ -117,7 +123,13 @@ oczekującą wersję, zapisuje różnice oraz kontroluje zajętość dnia dla ws
 rodzajów nieobecności. `RequestAccountingState` jest projekcją zajętości jednego
 wniosku; źródłem finansowej historii pozostaje niezmienny rejestr księgowań.
 
-Etapy 6–7 dodadzą publiczny proces składania i zmiany wniosków, wraz z pozostałymi
-regułami dat. W etapie 5 nie ma jeszcze formularza składania urlopu ani głównego
-kalendarza zespołu. Gotowe podstawowe ekrany rozliczeń zachowują roboczy wygląd;
-pełna stylistyka Notus pozostaje w etapie 8.
+Etap 6 dodaje publiczny `RequestWorkflowService` oraz API tworzenia, edycji
+oczekującego wniosku i decyzji. Usługa sprawdza reguły dat, kalendarz, dostępność
+rodzaju, zatrudnienie i uprawnienia przed atomowym rozliczeniem. Techniczne
+potwierdzenie `request.operation_completed` zapewnia idempotencję, ale nie jest
+drugim księgowaniem i nie pojawia się w historii salda. Właściwe zdarzenia
+`request.created`, `request.edited` i decyzje pozostają widoczne zgodnie z rolą.
+
+Zmiany zaakceptowanego urlopu i indywidualne korekty są zakresem etapu 7. Formularz
+składania i pełna stylistyka Notus pozostają w etapie 8, główny kalendarz w etapie 9.
+Kontrakt procesu opisuje [REQUESTS_API.md](REQUESTS_API.md).

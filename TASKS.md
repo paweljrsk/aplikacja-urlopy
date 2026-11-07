@@ -5,6 +5,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 3 — logowanie lokalne i kontrola dostępu — zakończony**.
 **Etap 4 — administracja — zakończony.** Q5 rozstrzygnięto w B22–B24.
 **Etap 5 — kalendarz roboczy, limity i saldo — zakończony.**
+**Etap 6 — wnioski, rezerwacje i decyzje — zakończony.** Q2 o dzisiaj i Q10 zatwierdzone jako B30–B31.
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -75,13 +76,23 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Sprawdzić obliczenia, uprawnienia, współbieżność, migracje i zachowanie istniejących danych. CI #20: 268 testów / 6832 asercje, SUCCESS.
 - [x] Uzupełnić dokumentację, wzór salda i rzeczywisty raport odbioru.
 
+## Etap 6 — ukończony
+
+- [x] Sprawdzić aktualne wymagania, prompt 6, model wniosków, zasady dostępu i stan PR #5.
+- [x] Rozstrzygnąć Q2 o dzisiejszym dniu oraz Q10 o uzasadnieniu odrzucenia przed zależną implementacją.
+- [x] Dodać publiczne API tworzenia, odczytu, edycji oczekującego wniosku, wycofania i decyzji.
+- [x] Połączyć walidację kalendarza, rodzaju, zatrudnienia, godzin i salda z atomowym zapisem historii.
+- [x] Zachować zapisane zasady przy edycji, kontrolę dostępu po transferze, idempotencję i ochronę nieaktualnych wersji.
+- [x] Sprawdzić scenariusze ról, przełomu roku, współbieżnych wniosków i decyzji oraz zachowanie dotychczasowych danych. CI #22: 337 testów / 10 662 asercje, SUCCESS.
+- [x] Uzupełnić kontrakt API, README, plan testów i rzeczywisty raport odbioru; opublikować PR #6 i zweryfikować pełny CI.
+
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
 - [x] Etap 3 — logowanie lokalne i kontrola dostępu w API.
 - [x] Etap 4 — administracja użytkownikami, zespołami i słownikami.
 - [x] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
-- [ ] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
+- [x] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
 - [ ] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
 - [ ] Etap 8 — formularz i widoki pracownika w stylistyce Notus.
 - [ ] Etap 9 — główny kalendarz zespołu i lista nieobecności.
@@ -145,7 +156,7 @@ na pustej bazie jawnie dodaj słowniki startowe, zespół i konta. Nie uruchamia
 ponownie bootstrap ani demo, jeśli masz już własne konta. Wygląd nadal roboczy,
 dopasowanie do Notus w etapie 8.
 
-### Bieżący punkt wznowienia — po etapie 5, 7 listopada 2026 r.
+### Historyczny odbiór etapu 5 — 7 listopada 2026 r.
 
 Etap 5 odebrano na commicie `c526ab8e2eda42ab029ba24a1f49ec6d5ff58701`:
 [CI #20](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42357495900)
@@ -160,13 +171,37 @@ Nowe ekrany: `/balances` i `/calendar-settings`. Aktualizacja lokalna:
 `make stop`, pobranie gałęzi, `make init`, `make verify`, `make db-validate`.
 Dotychczasowe konto administratora i dane pozostają zachowane.
 
-Punkt wznowienia: **etap 6 — wnioski, rezerwacje, decyzje i wycofanie**, dopiero
-po kolejnym poleceniu użytkownika. Przed wdrożeniem reguł dat rozstrzygnąć Q2
-o wnioskach na dzisiejszy dzień. Przeczytać prompt 6 i aktualne OPEN_QUESTIONS.
-Nie scalać PR bez osobnego polecenia.
+### Bieżący punkt wznowienia — po etapie 6, 7 listopada 2026 r.
 
-Usługi wniosków w etapach 6–7 mają korzystać z `RequestAccessPolicy`, blokować
+Etap 6 odebrano na commicie `58f30102b85567952f5967663ad8f04028d79384`:
+[CI #22](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42360588801)
+**SUCCESS**, PHP 8.3.36 + MySQL 8.0.32, **337 testów / 10 662 asercje**.
+Zaliczone API, rozliczenia, kontrola dostępu do poszczególnych wersji, rzeczywista
+współbieżność, migracje i schemat, PHPStan/lint/build, regresja Chrome, HTTP przez
+Nginx/PHP-FPM, restart z zachowaniem danych oraz workery. Szczegóły w TEST_PLAN.
+
+Kod jest w [PR #6](https://github.com/paweljrsk/aplikacja-urlopy/pull/6), gałąź
+`codex/etap-6-wnioski-decyzje`, oparta na końcowym commicie etapu 5
+`12e66f3fb76a25ea72ab4bd9d6b815f7091c905e` (CI #21 również SUCCESS).
+Etap 6 udostępnia wnioski przez API opisane w REQUESTS_API; formularz i stylistyka
+Notus pozostają w etapie 8. Bez nowych zależności ani migracji. Aktualizacja:
+`make stop`, pobranie gałęzi, `make init`, `make verify`, `make db-validate`.
+
+Następny jest **etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty**,
+wyłącznie po kolejnym poleceniu użytkownika. Przed zależną implementacją odczytać
+prompt 7 i rozstrzygnąć pozostałe procedury Q2/Q4 w OPEN_QUESTIONS. Nie scalać PR
+bez osobnego polecenia.
+
+Usługi etapu 6 korzystają z poniższych zabezpieczeń; należy zachować je w etapie 7:
+korzystać z `RequestAccessPolicy`, blokować
 agregat użytkownika przed zapisem i zachowywać pełny `RequestAssignmentContext`.
 Samo `RequestDay.assignment` nie określa uprawnień. Przygotowane operacje rozliczeń
 przyjmują zwalidowane, zapisane wersje; publiczny proces musi sprawdzać daty,
 kalendarz, dostępność rodzaju i zatrudnienie przed ich utworzeniem.
+
+Wnioski z przeglądu przed etapem 6: edycja oczekującej wersji ma zachować kontekst
+dotychczasowego zakresu, także pierwotnie wolnych dni; nowe daty poza nim wymagają
+przypisania z daty nieobecności. Nie rozciągać starego otwartego przypisania poza
+utrwalony zakres. Poprzednią oczekującą wersję zastępować nową w jednej transakcji,
+rozliczając tylko końcowy stan. Uprawnienia do historii sprawdzać osobno dla każdej
+wersji; dostęp do obecnego wniosku nie pozwala ujawnić całej historii innego zespołu.
