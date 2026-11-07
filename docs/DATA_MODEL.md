@@ -169,3 +169,15 @@ roku), Q4 (niedobór), pozostała część Q5 (historia i przyszłe wnioski), Q6
 limit kierownika), Q7 (produkcja), pozostała część Q8 (korekty przed startem)
 oraz Q9 (zmiana kalendarza). Nie interpretujemy pól i enumów jako odpowiedzi
 na te pytania. Etapy logowania, API i właściwych rozliczeń pozostają osobnymi pracami.
+
+## Rozszerzenie etapu 4
+
+Migracja `Version20261107090000` dodaje wersje optymistyczne do `team` oraz
+`employment_type`, JSON `absence_type_version.names_by_employment_type` oraz
+mapowany pojedynczy rekord `administration_lock`. Istniejące wersje zasad otrzymują
+pustą mapę nazw, bez zmiany reguł, dostępności, aktywności i referencji. Nie ma
+automatycznych danych demo ani usuwania istniejących rekordów.
+
+Datowane przeniesienie nie zmienia `RequestDay.assignment`: to nadal zapis
+historycznych zasad. Widoczność i osoby uprawnione wyznacza osobna polityka Q5.
+Pełny kontrakt i zabezpieczenia administracji opisuje [ADMINISTRATION.md](ADMINISTRATION.md).

@@ -194,6 +194,24 @@ class User
         ++$this->assignmentRevision;
     }
 
+    public function updateProfile(string $firstName, string $lastName, string $email, bool $active, bool $administrator): void
+    {
+        $firstName = self::validateName($firstName);
+        $lastName = self::validateName($lastName);
+        $email = strtolower(trim($email));
+        if (strlen($email) > 254 || false === filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException('A valid e-mail address is required.');
+        }
+        if ($this->email !== $email || $this->active !== $active || $this->isAdministrator !== $administrator) {
+            $this->advanceCredentialVersion();
+        }
+        $this->firstName = $firstName;
+        $this->lastName = $lastName;
+        $this->email = $email;
+        $this->active = $active;
+        $this->isAdministrator = $administrator;
+    }
+
     public function deactivate(): void
     {
         if (!$this->active) {

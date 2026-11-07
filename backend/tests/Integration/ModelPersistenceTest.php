@@ -240,7 +240,7 @@ final class ModelPersistenceTest extends KernelTestCase
         $this->assertDuplicate('request_day', 'revision_id,assignment_id,date,hours', $seed['revision']->getDays()[0]->getId());
         $this->assertDuplicate('opening_balance', 'user_id,effective_date,annual_hours,current_year_used_hours,source_id', $opening->getId());
         $this->assertDuplicate('opening_carry', 'opening_balance_id,origin_year,remaining_hours', $opening->getCarries()[0]->getId());
-        $this->assertDuplicate('absence_type_version', 'type_id,revision,name,deducts_balance', $seed['policy']->getId());
+        $this->assertDuplicate('absence_type_version', 'type_id,revision,name,deducts_balance,names_by_employment_type', $seed['policy']->getId());
 
         $this->assertSqlFails('DELETE FROM app_user WHERE id = ?', [$seed['user']->getId()], 1451);
         $this->assertSqlFails('DELETE FROM absence_type_version WHERE id = ?', [$seed['policy']->getId()], 1451);

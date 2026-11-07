@@ -1,6 +1,6 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.1 • stan uzgodnień z 6 listopada 2026 r., po odpowiedziach przed etapem 2.
+Wersja 1.2 • stan uzgodnień z 7 listopada 2026 r., po odpowiedziach przed etapem 4.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
 [decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
@@ -38,7 +38,11 @@ Konta zakłada administrator. Użytkownik loguje się służbowym adresem e-mail
 
 Kartoteka zawiera imię, nazwisko, e-mail, formę zatrudnienia, zespół, rolę, aktywność oraz dane limitów. Dodatkowo system przechowuje identyfikatory techniczne, skrót hasła i historię operacji. Nie zbieramy dokumentów, diagnoz ani opisów medycznych.
 
-Administrator może zmienić zespół lub formę zatrudnienia osoby mającej historię urlopów. Zmiana obowiązuje od wskazanej daty; wcześniejsze dane i rozliczenia pozostają zachowane. Widoczność historii po przeniesieniu oraz sposób obsługi otwartych i już złożonych przyszłych wniosków wymagają doprecyzowania pozostałej części Q5 przed wdrożeniem operacji administracyjnych.
+Administrator może zmienić zespół lub formę zatrudnienia osoby mającej historię urlopów. Zmiana obowiązuje od wskazanej daty; wcześniejsze dane i rozliczenia pozostają zachowane. Po zmianie zespołu przełożeni poprzedniego zespołu zachowują dostęp do nieobecności sprzed przeniesienia, a nowego zespołu — do nieobecności od daty przeniesienia. Pracownik i administrator widzą całą historię. Widoczność dotyczy dat nieobecności, nie daty złożenia wniosku. Nadal obowiązuje ograniczenie danych kalendarza współpracowników.
+
+Od dnia przeniesienia oczekujące wnioski dotyczące przyszłych nieobecności obsługuje nowy przełożony. Wcześniejsze akceptacje pozostają ważne. Wniosek obejmujący dni przed przeniesieniem i po nim obsługuje administrator, bez automatycznego dzielenia. Poszczególne zespoły widzą tylko właściwe dla nich dni; pełne szczegóły przekraczające granicę zespołów pozostają dostępne pracownikowi i administratorowi.
+
+Po zmianie formy zatrudnienia już złożone wnioski zachowują dotychczasowe zasady rozliczenia, również gdy dotyczą przyszłości. Nowe wnioski korzystają z formy obowiązującej w dniu nieobecności. Sama zmiana formy nie przelicza automatycznie wcześniejszych rozliczeń. Zapisane przypisania dni wniosku pozostają historią zasad rozliczeń; aktualna widoczność i obsługa są wyznaczane osobno (B22–B24).
 
 | Czynność | Pracownik | Kierownik | Zastępca | Administrator |
 |---|---|---|---|---|

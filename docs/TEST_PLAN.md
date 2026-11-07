@@ -301,3 +301,70 @@ użytkownika nie zalicza całego scenariusza wniosków, kalendarza czy rozlicze�
 | T21 | Oczekująca zmiana 8 h poniedziałek → 8 h wtorek albo 3 h → 5 h tego samego dnia | Ochrona obu dni w pierwszym przypadku; zajęte 5 h, nie 8 h, w drugim; zwolnienie starego terminu dopiero po decyzji |
 | T22 | Dodanie/usunięcie dnia wolnego z istniejącymi wnioskami | Kontrolowany wpływ na godziny, saldo i historię zgodnie z Q9 |
 | T23 | Dwa równoczesne wnioski po 6 h na ten sam dzień, także nieobciążające salda | Tylko jeden może przejść; suma aktywnych nieobecności nie przekracza 8 h |
+
+## Etap 4 — weryfikacja w toku, 7 listopada 2026 r.
+
+Zakres: administracja kontami, przypisaniami, zespołami i wersjonowanymi słownikami,
+Q5 oraz aktualizacja istniejącej bazy. Testy UI ze sztucznym API i rzeczywistego
+HTTP są osobnymi kontrolami.
+
+Wykonane lokalnie na PHP 8.4.24 i MySQL **8.0.32**, w odizolowanej bazie syntetycznej:
+
+- pełny PHPUnit: **198 testów / 4599 asercji — OK**;
+- PHPStan (poziom 6), mapowanie Doctrine, lint kontenera — OK;
+- migracje 1–3 na MySQL — OK;
+- frontend: ESLint, TypeScript, build produkcyjny — OK.
+
+Nowe testy obejmują rzeczywiste logowanie i wymuszoną zmianę hasła utworzonego
+konta; odmowę administracji pracownikowi/kierownikowi/zastępcy; CSRF; walidację
+i wycofanie nieudanych zapisów; konflikty wersji; aktywację/dezaktywację i zmianę
+globalnych uprawnień wraz z unieważnieniem sesji; ostatniego administratora;
+pierwsze przypisanie konta bootstrap; wersje zasad i historyczne nazwy;
+powtórzenie inicjalizacji katalogu; zachowanie wniosków i akceptacji po transferze.
+
+Testy polityki Q5 obejmują granicę dnia Europe/Warsaw, przyszłe zaplanowane
+przeniesienie, wnioski przekraczające granicę zespołów, przeszłość i kolejne
+przeniesienia, brak przypisania, role oraz propozycję zmiany wraz z wersją zastępowaną.
+Nie są odbiorem nieistniejącego jeszcze procesu wniosków.
+
+Lokalny Chromium nie wystartował z powodu ograniczenia socketów środowiska.
+Testów przeglądarkowych nie zaliczono lokalnie. CI ma uruchomić je w Chrome,
+sprawdzić właściwy PHP 8.3, migrację z historycznymi słownikami etapu 3, rzeczywisty
+HTTP przez Nginx/PHP-FPM, restart danych i workery. Wynik odbioru zostanie dopisany
+po zakończeniu konkretnego przebiegu.
+
+### Odbiór ręczny etapu 4
+
+1. Zaloguj się administratorem i otwórz Administrację.
+2. Na pustej bazie dodaj słowniki startowe, zespół, pracownika i jego przypisanie.
+3. Zaloguj się nowym kontem w osobnej przeglądarce, zmień hasło tymczasowe i
+   sprawdź odmowę dostępu do `/admin` oraz API administracji.
+4. Zmień nazwę zespołu i aktywność pozycji, sprawdź filtrowanie.
+5. Zmień rodzaj nieobecności i jego dostępność; wcześniejsza wersja pozostaje w bazie.
+6. Dodaj datowaną zmianę przypisania i sprawdź historię okresów.
+7. Otwórz dwa formularze tego samego rekordu; po zapisie jednego drugi powinien
+   pokazać konflikt i wymagać odświeżenia.
+8. Sprawdź ochronę ostatniego administratora; konto z samym hasłem tymczasowym
+   nie jest wystarczającym zastępstwem.
+
+Nie używaj danych produkcyjnych do testów ani `make demo` na bazie z własnymi kontami.
+
+### Dodatkowa weryfikacja lokalna i punkt zatrzymania
+
+- Migracja nowej izolowanej bazy do etapu 3, zapis historycznych słowników, migracja
+  etapu 4 i sprawdzenie starych nazw/aktywności/reguł/dostępności/wersji — **OK**.
+  Ponowne migracje bez zmian i pełne `doctrine:schema:validate` — **OK**.
+- Rzeczywisty HTTP na wbudowanym serwerze PHP 8.4.24 i MySQL 8.0.32 — **OK**:
+  bootstrap, CSRF, cookie, wymuszona zmiana, wylogowanie, inicjalizacja słowników,
+  tworzenie zespołu i konta, edycja, konflikt wersji oraz odmowa administracji
+  pracownikowi. To sprawdzenie nie zastępuje Nginx/PHP-FPM w Dockerze.
+- Dodatkowy test rzeczywistego komponentu React w DOM (scratch-only jsdom/esbuild)
+  — **OK**: payloady/CSRF, tworzenie, filtrowanie, konflikty, aktywność, przypisania,
+  wersje słowników, prywatne dane po odebraniu uprawnień, czyszczenie haseł.
+  Nie jest to test wizualny ani wykonanie Chrome.
+
+Publikację początkowo zatrzymano przed wysłaniem zmian do GitHuba. Użytkownik
+7 listopada 2026 r. potwierdził zgodę na push, roboczy PR i CI. Etap 4
+pozostaje **w trakcie odbioru**, bez deklaracji zielonego CI, screenshotów,
+restartu całego stosu czy gotowości produkcyjnej. Kod i dokumentacja są zapisane
+w lokalnych commitach gałęzi `codex/etap-4-administracja`.
