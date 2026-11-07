@@ -5,10 +5,12 @@
 const { execFileSync } = require('node:child_process');
 const { randomBytes } = require('node:crypto');
 const { resolve } = require('node:path');
+const { isDeepStrictEqual } = require('node:util');
 
 let step = 'development-only guards';
+class SmokeAssertionError extends Error {}
 function check(condition, description) {
-  if (!condition) throw new Error(description);
+  if (!condition) throw new SmokeAssertionError(description);
 }
 
 async function main() {
@@ -225,6 +227,109 @@ try {
   const { csrfToken: employeeCsrf } = await employeeFresh.request('/api/auth/csrf', 200);
   await employeeFresh.request(`${balancePath}/${leaveYear}/limit`, 403, { operationKey: `http.denied.${suffix}`, expectedVersion: corrected.version, annualHours: 999, reason: 'Denied synthetic edit' }, employeeCsrf);
   await employeeFresh.request('/api/calendar/preview', 403, companyChange, employeeCsrf);
+
+  step = 'request workflow annual funding and authenticated creation';
+  const beforeNextLimit = (await fresh.request(`${balancePath}/${nextYear}`, 200)).balance;
+  const nextLimit = (await mutate(`${balancePath}/${nextYear}/limit`, {
+    operationKey: `http.request-limit.${suffix}`, expectedVersion: beforeNextLimit.version, annualHours: 80,
+  })).balance;
+  check(nextLimit.availableHours === 80, 'Future year request budget is incorrect');
+  const paidType = catalog.absenceTypes.find(item => item.active && item.deductsBalance && item.employmentTypeIds.includes(employment.id));
+  const unpaidType = catalog.absenceTypes.find(item => item.active && !item.deductsBalance && item.employmentTypeIds.includes(employment.id));
+  check(paidType && unpaidType, 'Request absence types unavailable');
+  const requestMonday = new Date(Date.UTC(nextYear, 0, 10));
+  while (requestMonday.getUTCDay() !== 1) requestMonday.setUTCDate(requestMonday.getUTCDate() + 1);
+  const requestDate = offset => {
+    const value = new Date(requestMonday);
+    value.setUTCDate(value.getUTCDate() + offset);
+    return value.toISOString().slice(0, 10);
+  };
+  async function employeeMutate(path, body, status = 200) {
+    const { csrfToken } = await employeeFresh.request('/api/auth/csrf', 200);
+    return employeeFresh.request(path, status, body, csrfToken);
+  }
+  const requestPayload = {
+    operationKey: `http.request-create.${suffix}`, absenceTypeId: paidType.id,
+    startDate: requestDate(0), endDate: requestDate(1),
+  };
+  const receipt = (await employeeMutate('/api/requests', requestPayload, 201)).operation;
+  check(receipt?.status === 'pending' && Number.isInteger(receipt.id), 'Request was not created as pending');
+  const replayReceipt = (await employeeMutate('/api/requests', requestPayload, 201)).operation;
+  check(isDeepStrictEqual(receipt, replayReceipt), 'Create replay changed its receipt');
+  const requestDetail = (await employeeFresh.request(`/api/requests/${receipt.id}`, 200)).request;
+  check(requestDetail.current.totalHours === 16, 'Full-day request hours incorrect');
+  const reserved = (await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance;
+  check(reserved.availableHours === 64 && reserved.reservedHours === 16, 'Request did not reserve 16 hours');
+  await employeeMutate(`/api/requests/${receipt.id}/approve`, {
+    operationKey: `http.request-self-denied.${suffix}`, expectedVersion: receipt.version,
+  }, 403);
+
+  step = 'request decision, idempotent approval and stale edit protection';
+  const approvalPayload = { operationKey: `http.request-approve.${suffix}`, expectedVersion: receipt.version };
+  const approved = (await mutate(`/api/requests/${receipt.id}/approve`, approvalPayload)).operation;
+  check(approved.status === 'approved', 'Administrator could not approve pending request');
+  const approvalReplay = (await mutate(`/api/requests/${receipt.id}/approve`, approvalPayload)).operation;
+  check(isDeepStrictEqual(approved, approvalReplay), 'Approval replay changed receipt');
+  const charged = (await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance;
+  check(charged.availableHours === 64 && charged.reservedHours === 0 && charged.approvedFutureHours === 16,
+    'Approval charged twice or retained reservation');
+  await employeeMutate(`/api/requests/${receipt.id}/edit`, {
+    ...requestPayload, operationKey: `http.request-stale.${suffix}`, expectedVersion: receipt.version,
+  }, 409);
+
+  step = 'pending request edit and withdrawal release the final reservation';
+  const hourlyPayload = {
+    operationKey: `http.hourly-create.${suffix}`, absenceTypeId: paidType.id,
+    startDate: requestDate(2), endDate: requestDate(2), mode: 'hourly', hours: 3,
+  };
+  const hourly = (await employeeMutate('/api/requests', hourlyPayload, 201)).operation;
+  const edited = (await employeeMutate(`/api/requests/${hourly.id}/edit`, {
+    ...hourlyPayload, operationKey: `http.hourly-edit.${suffix}`, expectedVersion: hourly.version, hours: 5,
+  })).operation;
+  const afterEdit = (await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance;
+  check(afterEdit.availableHours === 59 && afterEdit.reservedHours === 5, 'Pending edit double-reserved or failed to reserve the difference');
+  const withdrawn = (await employeeMutate(`/api/requests/${hourly.id}/withdraw`, {
+    operationKey: `http.hourly-withdraw.${suffix}`, expectedVersion: edited.version,
+  })).operation;
+  check(withdrawn.status === 'withdrawn', 'Owner could not withdraw pending request');
+  const afterWithdrawal = (await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance;
+  check(afterWithdrawal.availableHours === 64 && afterWithdrawal.reservedHours === 0, 'Withdrawal did not release reservation');
+
+  step = 'rejection reason validation and owner-visible history';
+  const rejectable = (await employeeMutate('/api/requests', {
+    ...hourlyPayload, operationKey: `http.reject-create.${suffix}`, startDate: requestDate(3), endDate: requestDate(3),
+  }, 201)).operation;
+  await mutate(`/api/requests/${rejectable.id}/reject`, {
+    operationKey: `http.reject-empty.${suffix}`, expectedVersion: rejectable.version,
+  }, 422);
+  const rejectionReason = 'Synthetic scheduling conflict';
+  const rejected = (await mutate(`/api/requests/${rejectable.id}/reject`, {
+    operationKey: `http.reject.${suffix}`, expectedVersion: rejectable.version, reason: rejectionReason,
+  })).operation;
+  check(rejected.status === 'rejected', 'Rejection failed');
+  const rejectedDetail = (await employeeFresh.request(`/api/requests/${rejectable.id}`, 200)).request;
+  check(JSON.stringify(rejectedDetail).includes(rejectionReason), 'Owner cannot see rejection reason');
+  check((await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance.availableHours === 64,
+    'Rejection did not release reservation');
+
+  step = 'unpaid requests enforce daily capacity without charging balance';
+  const unpaidPayload = { ...hourlyPayload, absenceTypeId: unpaidType.id, hours: 6, operationKey: `http.unpaid-six.${suffix}` };
+  const unpaidSix = (await employeeMutate('/api/requests', unpaidPayload, 201)).operation;
+  const unpaidTwo = (await employeeMutate('/api/requests', {
+    ...unpaidPayload, hours: 2, operationKey: `http.unpaid-two.${suffix}`,
+  }, 201)).operation;
+  const capacityError = await employeeMutate('/api/requests', {
+    ...unpaidPayload, hours: 1, operationKey: `http.unpaid-extra.${suffix}`,
+  }, 409);
+  check(capacityError.error?.code === 'DAILY_CAPACITY_EXCEEDED', 'Daily capacity was not enforced for unpaid requests');
+  check((await employeeFresh.request(`${balancePath}/${nextYear}`, 200)).balance.availableHours === 64,
+    'Unpaid requests consumed the paid balance');
+  for (const unpaid of [unpaidSix, unpaidTwo]) {
+    await employeeMutate(`/api/requests/${unpaid.id}/withdraw`, {
+      operationKey: `http.unpaid-withdraw.${unpaid.id}.${suffix}`, expectedVersion: unpaid.version,
+    });
+  }
+  await employeeFresh.request('/api/requests?scope=managed', 403);
   await employeeFresh.post('/api/auth/logout', {});
 
   step = 'logout and session revocation';
@@ -232,11 +337,13 @@ try {
   check(loggedOut.status === 'logged_out', 'Logout failed');
   const anonymous = await fresh.request('/api/auth/me', 401);
   check(anonymous.error?.code === 'AUTH_REQUIRED', 'Logout did not revoke session');
-  console.log('Real HTTP smoke passed: auth/session/CSRF, administration, balances/opening/corrections/deficit, stale writes, calendar preview/apply, employee isolation and logout.');
+  console.log('Real HTTP smoke passed: auth/session/CSRF, administration, balances/calendar, request create/edit/withdraw/approve/reject, idempotency, stale writes, mandatory rejection reason, paid balance and unpaid daily capacity, employee isolation and logout.');
 }
 
-main().catch(() => {
+main().catch(error => {
   // Do not print exceptions: fetch and child-process errors can contain sensitive input/output.
   console.error(`Real HTTP auth smoke failed at: ${step}. Response bodies and subprocess output suppressed.`);
+  // Only our static assertion descriptions are safe; never log arbitrary fetch/process errors.
+  if (error instanceof SmokeAssertionError) console.error(error.message);
   process.exitCode = 1;
 });

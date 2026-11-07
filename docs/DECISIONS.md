@@ -68,6 +68,15 @@ Q3, Q4 (zakres etapu 5), Q6, pozostała część Q8 i Q9 są rozstrzygnięte.
 | B28 | Q8 | Okres sprzed rozpoczęcia ewidencji rozliczamy korektami danych początkowych z uzasadnieniem i historią. Nie dopisujemy przed granicą ewidencji starych wniosków ponownie pomniejszających saldo. Po rozpoczęciu rozliczania wniosków data rozpoczęcia ewidencji jest zablokowana. |
 | B29 | Q9 | Administrator zmienia firmowe dni wolne wyłącznie dla przyszłych dat. Najpierw otrzymuje podgląd wpływu na istniejące wnioski, następnie jawnie potwierdza korekty. Dodanie wolnego zwraca godziny, usunięcie zwiększa obciążenie według B26. Zniknięcie całego jednodniowego urlopu obejmuje jawne anulowanie/wycofanie. Potwierdzenie skutków dla zatwierdzonych wniosków zapisujemy jako decyzję; przeszłości nie przeliczamy zbiorczo. |
 
+## Doprecyzowania przed etapem 6 — 7 listopada 2026 r.
+
+Użytkownik potwierdził obie przedstawione propozycje odpowiedzią „Tak”.
+
+| ID | Pytanie | Potwierdzona decyzja |
+|---|---|---|
+| B30 | Q2 — dzisiejszy dzień | Własny wniosek można złożyć na dzisiaj. Do końca dnia w Europe/Warsaw można edytować lub wycofać własny oczekujący wniosek, jeśli nie obejmuje wcześniejszych dni. Nie ustalamy pory nieobecności, bo wniosek nie ma godzin zegarowych. Przeszłe daty pozostają zablokowane dla samoobsługi; procedury indywidualnych korekt pozostają w etapie 7. |
+| B31 | Q10 — odrzucenie | Powód odrzucenia jest obowiązkowy i widoczny dla właściciela wniosku oraz osób uprawnionych do jego szczegółów. |
+
 ## Ustalony sposób realizacji
 
 | ID | Zasada | Status |
@@ -161,6 +170,16 @@ testów pozostają w TEST_PLAN. Sam wpis nie oznacza zaliczenia odbioru.
 | DT40 | Zmiana kalendarza wymaga świeżego podglądu oraz jawnych nowych wersji i decyzji. | Oryginalne wnioski i zasady zatrudnienia pozostają zachowane. Nowe wersje utrwalają kontekst także pierwotnie wolnych dni. Niejednoznaczne stare dane nie są automatycznie uzupełniane bieżącymi zasadami. |
 | DT41 | Dodajemy podstawowe ekrany `/balances` i `/calendar-settings` bez nowych zależności aplikacji. | Formularz wniosków, główny kalendarz zespołu i pełny projekt Notus pozostają w zaplanowanych dalszych etapach. |
 
+## Decyzje techniczne etapu 6 — 7 listopada 2026 r.
+
+| ID | Decyzja i uzasadnienie | Zakres i granice |
+|---|---|---|
+| DT42 | Publiczny proces wniosków ma jedną granicę transakcji i korzysta z `reconcileRequest`. | Wspólna blokada administracji, uporządkowane blokady użytkowników i wniosku; ponowne wczytanie całego grafu po blokadzie usuwa nieaktualne relacje Doctrine. Wywołujący musi wcześniej zapisać niezależne zmiany; żadne obce niezapisane encje nie są częścią tej operacji. |
+| DT43 | Edycja oczekującego zastępuje wersję, zachowując kontekst tylko dotychczasowego zakresu. | Poprzednia `INITIAL` otrzymuje `SUPERSEDED`, nowa `INITIAL` oraz rozliczenie powstają atomowo. Nowe daty korzystają z przypisań obowiązujących w tych dniach; nie rozciągamy starego otwartego kontekstu. |
+| DT44 | Idempotencja przechowuje końcowe potwierdzenie niezależnie od właściwego zdarzenia rozliczenia. | Klucz jest przypisany do aktora; konflikt treści daje 409. Techniczny `request.operation_completed` nie stanowi kolejnego księgowania. Replay wymaga aktualnego dostępu do konkretnej wersji i nie ujawnia salda. |
+| DT45 | Każda wersja historii ma osobne uprawnienie do odczytu. | Odczyt we wspólnej transakcji i świeżym grafie; przełożony ze starą historią nie otrzymuje obecnego statusu, wersji ani szczegółów nowego zespołu. Lista jest stronicowana, sprawdza najwyżej 500 kandydatów i pozwala kontynuować kursorem bez liczników niedostępnych danych. |
+| DT46 | Etap 6 obejmuje API, bez nowych bibliotek, schematu i ekranów frontendu. | Publiczny proces i kontrakt w REQUESTS_API; UI w etapie 8, korekty zatwierdzonych w 7. PHPUnit ma jawny limit 512 MB wyłącznie podczas testów; pełny zestaw lokalnie przekracza domyślne 128 MB PHP. |
+
 ## Problemy i ograniczenia
 
 ### E01 — środowisko testowe PHPUnit w Compose
@@ -249,6 +268,20 @@ Walidacja zakresów i granic przypisań porównuje teraz wartości `Y-m-d`, zgod
 z semantyką dat nieobecności. Nie osłabiono kontroli tożsamości ani wersji zasad.
 Testy integracyjne kalendarza jawnie używają domyślnego UTC i przywracają poprzednią
 strefę. Pełny wynik kolejnego odbioru pozostaje w TEST_PLAN; CI #18 nie jest zaliczeniem.
+
+### E09 — edycja wniosku i zmiana dostępnych pul
+
+Przy testowaniu etapu 6 odtworzono błąd: oczekujące 6 h UoP finansowane starszą
+pulą można było przenieść na nową datę B2B mimo zerowego przydziału bieżącego roku.
+Dotychczasowa ochrona istniejącego zobowiązania porównywała tylko sumę godzin roku,
+przez co taka edycja mogła utworzyć nowy niedobór w innej puli.
+
+Warunek sprawdza teraz również podzbiór wymagający bieżącej puli: nowe godziny bez
+przenoszenia nie mogą korzystać z ochrony większej niż wcześniejsze finansowanie
+bieżącą pulą. Brak pokrycia powoduje pełne wycofanie edycji. Osobne testy potwierdzają
+odmowę wariantu finansowanego zaległością, dopuszczenie wariantu z rocznej puli i
+możliwość akceptacji istniejącej rezerwacji B2B po jawnej korekcie powodującej niedobór.
+To uszczelnienie B26, nie zmiana zasad przenoszenia ani anulowanie innych urlopów.
 
 ## Format kolejnego wpisu
 

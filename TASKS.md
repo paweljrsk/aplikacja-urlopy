@@ -5,7 +5,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 3 — logowanie lokalne i kontrola dostępu — zakończony**.
 **Etap 4 — administracja — zakończony.** Q5 rozstrzygnięto w B22–B24.
 **Etap 5 — kalendarz roboczy, limity i saldo — zakończony.**
-**Etap 6 — rozpoczęty na polecenie użytkownika; analiza i doprecyzowanie reguł.**
+**Etap 6 — w implementacji. Q2 o dzisiaj i Q10 zatwierdzone jako B30–B31.**
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -79,12 +79,12 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 ## Etap 6 — w trakcie
 
 - [x] Sprawdzić aktualne wymagania, prompt 6, model wniosków, zasady dostępu i stan PR #5.
-- [-] Rozstrzygnąć Q2 o dzisiejszym dniu oraz Q10 o uzasadnieniu odrzucenia przed zależną implementacją.
-- [ ] Dodać publiczne API tworzenia, odczytu, edycji oczekującego wniosku, wycofania i decyzji.
-- [ ] Połączyć walidację kalendarza, rodzaju, zatrudnienia, godzin i salda z atomowym zapisem historii.
-- [ ] Zachować zapisane zasady przy edycji, kontrolę dostępu po transferze, idempotencję i ochronę nieaktualnych wersji.
-- [ ] Sprawdzić scenariusze ról, przełomu roku, współbieżnych wniosków i decyzji oraz zachowanie dotychczasowych danych.
-- [ ] Uzupełnić kontrakt API, README, plan testów i rzeczywisty raport odbioru; opublikować PR i zweryfikować CI.
+- [x] Rozstrzygnąć Q2 o dzisiejszym dniu oraz Q10 o uzasadnieniu odrzucenia przed zależną implementacją.
+- [-] Dodać publiczne API tworzenia, odczytu, edycji oczekującego wniosku, wycofania i decyzji.
+- [-] Połączyć walidację kalendarza, rodzaju, zatrudnienia, godzin i salda z atomowym zapisem historii; zaimplementowane, odbiór CI.
+- [-] Zachować zapisane zasady przy edycji, kontrolę dostępu po transferze, idempotencję i ochronę nieaktualnych wersji; lokalnie zaliczone.
+- [-] Sprawdzić scenariusze ról, przełomu roku, współbieżnych wniosków i decyzji oraz zachowanie dotychczasowych danych; lokalnie 337 testów / 10 662 asercje i rzeczywiste HTTP PASS.
+- [-] Uzupełnić kontrakt API, README, plan testów i rzeczywisty raport odbioru; dokumentacja gotowa, publikacja PR i końcowy CI.
 
 ## Kolejne etapy
 
@@ -174,8 +174,7 @@ Dotychczasowe konto administratora i dane pozostają zachowane.
 Użytkownik polecił rozpoczęcie etapu 6. Przygotowano gałąź
 `codex/etap-6-wnioski-decyzje` z końcowego commita etapu 5
 `12e66f3fb76a25ea72ab4bd9d6b815f7091c905e` (CI #21 również SUCCESS).
-Punkt wznowienia: uzyskać i zapisać odpowiedzi na Q2 dotyczące dzisiejszego dnia
-oraz Q10 dotyczące powodu odrzucenia, następnie wdrożyć prompt 6.
+Punkt wznowienia: wdrożyć prompt 6 zgodnie z zatwierdzonymi B30–B31.
 Analiza kodu nie stanowi zaliczenia implementacji ani nowych testów.
 Nie scalać PR bez osobnego polecenia.
 

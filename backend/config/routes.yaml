@@ -35,3 +35,7 @@ admin_controllers:
 balance_controllers:
     resource: ../src/Controller/Balance/
     type: attribute
+
+request_controllers:
+    resource: ../src/Controller/Requests/
+    type: attribute

@@ -2,12 +2,16 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 5 — kalendarz roboczy, limity i saldo.**
+**Bieżący zakres: etap 6 — API wniosków, rezerwacje i decyzje.**
 Dostępne są logowanie, panel administracji `/admin`, limity i saldo `/balances`
 oraz zarządzanie firmowymi dniami wolnymi `/calendar-settings`. Rozliczenia
 obejmują dane początkowe, rezerwacje, obciążenia, korekty i wspólne pule zaległości.
-Formularz składania wniosków oraz główny kalendarz zespołu powstaną w kolejnych
-etapach. Wygląd pozostaje roboczy — pełna stylistyka Notus w etapie 8.
+API umożliwia złożenie, odczyt, edycję oczekującego wniosku, wycofanie, akceptację
+i odrzucenie z uzasadnieniem. Etap 6 udostępnia proces przez API; formularz i
+pełna stylistyka Notus powstaną w etapie 8, główny kalendarz zespołu w etapie 9.
+
+Gałąź etapu 6: `codex/etap-6-wnioski-decyzje`, oparta na ukończonym etapie 5.
+Trwa końcowa weryfikacja; stan i zakres kontroli opisuje [plan testów](docs/TEST_PLAN.md).
 
 Etap 5 ukończony w [PR #5](https://github.com/paweljrsk/aplikacja-urlopy/pull/5),
 gałąź `codex/etap-5-kalendarz-limity-saldo`, oparta na ukończonym
@@ -15,7 +19,7 @@ gałąź `codex/etap-5-kalendarz-limity-saldo`, oparta na ukończonym
 [CI #20 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42357495900):
 268 testów / 6832 asercje, Chrome, migracje, Nginx/PHP-FPM, restart i workery.
 Szczegóły i instrukcja ręcznego odbioru: [plan testów](docs/TEST_PLAN.md).
-Instrukcje: [rozliczenia](docs/ACCOUNTING.md), [API](docs/BALANCES_API.md),
+Instrukcje: [API wniosków](docs/REQUESTS_API.md), [rozliczenia](docs/ACCOUNTING.md), [API salda](docs/BALANCES_API.md),
 [kalendarz](docs/CALENDAR.md), [administracja](docs/ADMINISTRATION.md).
 `GET /api/health` sprawdza kernel/routing, nie gotowość bazy.
 
@@ -46,7 +50,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/etap-5-kalendarz-limity-saldo
+git switch codex/etap-6-wnioski-decyzje
 make init
 make verify
 make db-validate
@@ -54,7 +58,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 5, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Migracje zachowują istniejące limity, dane początkowe, księgowania i historię wniosków. Istniejące słowniki, wnioski i ich zasady pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 6, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etap 6 wykorzystuje ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 
@@ -122,6 +126,13 @@ Polskie święta wyliczane są lokalnie dla lat 2025–2100 według opisanych re
 firmowe dni zastępcze wpisuje administrator. [Zasady kalendarza](docs/CALENDAR.md).
 
 ## Codzienna praca
+
+Proces wniosków etapu 6 jest dostępny w `/api/requests`. Wymaga sesji logowania,
+CSRF, przypisania pracownika oraz jego danych początkowych; rodzaj obciążający
+saldo wymaga też skonfigurowanego limitu danego roku. Złożenie rezerwuje godziny,
+akceptacja nie potrąca ich ponownie, a odrzucenie i wycofanie zwalniają rezerwację.
+Dzisiejszy dzień jest dozwolony do jego końca w Warszawie. Odrzucenie wymaga powodu.
+Kontrakt, przejścia stanów i przykłady: [API wniosków](docs/REQUESTS_API.md).
 
 ```bash
 make start
