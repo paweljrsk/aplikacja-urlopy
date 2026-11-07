@@ -227,7 +227,9 @@ function calendarResponse(url) {
     await page.getByRole('dialog').waitFor({ state: 'detached' });
     await waitFor(() => requests.get(2).status === 'cancellation_pending', 'Cancellation proposal was not sent.');
     assert.equal(available, 64, 'No early refund on cancellation proposal.');
-    await page.getByText('Anulowanie oczekuje', { exact: true }).first().waitFor();
+    const cancellationBadge = page.getByRole('region', { name: 'Szczegóły wniosku', exact: true }).locator('.requests-status-cancellation_pending');
+    await cancellationBadge.waitFor();
+    assert.match((await cancellationBadge.innerText()).trim(), /Anulowanie oczekuje$/, 'The visible detail badge must show the pending cancellation status.');
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'Request history must fit mobile width.');
     await page.screenshot({ path: join(screenshotDir, 'requests-mobile.png'), fullPage: true });

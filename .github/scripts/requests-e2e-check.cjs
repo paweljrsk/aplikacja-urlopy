@@ -132,7 +132,9 @@ async function main() {
     await page.reload();
     await page.getByRole('button', { name: 'Zmień termin lub wymiar', exact: true }).waitFor();
     const details = page.getByRole('region', { name: 'Szczegóły wniosku', exact: true });
-    await details.getByText('Zaakceptowany', { exact: true }).waitFor();
+    const approvedBadge = details.locator('.requests-status-approved');
+    await approvedBadge.waitFor();
+    check(/Zaakceptowany$/.test((await approvedBadge.innerText()).trim()), 'The visible detail badge must show approved status');
     detail = (await get(context.request, `/api/requests/${created.id}`)).request;
     balance = (await get(context.request, balancePath)).balance;
     check(detail.status === 'approved' && detail.effective.totalHours === 3 && detail.pending === null
