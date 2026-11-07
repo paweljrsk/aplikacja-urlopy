@@ -7,6 +7,7 @@ use App\Entity\AbsenceTypeVersion;
 use App\Entity\AuditEvent;
 use App\Entity\EmploymentType;
 use App\Entity\RequestDay;
+use App\Entity\RequestAssignmentContext;
 use App\Entity\StaffAssignment;
 use App\Entity\Team;
 use App\Entity\User;
@@ -256,7 +257,8 @@ final class AdministrationService
                 throw new CredentialsException('ASSIGNMENT_CONFLICT', 'Dodaj zmianę po ostatnim przypisaniu; wcześniejszych okresów nie nadpisujemy.', 409);
             }
             if (0 === $comparison) {
-                if (0 !== $this->em->getRepository(RequestDay::class)->count(['assignment' => $last])) {
+                if (0 !== $this->em->getRepository(RequestDay::class)->count(['assignment' => $last])
+                    || 0 !== $this->em->getRepository(RequestAssignmentContext::class)->count(['assignment' => $last])) {
                     throw new CredentialsException('ASSIGNMENT_CONFLICT', 'Przypisanie jest używane we wniosku. Wskaż późniejszą datę zmiany.', 409);
                 }
                 $last->correctUnreferenced($team, $employment, $role);

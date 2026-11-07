@@ -217,3 +217,68 @@ select:focus-visible, h2:focus-visible { outline: 3px solid #1973b8; outline-off
   .admin-list > li { padding: 18px; }
   .assignment-history li { gap: 5px; }
 }
+
+/* Stage 5 functional accounting. Shared visual redesign remains in stage 8. */
+.accounting-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 28px; }
+.accounting-nav a { padding: 10px 16px; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; background: white; font-size: 13px; }
+.accounting-nav a[aria-current="page"] { background: var(--navy); border-color: var(--navy); color: white; }
+.balance-filter-fields { display: grid; grid-template-columns: minmax(190px, 1fr) 150px auto; gap: 16px; align-items: end; }
+.balance-filter-fields > .button { margin: 0; }
+.balance-filters { margin-bottom: 28px; }
+.balance-overview { padding: 25px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+.balance-overview .admin-section-heading { margin-top: 0; }
+.balance-stats { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+.balance-stat { display: flex; flex-direction: column; gap: 8px; padding: 20px; background: #f1f4f8; border-radius: 10px; min-width: 0; }
+.balance-stat > span { color: var(--muted); font-size: 12px; }
+.balance-stat > strong { font-size: 26px; line-height: 1.2; }
+.balance-stat > small { color: var(--muted); font-size: 12px; }
+.balance-available { background: #e8f2ed; }
+.balance-negative { background: #fff0f0; }
+.balance-negative > strong { color: #962e35; }
+.balance-breakdown { margin: 0; }
+.balance-breakdown > div { display: flex; gap: 24px; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.balance-breakdown dt { color: var(--muted); }
+.balance-breakdown dd { margin: 0; text-align: right; font-weight: 600; flex-shrink: 0; }
+.balance-management { padding: 22px 0; }
+.balance-section { margin-top: 32px; padding: 25px; background: white; border: 1px solid var(--line); border-radius: 14px; min-width: 0; }
+.balance-section h2 { font-size: 22px; margin-bottom: 16px; }
+.balance-conversion { grid-column: 1 / -1; margin-top: -12px; }
+.carry-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end; margin: 17px 0; }
+.accounting-table-scroll { overflow-x: auto; max-width: 100%; }
+.accounting-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+.accounting-table th, .accounting-table td { border-bottom: 1px solid var(--line); padding: 13px 12px; vertical-align: top; }
+.accounting-table th { font-weight: 600; }
+.accounting-table thead th { color: var(--muted); background: #f4f6f9; font-size: 12px; }
+.accounting-table small { display: block; color: var(--muted); font-weight: normal; }
+.balance-history { list-style: none; padding: 0; margin: 0; }
+.balance-history li { padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 13px; overflow-wrap: anywhere; }
+.balance-history li:last-child { border-bottom: 0; }
+.balance-history li > div:first-child { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+.balance-history li > div > span { color: var(--muted); font-size: 12px; }
+.balance-history p { margin: 10px 0 0; }
+.history-values { margin: 10px 0 0; }
+.history-values > div { display: flex; flex-wrap: wrap; gap: 12px; }
+.history-values dt { color: var(--muted); }
+.history-values dd { margin: 0; }
+.calendar-year { max-width: 450px; }
+.calendar-year .balance-filter-fields { grid-template-columns: 1fr auto; }
+.calendar-preview { padding: 25px; border: 1px solid #95b7d4; background: #f6faff; border-radius: 14px; margin-top: 25px; }
+.calendar-preview h2 { font-size: 24px; }
+.calendar-preview > p { font-size: 14px; }
+.calendar-confirm { margin: 20px 0; }
+.calendar-editor > .field-hint { margin-bottom: 20px; }
+@media (max-width: 760px) {
+  .balance-filter-fields { grid-template-columns: 1fr 1fr; }
+  .balance-filter-fields > .field:first-child { grid-column: 1 / -1; }
+  .balance-stats { grid-template-columns: 1fr; }
+  .balance-stat > strong { font-size: 29px; }
+  .balance-overview, .balance-section, .calendar-preview { padding: 20px; }
+  .balance-breakdown > div { flex-wrap: wrap; gap: 5px 15px; }
+  .balance-breakdown dd { text-align: left; }
+  .carry-row { grid-template-columns: 1fr 1fr; }
+  .carry-row > .button { grid-column: 1 / -1; }
+  .calendar-year .balance-filter-fields { grid-template-columns: 1fr; }
+  .calendar-preview .accounting-table { min-width: 590px; }
+  .balance-section .accounting-table { min-width: 530px; }
+  .accounting-main .admin-actions > .button { flex: 1 1 100%; }
+}

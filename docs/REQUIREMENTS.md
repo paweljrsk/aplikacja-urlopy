@@ -1,6 +1,6 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.2 • stan uzgodnień z 7 listopada 2026 r., po odpowiedziach przed etapem 4.
+Wersja 1.3 • stan uzgodnień z 7 listopada 2026 r., po odpowiedziach przed etapem 5.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
 [decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
@@ -54,7 +54,7 @@ Po zmianie formy zatrudnienia już złożone wnioski zachowują dotychczasowe za
 | Ustawianie limitów pracowników | Nie | W swoim zespole | Nie | Wszystkie zespoły |
 | Zarządzanie kontami, zespołami i słownikami | Nie | Nie | Nie | Tak |
 
-Administrator ma pełny dostęp do funkcji. To nie znosi automatycznie reguł poprawności dat, godzin ani rozliczeń. Uprawnienie kierownika do zmiany własnego limitu i tryb akceptacji korekt są wyszczególnione w pytaniach przed odpowiednimi etapami.
+Administrator ma pełny dostęp do funkcji. To nie znosi automatycznie reguł poprawności dat, godzin ani rozliczeń. Własny limit kierownika zmienia administrator. Tryb korekt samych wniosków pozostaje do uzgodnienia przed etapem 7.
 
 W kalendarzu współpracowników pokazujemy imię i nazwisko, daty, status oraz liczbę godzin nieobecności. Nie ujawniamy ich sald ani rodzaju nieobecności. Pracownik widzi własne szczegóły; uprawnione osoby obsługujące wnioski mają dostęp do danych potrzebnych do podjęcia decyzji.
 
@@ -88,7 +88,7 @@ Administrator albo kierownik ustawia pracownikowi limit na konkretny rok. Dla pr
 - godziny wykorzystane **z bieżącej rocznej puli** do dnia poprzedzającego rozpoczęcie ewidencji;
 - pozostałe godziny z wcześniejszych lat, osobno według roku ich pochodzenia.
 
-Pozostałość starszych pul oznacza stan na dzień rozpoczęcia ewidencji, a nie pierwotną wielkość przeniesienia na początek roku. Nie odejmujemy od niej ponownie wcześniejszego wykorzystania. Wcześniejsze nieobecności są już uwzględnione w danych początkowych; późniejsze wprowadzenie historycznego wniosku nie może drugi raz pomniejszyć salda. Szczegółowa procedura korekty danych lub wniosków sprzed tej granicy pozostaje do rozstrzygnięcia w Q8 przed etapem 5; sam agregat godzin nie odtwarza historii pojedynczych nieobecności.
+Pozostałość starszych pul oznacza stan na dzień rozpoczęcia ewidencji, a nie pierwotną wielkość przeniesienia na początek roku. Nie odejmujemy od niej ponownie wcześniejszego wykorzystania. Wcześniejsze nieobecności są już uwzględnione w danych początkowych; późniejsze wprowadzenie historycznego wniosku nie może drugi raz pomniejszyć salda. Okres sprzed tej granicy poprawiamy wyłącznie jawną korektą danych początkowych z uzasadnieniem i historią zmian, bez dopisywania wniosków ponownie obciążających saldo. Po rozpoczęciu rozliczania wniosków data rozpoczęcia ewidencji pozostaje zablokowana (B28).
 
 Limit można wprowadzać w dniach, przeliczanych po 8 godzin. Obliczenia wykorzystują pełne godziny. Saldo pokazujemy w godzinach oraz w przeliczeniu na dni i godziny, np. **68 h = 8 dni i 4 h**. Do zachowania reszty godzinowej przy danych początkowych i korektach potrzebne są pola godzinowe.
 
@@ -102,6 +102,25 @@ Limit można wprowadzać w dniach, przeliczanych po 8 godzin. Obliczenia wykorzy
 Przykład kontrolny: limit 80 h → wniosek na 16 h → dostępne 64 h. Po akceptacji nadal 64 h. Po wykorzystaniu nadal 64 h.
 
 Dla UoP niewykorzystane dni przechodzą na kolejne lata i zużywane są od najstarszej puli. Nie wygaszamy ich automatycznie. Dla pozostałych form, w tym B2B, niewykorzystane dni nie przechodzą. Limit kolejnego roku jest wpisywany osobno. Wniosek grudzień–styczeń rozlicza godziny według dat w odpowiednich latach. System rozróżnia rok nieobecności od roku pochodzenia wykorzystanej puli.
+
+Oczekujące wnioski z poprzedniego roku zachowują rezerwacje. Przeniesienie dla UoP
+udostępnia wolne godziny od początku nowego roku, bez kopiowania pul. Późniejsze
+odrzucenie lub wycofanie starego wniosku udostępnia również zwolnione godziny.
+Przed początkiem roku przyszły wniosek może korzystać z ręcznie wpisanego limitu
+tego roku, lecz nie z przewidywanego przeniesienia (B25).
+
+Korekta limitu lub danych początkowych wymaga uzasadnienia i może powodować jawny
+niedobór. Pokazujemy ujemne saldo; nie anulujemy zatwierdzonych urlopów. Nowe
+obciążenia zwiększające niedobór są blokowane, natomiast zatwierdzenie istniejącej
+rezerwacji nie zwiększa obciążenia (B26). Kierownik nie zmienia własnego limitu;
+wykonuje to administrator (B27).
+
+Administrator może dodawać i usuwać firmowe dni wolne dla przyszłych dat, po
+podglądzie skutków i jawnym potwierdzeniu korekt istniejących wniosków. Dodanie
+wolnego zwraca odpowiednie godziny, usunięcie zwiększa obciążenie zgodnie z B26.
+Jeśli znika cały jednodniowy urlop, operacja obejmuje jawne anulowanie/wycofanie.
+Potwierdzenie administratora dla zatwierdzonych wniosków jest zapisaną decyzją.
+Przeszłości nie przeliczamy zbiorczo (B29).
 
 ### 1.7. Wnioski, zmiany i korekty
 

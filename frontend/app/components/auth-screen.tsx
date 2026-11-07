@@ -155,6 +155,7 @@ export function AuthScreen({ screen }: { screen: Screen }) {
         <div className="profile-heading"><div className="avatar" aria-hidden="true">{user.firstName.slice(0, 1)}{user.lastName.slice(0, 1)}</div><div><h2 id="profile-title">{user.firstName} {user.lastName}</h2><p>Twoje konto</p></div><Link className="button button-secondary" href="/change-password" prefetch={false}>Zmień hasło</Link></div>
         <dl className="profile-details"><div><dt>Adres e-mail</dt><dd>{user.email}</dd></div><div><dt>Zespół</dt><dd>{user.team?.name ?? "Brak bieżącego przypisania"}</dd></div><div><dt>Rola</dt><dd>{roleLabel(user)}</dd></div></dl>
       </section>
+      <section className="admin-setup"><div><h2>Limity i saldo godzinowe</h2><p>Sprawdź dostępne godziny oraz historię rozliczeń.</p></div><Link href="/balances" className="button button-primary" prefetch={false}>Przejdź do salda</Link></section>
       <section className="coming-card"><div className="coming-icon" aria-hidden="true">↗</div><div><h2>Przestrzeń na plany zespołu</h2><p>Kalendarz i obsługa wniosków nie są jeszcze dostępne.</p></div></section>
       {user.isAdministrator && <section className="admin-setup"><div><h2>Zarządzanie aplikacją</h2><p>Dodawaj użytkowników, zarządzaj zespołami i rodzajami nieobecności.</p></div><Link href="/admin" className="button button-primary" prefetch={false}>Przejdź do administracji</Link></section>}
       {user.isAdministrator && <AdminPasswords currentUser={user} />}

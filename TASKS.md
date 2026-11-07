@@ -4,7 +4,8 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 2 — model danych i migracje — zakończony**.
 **Etap 3 — logowanie lokalne i kontrola dostępu — zakończony**.
 **Etap 4 — administracja — zakończony.** Q5 rozstrzygnięto w B22–B24.
-Następny: etap 5, po kolejnym poleceniu użytkownika i odpowiedziach na pytania tego etapu.
+**Etap 5 — rozpoczęty na polecenie użytkownika; analiza i rozstrzygnięcie pytań.**
+Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
 Statusy: `[ ]` do zrobienia, `[-]` w trakcie, `[x]` wykonane i zweryfikowane.
@@ -63,12 +64,23 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Wykonać testy API i UI, migracje, zachowanie danych, Nginx/PHP-FPM, restart i workery. CI #16: 198 testów / 4599 asercji, SUCCESS.
 - [x] Uzupełnić README, kontrakt administracji, decyzje techniczne i raport odbioru.
 
+## Etap 5 — w trakcie
+
+- [x] Odczytać aktualny kod, wymagania, decyzje i prompt etapu 5; sprawdzić stan Git.
+- [x] Uzyskać odpowiedzi na Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisać decyzje B25–B29 przed zależną implementacją.
+- [x] Zweryfikować urzędowe źródła świąt i wdrożyć lokalny kalendarz dni roboczych.
+- [-] Wdrożyć limity, dane początkowe, saldo godzinowe i idempotentne rozliczenie roku; końcowy odbiór.
+- [-] Przygotować atomowe operacje rezerwacji, zwolnienia, zatwierdzenia i korekty; końcowy odbiór.
+- [-] Dodać chronione API i podstawowy ekran limitów/danych początkowych; odbiór Chrome.
+- [-] Sprawdzić obliczenia, uprawnienia, współbieżność, migracje i zachowanie istniejących danych; lokalnie zaliczone, docelowe CI w przygotowaniu.
+- [-] Uzupełnić dokumentację, wzór salda i rzeczywisty raport odbioru.
+
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
 - [x] Etap 3 — logowanie lokalne i kontrola dostępu w API.
 - [x] Etap 4 — administracja użytkownikami, zespołami i słownikami.
-- [ ] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
+- [-] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
 - [ ] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
 - [ ] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
 - [ ] Etap 8 — formularz i widoki pracownika w stylistyce Notus.
@@ -135,8 +147,9 @@ na pustej bazie jawnie dodaj słowniki startowe, zespół i konta. Nie uruchamia
 ponownie bootstrap ani demo, jeśli masz już własne konta. Wygląd nadal roboczy,
 dopasowanie do Notus w etapie 8.
 
-Następny: **etap 5 — kalendarz roboczy, limity i saldo**. Najpierw rozstrzygnąć
-Q3, Q4, Q6, pozostałą część Q8 i Q9 zgodnie z promptem 5. Nie zaczynać tego etapu
-ani nie scalać PR bez kolejnego polecenia. Usługi wniosków w etapach 6–7 mają
+Użytkownik polecił rozpoczęcie **etapu 5 — kalendarz roboczy, limity i saldo**.
+Przygotowano gałąź `codex/etap-5-kalendarz-limity-saldo` na ukończonym etapie 4.
+Punkt wznowienia: wdrożyć rozliczenia zgodnie z zatwierdzonymi B25–B29 oraz promptem 5. Nie scalać PR
+bez osobnego polecenia. Usługi wniosków w etapach 6–7 mają
 korzystać z `RequestAccessPolicy` i blokować agregat użytkownika przed zapisem
 przypisań dni; samo zapisane `RequestDay.assignment` nie określa uprawnień.

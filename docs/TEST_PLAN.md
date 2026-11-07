@@ -393,3 +393,30 @@ Test przeglądarkowy ze sztucznym API oraz rzeczywiste testy backendu/HTTP są
 oddzielnymi kontrolami — nie deklarujemy pełnego przeglądarkowego E2E wszystkich
 procesów urlopowych. Wnioski, kalendarz, limity i saldo należą do kolejnych etapów.
 Końcowy styl Notus pozostaje w etapie 8; wdrożenie produkcyjne w etapie 12.
+
+
+## Etap 5 — lokalna weryfikacja w trakcie odbioru
+
+7 listopada 2026 r. Zweryfikowano lokalnie na PHP 8.4.24 i MySQL 8.0.32:
+
+- pełny PHPUnit po końcowych poprawkach: 268 testów / 6832 asercje;
+- PHPStan, lint YAML i kontenera Symfony;
+- migrację od schematu etapu 3 przez etap 4 z syntetycznymi danymi początkowymi,
+  pulami, rezerwacją, wnioskiem i dniem firmowym do etapu 5; zachowanie wszystkich
+  wcześniejszych kolumn, bezpieczny stan limitu i powtórzenie migracji;
+- zgodność końcowego schematu z mapowaniem Doctrine;
+- rzeczywiste HTTP z MySQL przez lokalny serwer PHP: logowanie, CSRF, administracja,
+  dane początkowe, idempotencja, limit, konflikt wersji, jawny niedobór, korekta,
+  podgląd i zmiana kalendarza, odczyt własnego salda i odmowa cudzych danych/zapisów.
+
+Osobne testy obejmują blokadę współbieżnego zapisu na drugim połączeniu MySQL
+oraz nieaktualną wersję wniosku w drugim EntityManager po równoczesnej akceptacji.
+Testy dat i przełomu roku korzystają z kontrolowanego zegara.
+Dodatkowe regresje potwierdzają, że późniejsze przejście B2B → UoP nie przywraca
+starej puli B2B, a jawnie importowana zaległość nie wymaga fikcyjnych przypisań.
+ESLint, TypeScript, build frontendu i scenariusze rzeczywistych komponentów React
+w lokalnym DOM również przeszły; Chrome wymaga CI.
+
+Lokalny serwer PHP nie zastępuje Nginx/PHP-FPM ani docelowego PHP 8.3. Pełny odbiór
+Docker, Chrome, build, restart i workery zostanie zapisany po rzeczywistym CI dla
+konkretnego commita. Nie oznaczamy tego etapu jako zakończonego przed odbiorem.

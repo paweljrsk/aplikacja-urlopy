@@ -48,7 +48,7 @@ class RequestDay
             throw new \InvalidArgumentException('A request day must be inside the requested range.');
         }
         // Cancellation copies an existing approved snapshot, even if its assignment was later closed.
-        if (RequestChangeKind::CANCELLATION !== $revision->getKind() && ($key < $assignment->getValidFrom()->format('Y-m-d')
+        if (RequestChangeKind::CANCELLATION !== $revision->getKind() && !$revision->preservesAssignment($assignment, $this->date) && ($key < $assignment->getValidFrom()->format('Y-m-d')
             || (null !== $assignment->getValidUntil() && $key >= $assignment->getValidUntil()->format('Y-m-d')))) {
             throw new \InvalidArgumentException('The assignment must cover the date of absence.');
         }

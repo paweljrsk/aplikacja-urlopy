@@ -58,13 +58,17 @@ class RequestRevision
     #[ORM\OrderBy(['date' => 'ASC'])]
     private Collection $days;
 
+    /** @var Collection<int, RequestAssignmentContext> */
+    #[ORM\OneToMany(mappedBy: 'revision', targetEntity: RequestAssignmentContext::class, cascade: ['persist'])]
+    private Collection $assignmentContexts;
+
     #[ORM\OneToOne(mappedBy: 'revision', targetEntity: RequestDecision::class, cascade: ['persist'])]
     private ?RequestDecision $decision = null;
 
     private bool $building = false;
 
     /** @param list<RequestedDay> $days */
-    public function __construct(LeaveRequest $request, RequestChangeKind $kind, AbsenceTypeVersion $policy, RequestMode $mode, \DateTimeImmutable $startDate, \DateTimeImmutable $endDate, array $days, AuditEvent $source, ?self $baseRevision = null)
+    public function __construct(LeaveRequest $request, RequestChangeKind $kind, AbsenceTypeVersion $policy, RequestMode $mode, \DateTimeImmutable $startDate, \DateTimeImmutable $endDate, array $days, AuditEvent $source, ?self $baseRevision = null, ?self $calendarSource = null)
     {
         $this->request = $request;
         $this->kind = $kind;
@@ -75,6 +79,7 @@ class RequestRevision
         $this->source = $source;
         $this->baseRevision = $baseRevision;
         $this->days = new ArrayCollection();
+        $this->assignmentContexts = new ArrayCollection();
         if ($source->getSubject() !== $request->getUser()) {
             throw new \InvalidArgumentException('The source operation concerns a different employee.');
         }
@@ -99,6 +104,42 @@ class RequestRevision
                     throw new \DomainException('This application retains the captured version of this absence type.');
                 }
                 break;
+            }
+        }
+        if (null !== $calendarSource) {
+            if ($calendarSource->getRequest() !== $request || !\in_array($calendarSource, $request->getRevisions(), true)
+                || $calendarSource->getStartDate() != $this->startDate || $calendarSource->getEndDate() != $this->endDate
+                || $calendarSource->getPolicy() !== $policy || $calendarSource->getMode() !== $mode) {
+                throw new \DomainException('A calendar correction must retain a previous revision’s range and rules.');
+            }
+            foreach ($calendarSource->getAssignmentContexts() as $context) {
+                $this->assignmentContexts->add(new RequestAssignmentContext($this, $context->getAssignment(), $context->getValidFrom(), $context->getValidUntil()));
+            }
+            // Legacy revisions predate full-range context. Preserve their actual captured dates.
+            if ([] === $calendarSource->getAssignmentContexts()) {
+                foreach ($calendarSource->getDays() as $day) {
+                    $this->assignmentContexts->add(new RequestAssignmentContext($this, $day->getAssignment(), $day->getDate(), $day->getDate()->modify('+1 day')));
+                }
+                foreach ($days as $day) {
+                    if (!$this->preservesAssignment($day->assignment, $day->date)) {
+                        $known = array_filter($calendarSource->getDays(), static fn (RequestDay $captured): bool => $captured->getAssignment() === $day->assignment);
+                        if ([] === $known || $day->date < $day->assignment->getValidFrom() || (null !== $day->assignment->getValidUntil() && $day->date >= $day->assignment->getValidUntil())) {
+                            throw new \DomainException('Legacy calendar correction lacks an unambiguous captured assignment.');
+                        }
+                        $this->assignmentContexts->add(new RequestAssignmentContext($this, $day->assignment, $day->date, $day->date->modify('+1 day')));
+                    }
+                }
+            }
+            foreach ($days as $day) {
+                if (!$this->preservesAssignment($day->assignment, $day->date)) {
+                    throw new \DomainException('A calendar correction must use the exact captured assignment for every date.');
+                }
+            }
+        } else {
+            foreach ($request->getUser()->getAssignments() as $assignment) {
+                if ($assignment->getValidFrom() <= $this->endDate && (null === $assignment->getValidUntil() || $assignment->getValidUntil() > $this->startDate)) {
+                    $this->assignmentContexts->add(new RequestAssignmentContext($this, $assignment, $assignment->getValidFrom(), $assignment->getValidUntil()));
+                }
             }
         }
         $this->building = true;
@@ -179,6 +220,22 @@ class RequestRevision
     public function getTotalHours(): int
     {
         return array_sum(array_map(static fn (RequestDay $day): int => $day->getHours(), $this->getDays()));
+    }
+
+    /** @return list<RequestAssignmentContext> */
+    public function getAssignmentContexts(): array
+    {
+        return array_values($this->assignmentContexts->toArray());
+    }
+
+    public function preservesAssignment(StaffAssignment $assignment, \DateTimeImmutable $date): bool
+    {
+        foreach ($this->assignmentContexts as $context) {
+            if ($context->getAssignment() === $assignment && $context->covers($date)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @internal The immutable daily snapshot is constructed with the revision. */

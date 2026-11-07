@@ -55,6 +55,19 @@ Użytkownik potwierdził trzy propozycje odpowiedzią „tak dla wszystkich”. 
 Użytkownik potwierdził także pozostawienie tymczasowego interfejsu na tym etapie.
 Pełne dopasowanie wszystkich ekranów do notus.pl i notus.pl/banki pozostaje w etapie 8.
 
+## Doprecyzowania przed etapem 5 — 7 listopada 2026 r.
+
+Użytkownik potwierdził wszystkie pięć propozycji odpowiedzią „tak dla wszystkich”.
+Q3, Q4 (zakres etapu 5), Q6, pozostała część Q8 i Q9 są rozstrzygnięte.
+
+| ID | Pytanie | Potwierdzona decyzja |
+|---|---|---|
+| B25 | Q3 | Oczekujące stare wnioski zachowują rezerwacje. UoP udostępnia przeniesione wolne godziny dopiero od początku nowego roku; późniejsze zwolnienie starej rezerwacji zwiększa dostępną zaległość. Przed rozpoczęciem roku można rezerwować jego ręcznie wpisany limit, bez przewidywanego przeniesienia. B2B i pozostałe formy nadal nie przenoszą godzin. Jedna godzina pozostaje w jednej puli pochodzenia. |
+| B26 | Q4 | Jawna korekta limitu lub danych początkowych z uzasadnieniem może powodować niedobór. Pokazujemy ujemne saldo, zachowujemy zatwierdzone urlopy i blokujemy nowe obciążenia zwiększające niedobór. Zamiana istniejącej rezerwacji na obciążenie nie potrąca drugi raz. Procedury korekty samych wniosków pozostają w etapie 7. |
+| B27 | Q6 | Własny limit kierownika zmienia administrator. Kierownik zarządza limitami innych osób własnego zespołu; zastępca nie zmienia limitów. Nie zmienia to prawa kierownika do akceptacji własnych wniosków. |
+| B28 | Q8 | Okres sprzed rozpoczęcia ewidencji rozliczamy korektami danych początkowych z uzasadnieniem i historią. Nie dopisujemy przed granicą ewidencji starych wniosków ponownie pomniejszających saldo. Po rozpoczęciu rozliczania wniosków data rozpoczęcia ewidencji jest zablokowana. |
+| B29 | Q9 | Administrator zmienia firmowe dni wolne wyłącznie dla przyszłych dat. Najpierw otrzymuje podgląd wpływu na istniejące wnioski, następnie jawnie potwierdza korekty. Dodanie wolnego zwraca godziny, usunięcie zwiększa obciążenie według B26. Zniknięcie całego jednodniowego urlopu obejmuje jawne anulowanie/wycofanie. Potwierdzenie skutków dla zatwierdzonych wniosków zapisujemy jako decyzję; przeszłości nie przeliczamy zbiorczo. |
+
 ## Ustalony sposób realizacji
 
 | ID | Zasada | Status |
@@ -137,6 +150,16 @@ testów pozostają w TEST_PLAN. Sam wpis nie oznacza zaliczenia odbioru.
 | DT34 | Przypisania dopisujemy chronologicznie; nieużywane ostatnie przypisanie można skorygować od tej samej daty z audytem. | Gdy wskazuje je `RequestDay`, korekta treści jest blokowana; nowy okres zachowuje stare referencje. Przyszła usługa wniosków musi blokować agregat użytkownika przed zapisem przypisań dni. |
 | DT35 | Uprawnienia wniosków po transferze są osobną polityką od zapisanych zasad rozliczenia. | `RequestAccessPolicy` rozdziela dni kalendarza, szczegóły wersji i decyzję. Mieszany zakres wymaga administratora także przy zaplanowanym transferze; nowe API wniosków wykorzysta politykę później. |
 | DT36 | Zachowujemy stack i zależności, dodając funkcjonalny panel `/admin`. | Bez nowych pakietów runtime; pełny projekt wizualny Notus pozostaje w etapie 8. Testy backendu, przeglądarki ze sztucznym API i rzeczywistego HTTP są raportowane osobno. |
+
+## Decyzje techniczne etapu 5 — 7 listopada 2026 r.
+
+| ID | Decyzja i uzasadnienie | Zakres i granice |
+|---|---|---|
+| DT37 | Dostępne godziny liczymy z niezmiennych zapisów wspólnych pul pochodzenia, bez kopiowania zaległości. | Ręczny przydział roczny, jawny stan brak/zero, korekty różnicowe, rezerwacje i obciążenia. Wzór i źródła w ACCOUNTING. |
+| DT38 | Rozliczenia korzystają z tej samej blokady co administracja; uprawnienia sprawdzamy pod blokadą. | Transakcje obejmują audyt, księgowania, decyzje i zajętość. Wersja formularza obejmuje wspólne pule; klucz operacji chroni ponowienia. |
+| DT39 | Kalendarz lokalny obejmuje lata 2025–2100 według zweryfikowanych obecnych reguł. | Starsze lata pochodzenia pul są dozwolone; brak połączeń do internetu w runtime. Przyszłe lata nie gwarantują niezmienności przepisów. Źródła i ograniczenia w CALENDAR. |
+| DT40 | Zmiana kalendarza wymaga świeżego podglądu oraz jawnych nowych wersji i decyzji. | Oryginalne wnioski i zasady zatrudnienia pozostają zachowane. Nowe wersje utrwalają kontekst także pierwotnie wolnych dni. Niejednoznaczne stare dane nie są automatycznie uzupełniane bieżącymi zasadami. |
+| DT41 | Dodajemy podstawowe ekrany `/balances` i `/calendar-settings` bez nowych zależności aplikacji. | Formularz wniosków, główny kalendarz zespołu i pełny projekt Notus pozostają w zaplanowanych dalszych etapach. |
 
 ## Problemy i ograniczenia
 
