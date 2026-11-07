@@ -61,10 +61,11 @@ export function AppHeader({ user, active, onNewRequest, onLogout, logoutBusy = f
       <div className="app-header-inner">
         <NotusBrand />
         {user && <>
-          <nav className="app-navigation" aria-label="Nawigacja główna">
+          <nav className={`app-navigation${user.isAdministrator || user.role === "manager" || user.role === "deputy" ? " has-management" : ""}`} aria-label="Nawigacja główna">
             <Link href="/" prefetch={false} aria-current={active === "calendar" ? "page" : undefined}>Kalendarz</Link>
             <Link href="/requests" prefetch={false} aria-current={active === "requests" ? "page" : undefined}>Moje wnioski</Link>
             <Link href="/balances" prefetch={false} aria-current={active === "balances" ? "page" : undefined}>Moje saldo</Link>
+            {(user.isAdministrator || user.role === "manager" || user.role === "deputy") && <Link href="/management" prefetch={false} aria-current={active === "management" ? "page" : undefined}>Obsługa wniosków</Link>}
           </nav>
           <div className="app-header-actions">
             {onNewRequest ? <button type="button" className="button button-primary new-request-button" onClick={onNewRequest}><span aria-hidden="true">+</span>Złóż wniosek</button> : <Link href="/requests?new=1" prefetch={false} className="button button-primary new-request-button"><span aria-hidden="true">+</span>Złóż wniosek</Link>}
@@ -73,6 +74,7 @@ export function AppHeader({ user, active, onNewRequest, onLogout, logoutBusy = f
               <div className="account-menu-panel">
                 <strong>{user.firstName} {user.lastName}</strong><small>{roleLabel(user)}</small>
                 <Link href="/account" prefetch={false}>Moje konto</Link>
+                {(user.isAdministrator || user.role === "manager" || user.role === "deputy") && <Link href="/balances?view=team" prefetch={false}>Salda zespołu</Link>}
                 {user.isAdministrator && <><Link href="/admin" prefetch={false}>Administracja</Link><Link href="/calendar-settings" prefetch={false}>Firmowe dni wolne</Link></>}
                 <button type="button" onClick={onLogout ?? (() => void logout())} disabled={busy || logoutBusy}>{busy || logoutBusy ? "Wylogowywanie…" : "Wyloguj się"}</button>
               </div>

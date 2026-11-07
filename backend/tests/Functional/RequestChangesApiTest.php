@@ -351,6 +351,12 @@ final class RequestChangesApiTest extends WebTestCase
         self::assertSame([1], array_column($oldView['history'], 'revision'));
         self::assertSame([false], array_values(array_unique($oldView['actions'])));
         self::assertStringNotContainsString('2026-11-16', json_encode($oldView, JSON_THROW_ON_ERROR));
+        $this->client->request('GET', '/api/requests?scope=managed&status=awaiting');
+        $queue = $this->success();
+        self::assertNotContains($old['id'], array_column($queue['requests'], 'id'));
+        $this->send('/api/requests/'.$old['id'].'/decision-preview', ['action' => 'approve', 'expectedVersion' => $change['version']]);
+        $this->assertError(403, 'FORBIDDEN');
+        self::assertStringNotContainsString('AvailableHours', $this->content());
         $this->send('/api/requests/'.$old['id'].'/approve', $this->transition($change));
         $this->assertError(403, 'FORBIDDEN');
         $this->login('managerBeta');

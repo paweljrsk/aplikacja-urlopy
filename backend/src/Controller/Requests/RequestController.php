@@ -111,6 +111,12 @@ final class RequestController extends AbstractController
         return $this->execute(fn (User $actor): JsonResponse => $this->json(['operation' => $this->workflow->approve($actor, $id, $this->read($request))]));
     }
 
+    #[Route('/api/requests/{id}/decision-preview', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]
+    public function decisionPreview(int $id, Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['preview' => $this->workflow->previewDecision($actor, $id, $this->read($request))]));
+    }
+
     #[Route('/api/requests/{id}/reject', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]
     public function reject(int $id, Request $request): JsonResponse
     {

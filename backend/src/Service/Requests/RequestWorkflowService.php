@@ -139,6 +139,27 @@ final class RequestWorkflowService
         return $this->perform($actor, $id, 'rejected', RequestInput::decision($data, true));
     }
 
+    /** Run the actual decision and accounting under the same locks, then roll back.
+     * Preview never authorizes a later write: version and access are checked again.
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public function previewDecision(User $actor, int $id, array $data): array
+    {
+        $input = RequestInput::decisionPreview($data);
+        $action = 'approve' === $input['action'] ? 'approved' : 'rejected';
+        unset($input['action']);
+        $actorId = $actor->getId() ?? throw new \LogicException('A persisted actor is required.');
+        $connection = $this->em->getConnection();
+        $connection->beginTransaction();
+        try {
+            return $this->execute($actorId, $id, $action, $input, true);
+        } finally {
+            $connection->rollBack();
+            $this->em->clear();
+        }
+    }
+
     /** A preview executes the same validation and accounting, but always rolls it back.
      * Callers must flush independent work before entering this public transaction boundary.
      * @param array<string, mixed> $data
@@ -227,6 +248,23 @@ final class RequestWorkflowService
         }
         $before = null === $previous ? [] : $this->snapshot($previous);
         $beforeBalances = [];
+        $decisionPreview = $preview && \in_array($action, ['approved', 'rejected'], true);
+        $decisionContext = [];
+        $balanceVisible = false;
+        if ($decisionPreview) {
+            if (null === $request) { throw new \LogicException('A decision requires a request.'); }
+            $decisionContext = ['id' => $request->getId(), 'version' => $request->getVersion(),
+                'action' => 'approved' === $action ? 'approve' : 'reject', 'statusBefore' => RequestState::status($request)];
+            $balanceVisible = (new BalanceAccessPolicy($this->assignments))->canViewBalance($actor, $subject, $this->clock->now());
+            if ($balanceVisible) {
+                $years = [];
+                foreach ([$pending, $effective] as $version) {
+                    foreach ($version?->getDays() ?? [] as $day) { $years[(int) $day->getDate()->format('Y')] = true; }
+                }
+                ksort($years, SORT_NUMERIC);
+                foreach (array_keys($years) as $year) { $beforeBalances[$year] = $this->accounting->getBalance($subject, $year); }
+            }
+        }
         if (\in_array($action, ['created', 'edited', 'change_proposed'], true)) {
             [$policy, $mode, $start, $end, $days] = $this->application($subject, $data, $request, $previous);
             if ($preview) {
@@ -266,6 +304,19 @@ final class RequestWorkflowService
         }
         $this->accounting->reconcileRequest($request, $event);
         if ($preview) {
+            if ($decisionPreview) {
+                $years = [];
+                foreach ($beforeBalances as $year => $balance) {
+                    $after = $this->accounting->getBalance($subject, $year);
+                    $years[] = ['year' => $year,
+                        'beforeAvailableHours' => $balance['availableHours'], 'afterAvailableHours' => $after['availableHours'],
+                        'beforeReservedHours' => $balance['reservedHours'] + $balance['changeReservedHours'],
+                        'afterReservedHours' => $after['reservedHours'] + $after['changeReservedHours'],
+                        'beforeApprovedHours' => $balance['usedHours'] + $balance['approvedFutureHours'],
+                        'afterApprovedHours' => $after['usedHours'] + $after['approvedFutureHours']];
+                }
+                return $decisionContext + ['statusAfter' => RequestState::status($request), 'years' => $balanceVisible ? $years : null];
+            }
             $years = [];
             foreach ($beforeBalances as $year => $balance) {
                 $after = $this->accounting->getBalance($subject, $year);

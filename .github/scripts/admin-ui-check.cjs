@@ -19,13 +19,25 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
     let conflictOnce = false;
     let createCount = 0;
     let adminReads = 0;
+    let historyFailure = false;
+    let historyGate = null;
+    const historyCursors = [];
+    const auditEvents = [
+      { id: 102, action: 'admin.assignment_changed', occurredAt: '2026-11-07T10:00:00+00:00', actorName: 'Operator Historyczny',
+        subject: { id: 2, firstName: 'Anna', lastName: 'Demonstracyjna' }, targetType: 'user', targetReference: '2',
+        changes: [{ field: 'assignments', label: 'Przypisania', before: '2026-01-01 – 2030-01-01 · Historyczny dział · B2B · Pracownik', after: '2030-01-01 – bez końca · Rozwój aplikacji · B2B · Zastępca' }] },
+      { id: 101, action: 'security.password_reset', occurredAt: '2026-11-06T09:00:00+00:00', actorName: 'Paweł Testowy',
+        subject: { id: 2, firstName: 'Anna', lastName: 'Demonstracyjna' }, targetType: 'user', targetReference: '2',
+        changes: [{ field: 'mustChangePassword', label: 'Wymagana zmiana hasła', before: 'Nie', after: 'Tak' }] },
+    ];
     const mutations = [];
     const errors = [];
     const catalog = { teams: [], employmentTypes: [], absenceTypes: [], roles };
     const users = [structuredClone(admin)];
     await context.route('**/api/**', async route => {
       const request = route.request();
-      const path = new URL(request.url()).pathname;
+      const url = new URL(request.url());
+      const path = url.pathname;
       const method = request.method();
       const reply = (status, data) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
       const error = (status, code) => reply(status, { error: { code, message: 'Synthetic response' } });
@@ -42,6 +54,15 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
         adminReads++;
         if (path === '/api/admin/catalog') return reply(200, catalog);
         if (path === '/api/admin/users') return reply(200, { users });
+        if (path === '/api/admin/history') {
+          assert.equal(url.searchParams.get('limit'), '20');
+          const beforeId = url.searchParams.get('beforeId');
+          historyCursors.push(beforeId);
+          if (historyFailure) { historyFailure = false; return error(503, 'SERVICE_UNAVAILABLE'); }
+          if (historyGate) await historyGate;
+          assert.ok(beforeId === null || beforeId === '102');
+          return reply(200, { events: [auditEvents[beforeId === null ? 0 : 1]], nextBeforeId: beforeId === null ? 102 : null });
+        }
       }
       const data = request.postDataJSON();
       if (path === '/api/admin/catalog/initialize') {
@@ -190,11 +211,44 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
     await page.getByRole('button', { name: 'Zapisz pozycję', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Zapisano zmiany słownika' }).waitFor();
     assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
+    const beforeHistoryMutations = mutations.length;
+    historyFailure = true;
+    await page.getByRole('button', { name: 'Historia', exact: true }).click();
+    const historyPanel = page.locator('.admin-history-panel');
+    await historyPanel.getByRole('alert').waitFor();
+    assert.equal(await historyPanel.locator('.admin-audit-list > li').count(), 0);
+    await historyPanel.getByRole('button', { name: 'Odśwież historię', exact: true }).click();
+    await historyPanel.getByText('Zmieniono przypisanie pracownika', { exact: true }).waitFor();
+    await historyPanel.getByText('Autor operacji: Operator Historyczny', { exact: true }).waitFor();
+    assert.equal(await historyPanel.locator('time').first().getAttribute('datetime'), auditEvents[0].occurredAt);
+    await historyPanel.getByText('Pokaż zmienione wartości', { exact: true }).click();
+    await historyPanel.getByText(auditEvents[0].changes[0].before, { exact: true }).waitFor();
+    await historyPanel.getByText(auditEvents[0].changes[0].after, { exact: true }).waitFor();
+    await historyPanel.getByRole('button', { name: 'Pokaż wcześniejsze operacje', exact: true }).click();
+    await historyPanel.getByText('Zresetowano hasło', { exact: true }).waitFor();
+    assert.equal(await historyPanel.locator('.admin-audit-list > li').count(), 2, 'Earlier operations append without replacing the first page.');
+    assert.equal(historyCursors.at(-1), '102');
+    assert.equal(await historyPanel.getByRole('button', { name: 'Pokaż wcześniejsze operacje', exact: true }).count(), 0);
+    assert.equal(await page.locator('input[type="password"]').count(), 0, 'Administrative history never reopens a credential form.');
+    assert.doesNotMatch(await historyPanel.innerText(), /SyntheticGeneratedTemporaryPassword|SyntheticResetTemporaryPassword|Synthetic administrator password/);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'Long historical assignment values must fit the mobile page.');
+    await page.screenshot({ path: join(screenshotDir, 'admin-history-mobile.png'), fullPage: true });
+    let releaseHistory;
+    historyGate = new Promise(resolve => { releaseHistory = resolve; });
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await historyPanel.getByText('Wczytywanie historii administracji…', { exact: true }).waitFor();
+    assert.equal(await historyPanel.locator('.admin-audit-list > li').count(), 0, 'Focus refresh clears old private history before its fresh response.');
+    releaseHistory(); historyGate = null;
+    await historyPanel.getByText('Zmieniono przypisanie pracownika', { exact: true }).waitFor();
+    assert.equal(historyCursors.at(-1), null, 'Focus refresh starts a fresh first page.');
+    assert.equal(mutations.length, beforeHistoryMutations, 'Reading, retrying and paging audit history never writes.');
     session = { ...admin, isAdministrator: false };
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await page.getByRole('heading', { name: 'Brak dostępu' }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Edytuj: Płatne dni wolne' }).count(), 0);
+    assert.equal(await page.locator('.admin-audit-list').count(), 0, 'Revoked administrator access removes cached history.');
+    assert.equal(await page.getByText('Autor operacji: Operator Historyczny', { exact: true }).count(), 0);
     assert.equal(errors.length, 0, 'Browser reported a JavaScript exception.');
-    console.log('PASS: admin/anonymous/temporary-password guards, startup dictionaries, team and account creation, duplicate-click prevention, one-time secret cleanup, search/active filters, conflict recovery, deactivate/reactivate, dated assignment history, password reset, absence rules/availability/names, CSRF, no browser storage, revoked admin clearing, desktop/mobile overflow.');
+    console.log('PASS: admin/anonymous/temporary-password guards, startup dictionaries, team and account creation, duplicate-click prevention, one-time secret cleanup, search/active filters, conflict recovery, deactivate/reactivate, dated assignment history, password reset, absence rules/availability/names, paginated administrative history with actor/time/changed values, retry and focus refresh, CSRF, no browser storage, revoked admin clearing, desktop/mobile overflow.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });

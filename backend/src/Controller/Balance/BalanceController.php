@@ -83,6 +83,24 @@ final class BalanceController extends AbstractController
         });
     }
 
+    #[Route('/api/balances/users/{id}/opening-preview', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function previewOpening(int $id, Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['preview' => $this->accounting->previewAdjustment($actor, $this->subject($actor, $id, true), 'opening', null, $this->read($request))]));
+    }
+
+    #[Route('/api/balances/users/{id}/{year}/limit-preview', requirements: ['id' => '\\d+', 'year' => '\\d{4}'], methods: ['POST'])]
+    public function previewLimit(int $id, int $year, Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['preview' => $this->accounting->previewAdjustment($actor, $this->subject($actor, $id, true), 'limit', $year, $this->read($request))]));
+    }
+
+    #[Route('/api/balances/users/{id}/opening/corrections-preview', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function previewOpeningCorrection(int $id, Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['preview' => $this->accounting->previewAdjustment($actor, $this->subject($actor, $id, true), 'correction', null, $this->read($request))]));
+    }
+
     #[Route('/api/balances/users/{id}/{year}/limit', requirements: ['id' => '\\d+', 'year' => '\\d{4}'], methods: ['POST'])]
     public function limit(int $id, int $year, Request $request): JsonResponse
     {

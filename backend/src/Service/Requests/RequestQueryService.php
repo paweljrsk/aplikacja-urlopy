@@ -74,7 +74,7 @@ final class RequestQueryService
         $limit = array_key_exists('limit', $query) ? $this->positiveQueryInteger($query['limit'], 'limit', 100) : 50;
         $beforeId = array_key_exists('beforeId', $query) ? $this->positiveQueryInteger($query['beforeId'], 'beforeId') : null;
         $status = $query['status'] ?? null;
-        if (null !== $status && (!\is_string($status) || !\in_array($status, ['pending', 'approved', 'rejected', 'withdrawn', 'cancelled', 'change_pending', 'cancellation_pending'], true))) {
+        if (null !== $status && (!\is_string($status) || !\in_array($status, ['pending', 'approved', 'rejected', 'withdrawn', 'cancelled', 'change_pending', 'cancellation_pending', 'awaiting'], true))) {
             throw new CredentialsException('VALIDATION_FAILED', 'Wybierz poprawny status.');
         }
 
@@ -113,7 +113,8 @@ final class RequestQueryService
                 $current = RequestState::current($request);
                 $currentVisible = null !== $current && \in_array($current, $visible, true);
                 // A status filter must not reveal an unauthorized current version.
-                if (null !== $status && (!$currentVisible || RequestState::status($request) !== $status)) {
+                $statuses = 'awaiting' === $status ? ['pending', 'change_pending', 'cancellation_pending'] : [$status];
+                if (null !== $status && (!$currentVisible || !\in_array(RequestState::status($request), $statuses, true))) {
                     continue;
                 }
                 $rows[] = $this->summary($actor, $request, $visible, $now);

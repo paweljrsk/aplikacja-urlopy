@@ -223,7 +223,59 @@ oraz widok 1/2 tygodnie; widok miesiąca pozostaje opcją późniejszego rozwoju
 | DT52 | „Zatwierdzone” pokazuje obowiązujące wersje, także oczekujące na zmianę/anulowanie; „Oczekujące” wyłącznie nowe wnioski; „Zmiany i anulowania” dostępne wersje powiązanego procesu. | Zmiana i anulowanie nie unieważniają dotychczasowego urlopu. Filtr nie wnioskuje o niedostępnej propozycji. Lista grupuje po wniosku, nie sumuje wersji i nie łączy dwóch niezależnych wniosków 3 h + 5 h. |
 | DT53 | Szczegóły z kalendarza otwieramy w krótkim oknie tylko po wskazaniu `canViewDetails`, zawsze z nowym odczytem istniejącego API. | Backend ponownie autoryzuje każdą wersję. Modal czyści wcześniejszy DTO przed odświeżeniem, po odmowie i przy ukryciu strony. Zamknięcie zachowuje okres/filtry i przywraca fokus. Brak nowych uprawnień lub kontrolek decyzji; panel przełożonego pozostaje w etapie 10. |
 
+## Decyzje realizacyjne etapu 10 — 7 listopada 2026 r.
+
+Użytkownik zlecił etap 10. Nie pozostały pytania biznesowe blokujące ten zakres;
+Q7 dotyczy konfiguracji przed produkcją. Zachowujemy B22–B33.
+
+| ID | Decyzja wykonawcza | Uzasadnienie i granice |
+|---|---|---|
+| DT54 | `/management` domyślnie pokazuje wnioski wymagające decyzji aktora, z filtrem historii i stronicowaniem. | Backendowe `status=awaiting` łączy trzy stany, UI używa `actions`; własny wniosek zastępcy nie trafia do kolejki decyzji, pozostaje w jego historii. Nie ujawniamy statusu niedostępnej wersji. |
+| DT55 | Podgląd decyzji i limitu/danych początkowych wykonuje istniejący zapis w wycofywanej transakcji. | Te same walidacje, blokady i obliczenia; brak trwałych zmian. Podgląd decyzji nie ujawnia bieżącego salda bez osobnego prawa. Potwierdzenie UI poprzedza kompatybilny zapis z wersją i kluczem; sam podgląd nie nadaje uprawnień. |
+| DT56 | Historyczne korekty używają istniejącego podglądu z tokenem i jawnego potwierdzenia, bez ponownego implementowania rozliczeń na froncie. | Każda edycja unieważnia podgląd. Administrator osobno potwierdza niedobór. Niepewny zapis zachowuje treść, token i klucz; konflikt wymaga świeżego odczytu. |
+| DT57 | Historia administracji ma osobny stronicowany odczyt administratora z jawną listą zdarzeń i pól. | UI pokazuje autora/czas i zmienione wartości jako tekst. Zdarzenia haseł mają tylko metadane; brak surowego JSON, sekretów, sesji, kluczy operacji i technicznych potwierdzeń. |
+| DT58 | Salda zespołu są drugim widokiem istniejącego `/balances`, z rokiem, wyszukiwaniem i przejściem do osoby. | Lista uprawnionych osób jest pobierana ponownie; maksymalnie cztery równoległe odczyty sald. Brak sumowania wspólnych pul między latami. Własny limit kierownika i brak edycji zastępcy pozostają zgodne z B27. |
+
 ## Problemy i ograniczenia
+
+Poprawki E15–E18 zweryfikowano w pełnym [CI #37](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42417402132)
+dla kodu `ed777e033e1a04341a87157bf4efad864897f096`: SUCCESS, w tym Chrome i rzeczywisty E2E.
+
+### E18 — klawiatura po wymianie przycisku podglądu
+
+CI #36 zaliczył salda mobilne i wcześniejsze ekrany, ale wykrył opuszczenie
+dialogu klawiszami Tab/Shift+Tab po podglądzie decyzji. Dotychczasowa obsługa
+klawiatury działała tylko dla zdarzeń pochodzących z dialogu; nie obejmowała
+fokusu utraconego przy zmianie aktywnych kontrolek. Wspólny modal przechwytuje
+Tab na dokumencie wyłącznie podczas otwarcia, kieruje fokus do dostępnych
+kontrolek i usuwa nasłuchiwanie przy zamknięciu. Asercja pozostaje bez zmian.
+
+### E17 — spóźniony podgląd po zmianie dostępu
+
+Przegląd etapu 10 wykrył, że pominięcie odświeżenia dostępu podczas trwającego
+podglądu mogło przywrócić stare szczegóły po utracie uprawnień. Podgląd jest
+odczytem: ukrycie lub ponowne aktywowanie strony unieważnia jego odpowiedź,
+usuwa szczegóły i wymaga ponownej autoryzacji. Robocze pola pozostają zachowane
+dla tej samej wersji. Ochrona niepewnego faktycznego zapisu nadal zachowuje dokładną
+treść i klucz ponowienia. Osobne regresje opóźniają odpowiedź podglądu oraz
+odbierają dostęp przed jej dostarczeniem. Wynik odbioru jest w TEST_PLAN.
+
+### E16 — ukryta etykieta poza przewijaną tabelą sald
+
+CI #34–35 wykryły poziome przepełnienie strony przy mobilnym zestawieniu zespołu.
+Samo ograniczenie szerokości panelu nie wystarczyło. Diagnostyka CI #35 wskazała
+absolutnie pozycjonowaną etykietę `.sr-only` ostatniej kolumny, której położenie
+wykraczało poza przewijany kontener. Ustawienie `position: relative` na kontenerze
+obejmuje także etykiety dostępności. Tabela zachowuje własne przewijanie i pełną
+treść; asercja szerokości strony pozostaje bez zmian. Wynik odbioru jest w TEST_PLAN.
+
+### E15 — równoległe przekierowania wygasłej sesji w teście
+
+CI #33, po dokumentacji etapu 9, zakończył się `net::ERR_ABORTED` podczas oczekiwania
+na załadowanie strony logowania. Odczyt konta i otwartych szczegółów równolegle
+otrzymały 401 i oba przekierowały na login. Test sprawdza teraz końcowy URL oraz
+wyrenderowany formularz zamiast cyklu pojedynczej, zastąpionej nawigacji.
+Asercje braku prywatnych danych i magazynu przeglądarki pozostają bez zmian.
 
 ### E14 — niezależne błędy opcji i kalendarza
 

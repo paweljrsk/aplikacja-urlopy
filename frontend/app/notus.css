@@ -21,6 +21,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-navigation { align-self: stretch; display: flex; align-items: center; gap: 26px; }
 .app-navigation a { align-self: stretch; display: flex; align-items: center; position: relative; text-decoration: none; color: #606570; font-size: 13px; font-weight: 500; white-space: nowrap; }
 .app-navigation a:hover { color: var(--brand); }
+.app-navigation.has-management { min-width: 0; }
 .app-navigation a[aria-current="page"] { color: var(--brand); font-weight: 650; }
 .app-navigation a[aria-current="page"]::after { content: ''; position: absolute; left: 0; right: 0; bottom: -17px; height: 3px; border-radius: 3px 3px 0 0; background: var(--brand); }
 .app-header-actions { display: flex; align-items: center; gap: 22px; margin-left: auto; }
@@ -163,6 +164,12 @@ a.calendar-entry:hover { filter: brightness(.96); }
   .upcoming-section { margin-top: 30px; } .upcoming-heading { align-items: flex-end; } .upcoming-heading h2 { font-size: 21px; } .upcoming-heading .eyebrow { font-size: 8px; } .upcoming-heading p { font-size: 10px; max-width: 210px; } .upcoming-heading .text-link { font-size: 10px; gap: 5px; flex-shrink: 0; } .upcoming-list > li { display: grid; grid-template-columns: 38px 1fr auto; padding: 15px; gap: 8px 12px; } .upcoming-date { width: 38px; min-height: 44px; grid-row: 1 / 3; } .upcoming-person { grid-column: 2 / 4; } .upcoming-person > strong { font-size: 11px; } .upcoming-person > span { font-size: 9px; } .calendar-status { grid-column: 2; justify-self: start; font-size: 8px; padding: 3px 7px; } .upcoming-details { grid-column: 3; margin-left: 0; font-size: 9px; gap: 4px; } .workspace-footer { width: calc(100% - 36px); font-size: 9px; gap: 20px; }
 }
 @media (max-width: 370px) { .notus-brand-divider, .notus-brand > span:last-child { display: none; } .app-navigation { gap: 23px; } .calendar-controls { gap: 7px; } .calendar-pagination { gap: 3px; } .period-toggle button { padding: 5px 8px; } .calendar-today { padding: 5px 8px; } .dashboard-balance strong { font-size: 21px; } }
+@media (max-width: 1050px) {
+  .app-header-inner:has(.has-management) { flex-wrap: wrap; gap: 12px 20px; padding-bottom: 0; }
+  .app-navigation.has-management { order: 3; width: 100%; height: 42px; max-width: 100%; overflow-x: auto; justify-content: flex-start; gap: 22px; }
+  .app-navigation.has-management a { flex-shrink: 0; }
+  .app-navigation.has-management a[aria-current="page"]::after { bottom: 0; }
+}
 
 /* Calendar filters narrow the same authorized feed used by both views. */
 .calendar-filters { margin: 0 0 20px; padding: 18px 22px; border: 1px solid var(--line); background: white; border-radius: 13px; }

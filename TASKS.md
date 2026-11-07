@@ -9,6 +9,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 7 — zmiany, anulowania i korekty — zakończony.** Q2/Q4: B32–B33.
 **Etap 8 — formularz, widoki pracownika i podstawowy kalendarz Notus — ukończony.** B34; CI #29 SUCCESS.
 **Etap 9 — filtry i dopracowanie kalendarza — ukończony.** CI #32 SUCCESS.
+**Etap 10 — obsługa zespołu, salda i historia — ukończony.** CI #37 SUCCESS.
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -116,6 +117,15 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Sprawdzić dostęp, cofnięcie uprawnień, transfery i scenariusze UI desktop/mobile.
 - [x] Uzupełnić dokumentację i ukończyć odbiór CI oraz zrzutów.
 
+## Etap 10 — ukończony
+
+- [x] Dodać kolejkę decyzji, podgląd wpływu i obsługę konfliktów/ponowień.
+- [x] Udostępnić historyczne korekty z podglądem i jawnym potwierdzeniem.
+- [x] Uzupełnić przegląd sald zespołu i podgląd zmian limitów/danych początkowych.
+- [x] Udostępnić bezpieczną historię administracji i zachować historię wniosków/limitów.
+- [x] Zweryfikować wszystkie role, realny proces, współbieżność, mobile i klawiaturę.
+- [x] Uzupełnić kontrakty, dokumentację i raport rzeczywistych wyników CI #37: 437 testów / 20 849 asercji, Chrome i rzeczywisty E2E — PASS.
+
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
@@ -126,7 +136,7 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
 - [x] Etap 8 — formularz i widoki pracownika w stylistyce Notus, podstawowy kalendarz i lista według B34.
 - [x] Etap 9 — dalsze doskonalenie kalendarza zespołu i listy nieobecności; podstawowy ekran już w etapie 8.
-- [ ] Etap 10 — widoki przełożonego/administratora, salda i historia.
+- [x] Etap 10 — widoki przełożonego/administratora, salda i historia.
 - [ ] Etap 11 — weryfikacja pełnych procesów, bezpieczeństwa i wydajności.
 - [ ] Etap 12 — przygotowanie produkcji, backup/restore i pilotaż.
 
@@ -309,7 +319,7 @@ kalendarz udostępnia wyłącznie dozwolone dni i ograniczone metadane.
 Kolejny punkt to odbiór użytkownika, następnie etap 9 wyłącznie na osobne polecenie.
 Panel decyzji i korekt przełożonego pozostaje w etapie 10. Nie scalać PR automatycznie.
 
-### Bieżący punkt wznowienia — po ukończeniu etapu 9
+### Historyczny punkt wznowienia — po ukończeniu etapu 9
 
 Użytkownik zlecił etap 9 po przedstawieniu zakresu filtrów, czytelności zmian,
 szczegółów dla uprawnionych osób i odbioru. Zachować widok 1/2 tygodnie; miesiąc
@@ -329,3 +339,23 @@ DT51–DT53 opisują filtry, grupowanie i modal. Backend ponownie sprawdza każd
 wskazówka `canViewDetails` nie zastępuje autoryzacji. Naprawiono wyścig błędów
 pobrania kalendarza/opcji (E14). Ręczny odbiór zapisano w TEST_PLAN.
 Następny punkt: odbiór użytkownika, potem etap 10 wyłącznie na jego polecenie.
+
+### Bieżący punkt wznowienia — po ukończeniu etapu 10
+
+Użytkownik zlecił etap 10. Gałąź `codex/etap-10-obsluga-zespolu` bazuje na końcowym
+etapie 9 `207ee253ab1ca2900d1affd24e053948915efeaf`. Kod etapu 9 przeszedł CI #32;
+CI #33 po dokumentacji ujawnił wyścig dwóch przekierowań sesji w teście Chrome.
+Poprawiono oczekiwanie na końcowy URL/formularz bez osłabienia kontroli prywatności.
+Zachować istniejące B22–B33, role, idempotencję i audyt. Nie rozpoczynać etapu 11
+ani nie scalać PR automatycznie. Q7 dotyczy konfiguracji przed produkcją.
+
+Kod `ed777e033e1a04341a87157bf4efad864897f096`:
+[CI #37 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42417402132),
+PHP 8.3.36 + MySQL 8.0.32, **437 testów / 20 849 asercji**, kontrole statyczne,
+build, wszystkie regresje Chrome oraz rzeczywiste procesy pracownika i przełożonego,
+restart z zachowaniem danych i workery. Zrzuty desktop/mobile sprawdzono.
+[PR #10](https://github.com/paweljrsk/aplikacja-urlopy/pull/10) bazuje na niescalonym PR #9.
+
+DT54–DT58 opisują nowe widoki i podglądy; E15–E18 naprawione wyścigi i układ.
+Bez nowych bibliotek, migracji ani zmian B22–B33. README zawiera kroki odbioru.
+Następny punkt: odbiór użytkownika, następnie etap 11 wyłącznie na jego polecenie.

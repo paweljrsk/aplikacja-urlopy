@@ -1,4 +1,4 @@
-# API wniosków — etapy 6–8
+# API wniosków — etapy 6–10
 
 Reguły biznesowe: [REQUIREMENTS.md](REQUIREMENTS.md), B18–B33 w
 [DECISIONS.md](DECISIONS.md). Rozliczenia: [ACCOUNTING.md](ACCOUNTING.md).
@@ -8,7 +8,7 @@ Opis kontraktu nie zastępuje odbioru testów.
 ## Dostęp i zakres
 
 Wszystkie endpointy wymagają aktywnej zalogowanej sesji z docelowym hasłem.
-Każdy zapis wymaga `X-CSRF-Token` z `/api/auth/csrf`. Odpowiedzi mają
+Każdy `POST`, w tym podgląd bez zapisu, wymaga `X-CSRF-Token` z `/api/auth/csrf`. Odpowiedzi mają
 `Cache-Control: no-store, private`. Dane pracowników, salda, surowe encje i pełne
 obiekty audytu nie są automatycznie dołączane do odpowiedzi wniosku.
 
@@ -20,6 +20,7 @@ obiekty audytu nie są automatycznie dołączane do odpowiedzi wniosku.
 | Wycofanie oczekującego wniosku/propozycji | Właściciel; zakres propozycji i zastępowanej wersji nie obejmuje wcześniejszych dat |
 | Korekta rozpoczętego/przeszłego wniosku | Uprawniony kierownik/zastępca/admin po podglądzie i potwierdzeniu; własny wniosek zastępcy koryguje kierownik albo admin |
 | Historyczna korekta zwiększająca niedobór | Wyłącznie administrator, z dodatkowym jawnym potwierdzeniem niedoboru |
+| Podgląd decyzji | Taki sam zakres jak podjęcie tej decyzji; odczyt bieżącego salda wymaga dodatkowo uprawnienia do salda |
 | Akceptacja i odrzucenie | Kierownik i zastępca dla obsługiwanych wniosków zespołu; administrator dla wszystkich zespołów |
 | Decyzja o własnym wniosku | Kierownik i administrator; zastępca nie |
 | Własne szczegóły i historia | Właściciel i administrator |
@@ -38,7 +39,9 @@ oczekującym wniosku; rezerwacja nie wygasa przy zmianie dnia ani roku.
 
 Etap 7 dodaje zmiany zatwierdzonego urlopu, anulowanie oraz bezpośrednie korekty
 przeszłości według B32–B33. Etap 8 dodaje podgląd zwykłego formularza obliczany
-przez ten sam backend przed złożeniem, edycją lub propozycją zmiany.
+przez ten sam backend przed złożeniem, edycją lub propozycją zmiany. Etap 10
+udostępnia zbiorczy filtr oczekujących procesów i podgląd skutków decyzji
+przełożonego, bez zmiany zasad akceptacji ani rozliczeń.
 
 ## Endpointy
 
@@ -58,6 +61,7 @@ HTTP `200`. Utworzenie zwraca `201`, także przy identycznym ponowieniu operacji
 | `POST /api/requests/{id}/change` | Propozycja zmiany zatwierdzonego urlopu; zabezpieczenie dodatkowych godzin |
 | `POST /api/requests/{id}/cancel` | Propozycja anulowania; dotychczasowy urlop nadal obowiązuje |
 | `POST /api/requests/{id}/withdraw` | Wycofanie własnego oczekującego wniosku/propozycji i zwolnienie tylko odpowiedniej rezerwacji |
+| `POST /api/requests/{id}/decision-preview` | Podgląd akceptacji albo odrzucenia z rzeczywistym rozliczeniem wycofywanym po obliczeniu; wymaga CSRF |
 | `POST /api/requests/{id}/approve` | Akceptacja, zamiana rezerwacji na obciążenie |
 | `POST /api/requests/{id}/reject` | Odrzucenie z obowiązkowym powodem i zwolnienie odpowiedniej rezerwacji |
 | `POST /api/requests/{id}/correction-preview` | Podgląd historycznej korekty, bez zapisania zmian; wymaga CSRF |
@@ -214,6 +218,48 @@ każdego dnia chroniony jest większy wymiar ze starej i proponowanej wersji, pl
 inne aktywne wnioski: 3 h → 5 h zajmuje 5 h; przeniesienie poniedziałku na wtorek
 chroni oba dni do decyzji. Wersje nie sumują się podwójnie w tym samym dniu.
 
+## Podgląd decyzji przełożonego
+
+`POST /api/requests/{id}/decision-preview` przyjmuje `expectedVersion` oraz
+`action: "approve"` albo `action: "reject"`. Dla odrzucenia wymagane jest `reason`
+według tych samych zasad co przy zapisie decyzji (1–1000 znaków). Akceptacja nie
+przyjmuje powodu. Podgląd nie przyjmuje `operationKey`, `userId` ani dodatkowych pól.
+
+Podgląd wykonuje faktyczny proces decyzji i rozliczenie pod tymi samymi blokadami,
+po czym zawsze wycofuje transakcję i czyści zmienione encje z pamięci ORM.
+Nie zmienia wniosku, wersji, rezerwacji, obciążeń ani audytu. Odpowiedź HTTP `200`
+ma postać `{ "preview": ... }`:
+
+| Pole `preview` | Znaczenie |
+|---|---|
+| `id`, `version` | Wniosek i jego wersja przed symulowaną decyzją |
+| `action` | `approve` albo `reject` |
+| `statusBefore`, `statusAfter` | Obecny status i status wynikający z wybranej decyzji |
+| `years` | Wyniki dla lat obowiązującej i oczekującej wersji albo `null` przy braku osobnego dostępu do bieżącego salda |
+
+Każda pozycja `years` zawiera `year` i sześć wartości godzinowych:
+
+- `beforeAvailableHours`, `afterAvailableHours` — dostępne saldo przed i po decyzji;
+- `beforeReservedHours`, `afterReservedHours` — suma rezerwacji nowych wniosków
+  i dodatkowych rezerwacji zmian w danym roku;
+- `beforeApprovedHours`, `afterApprovedHours` — suma zatwierdzonych obciążeń
+  wykorzystanych oraz przyszłych w danym roku, bez wykorzystania początkowego.
+
+Są to stany salda pracownika, nie suma dwóch wersji jednego urlopu. Dostępne pule
+mogą być współdzielone między latami, dlatego klient nie dodaje wartości salda
+różnych lat. Rodzaj nieobciążający może zwrócić lata z identycznymi wartościami
+przed i po operacji. `years: null` pozwala uprawnionemu przełożonemu obsłużyć dawny
+wniosek po przeniesieniu pracownika bez ujawnienia jego bieżących sald lub pul.
+Brak prawa do decyzji daje `403`, zamiast podglądu danych.
+
+Po sprawdzeniu podglądu interfejs prosi o potwierdzenie i używa istniejącego
+`/approve` albo `/reject`, przekazując `expectedVersion`, `operationKey` oraz
+`reason` dla odrzucenia. Zmiana decyzji lub powodu wymaga nowego podglądu w UI.
+Podstawowe decyzje nie otrzymują tokena podglądu i nie wymagają dodatkowego
+`confirm`: zapis ponownie sprawdza aktualne uprawnienia, wersję, stan i rozliczenia.
+Podgląd nie jest blokadą przyszłych zmian; konflikt wymaga ponownego odczytu.
+Nie zmienia to wymogu tokena HMAC i potwierdzenia historycznej korekty poniżej.
+
 ## Bezpośrednia korekta przeszłości
 
 Korekta wymaga zakresu z wcześniejszą datą; dzisiaj nadal podlega B30. Nie służy do
@@ -283,7 +329,9 @@ Parametry `GET /api/requests`:
 - `beforeId`: kursor do kolejnej strony; dodatni identyfikator zwrócony w
   `nextBeforeId`. Porządek malejąco po identyfikatorze.
 - `status`: opcjonalnie `pending`, `approved`, `rejected`, `withdrawn`, `cancelled`,
-  `change_pending` lub `cancellation_pending`.
+  `change_pending`, `cancellation_pending` albo zbiorcze `awaiting`.
+  `awaiting` wybiera trzy procesy: `pending`, `change_pending` i `cancellation_pending`;
+  nie jest nowym statusem wniosku ani nadaniem prawa do decyzji.
 
 Odpowiedź: `{ "requests": [...], "nextBeforeId": liczba_lub_null }`.
 Każda strona sprawdza najwyżej 500 kandydatów, po czym umożliwia kontynuację
@@ -291,7 +339,8 @@ kursorem. Strona listy obsługiwanej może być krótsza lub pusta, jeśli kandy
 nie mają dostępnych wersji. Dopóki `nextBeforeId` nie jest `null`, klient może
 kontynuować odczyt. Nie zwracamy liczby wszystkich ani niedostępnych wniosków.
 Kursor nie pomija niesprawdzonych elementów. Filtr statusu nie ujawnia statusu
-niedostępnej obecnej wersji.
+niedostępnej obecnej wersji. Dotyczy to także `status=awaiting`: dostęp do dawnej
+wersji nie ujawnia, czy niedostępna aktualna propozycja oczekuje na decyzję.
 
 Element listy zawiera `id`, `reference`, `user` (tylko identyfikator, imię i nazwisko),
 `version`, `status`, `currentVisible`, `latestVisibleRevision` oraz `actions`.

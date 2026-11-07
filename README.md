@@ -2,7 +2,27 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 9 — filtry i dopracowanie kalendarza — ukończony.**
+**Bieżący zakres: etap 10 — obsługa zespołu, salda i historia — ukończony.**
+W `/management` jest kolejka nowych wniosków, zmian i anulowań oraz dostępna historia.
+Decyzję poprzedza podgląd wpływu na saldo; odrzucenie wymaga uzasadnienia.
+Przeszłe wnioski można skorygować po podglądzie i jawnym potwierdzeniu, zgodnie
+z dotychczasowymi uprawnieniami. Kierownik obsługuje też własne wnioski, zastępca cudze.
+`/balances?view=team` pokazuje salda dostępnych osób. Zmiany limitów i danych
+początkowych wymagają podglądu oraz potwierdzenia. W administracji jest karta „Historia”.
+
+Gałąź `codex/etap-10-obsluga-zespolu` bazuje na końcowym etapie 9
+`207ee253ab1ca2900d1affd24e053948915efeaf`, [PR #10](https://github.com/paweljrsk/aplikacja-urlopy/pull/10).
+[CI #37 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42417402132)
+dla kodu `ed777e033e1a04341a87157bf4efad864897f096`: **437 testów / 20 849 asercji**,
+kontrole statyczne, build i wszystkie regresje Chrome — PASS. Rzeczywisty proces
+obejmuje własną decyzję kierownika, odmowę własnej decyzji zastępcy, obsługę drugiego
+zespołu przez administratora i historyczną korektę 6 h → 3 h z poprawnym zwrotem
+oraz historią autora/uzasadnienia. Restart z zachowaniem danych i workery — PASS.
+Sprawdzono zrzuty desktop/mobile, klawiaturę, konflikty i utracone odpowiedzi.
+PR pozostaje niescalony. Szczegółowy raport jest w [TEST_PLAN.md](docs/TEST_PLAN.md).
+Bez nowych bibliotek ani migracji. Etap 11 wymaga kolejnego polecenia użytkownika.
+
+**Ukończony wcześniej etap 9 — filtry i dopracowanie kalendarza.**
 Wspólne filtry pracownika i statusu zawężają kalendarz oraz listę kolejnych dwóch
 miesięcy. Zatwierdzony termin i propozycja zmiany tworzą jedną pozycję listy,
 z osobnymi wymiarami. Uprawnione osoby otwierają szczegóły w oknie, zachowując
@@ -18,7 +38,7 @@ kontrole statyczne i build, wszystkie regresje Chrome, rzeczywisty proces wniosk
 restart z zachowaniem danych oraz workery — PASS. Sprawdzono zrzuty desktop/mobile.
 Lokalnie: 12 testów kalendarza / 1625 asercji, PHPStan, ESLint, TypeScript i build — PASS.
 Bez zmian schematu, rozliczeń i reguł uprawnień; bez nowych zależności.
-PR pozostaje niescalony. Etap 10 wymaga kolejnego polecenia użytkownika.
+PR pozostaje niescalony. Zlecony etap 10 opisano na początku tego pliku.
 
 **Ukończony wcześniej etap 8 — formularz, widoki pracownika i kalendarz Notus.**
 Dostępny jest nowy ekran główny z kalendarzem zespołu (dwa tygodnie na komputerze,
@@ -104,7 +124,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/etap-9-kalendarz-filtry
+git switch codex/etap-10-obsluga-zespolu
 make init
 make verify
 make db-validate
@@ -112,7 +132,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 9, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–9 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 10, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–10 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 
@@ -300,3 +320,25 @@ Faktyczne wyniki i ograniczenia środowiska opisano w [planie testów](docs/TEST
 Przed kolejnym etapem przeczytaj `AGENTS.md`, dokumentację i aktualny stan TASKS. Dla frontendu obowiązuje także `frontend/AGENTS.md` i dokumentacja zainstalowanej wersji Next.js.
 
 Konfiguracja produkcyjna, HTTPS/VPN, polityka backupów oraz próba odtworzenia będą odbierane w etapie 12. Nie używaj konfiguracji developerskiej ani przykładowych haseł na produkcji. Kod, dokumentacja i dane demonstracyjne mogą być publiczne; rzeczywiste dane pracowników, sekrety i kopie bazy pozostają poza repozytorium.
+
+## Odbiór widoków przełożonego — etap 10
+
+1. Zaloguj się jako kierownik i otwórz „Obsługa wniosków”. Wybierz szczegóły,
+   „Akceptuj” albo „Odrzuć”, sprawdź wpływ i potwierdź. Odrzucenie wymaga powodu.
+2. Własny oczekujący wniosek kierownika jest dostępny do decyzji. Własny wniosek
+   zastępcy obsługuje kierownik albo administrator. Administrator widzi też inne zespoły.
+3. Filtr „Wszystkie i historia” udostępnia zakończone wnioski oraz dostępne wersje.
+   Przy historycznym wniosku użyj „Skoryguj przeszły wniosek”, podaj powód,
+   sprawdź skutki i potwierdź. Niedobór wymaga osobnej zgody administratora.
+4. „Salda zespołu” pokazują zestawienie z wyborem roku i wyszukiwaniem. Otwórz
+   osobę, sprawdź historię; dozwolona zmiana limitu/początkowych danych pokazuje
+   wynik przed zapisaniem. Kierownik nie zmienia własnego limitu, zastępca tylko czyta.
+5. Administrator: karta „Historia” w `/admin` pokazuje autora, czas i dozwolone
+   zmienione wartości. Szczegóły decyzji urlopowych i limitów pozostają przy ich danych.
+6. Otwórz ten sam wniosek w dwóch oknach. Zapisz decyzję w pierwszym, następnie
+   spróbuj zapisać w drugim: wymagany jest świeży odczyt, a saldo zmienia się raz.
+   Po powrocie do otwartego formularza aplikacja ponownie sprawdza dostęp i wymaga
+   nowego podglądu. Niepewny zapis ponawia tę samą operację.
+7. Na telefonie sprawdź kolejkę, pełnoekranowe okno korekty i przewijanie tabeli
+   sald wewnątrz panelu. Tab/Shift+Tab pozostają w otwartym oknie; Escape zamyka
+   je, a formularz korekty z niezapisanymi zmianami wymaga potwierdzenia zamknięcia.

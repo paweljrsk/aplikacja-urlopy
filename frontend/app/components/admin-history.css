@@ -1,0 +1,11 @@
+.admin-audit-list { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 14px; }
+.admin-audit-list > li { padding: 20px 24px; background: white; border: 1px solid #e0e4eb; border-radius: 12px; overflow-wrap: anywhere; }
+.admin-audit-heading { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; }
+.admin-audit-heading strong { font-size: 15px; }
+.admin-audit-heading time { color: #697585; font-size: 12px; }
+.admin-audit-subject { margin: 12px 0 5px; font-size: 14px; }
+.admin-audit-list details { margin-top: 16px; border-top: 1px solid #eceef2; padding-top: 14px; }
+.admin-audit-list summary { cursor: pointer; font-size: 13px; font-weight: 600; }
+.admin-audit-list .history-values > div { align-items: start; }
+.admin-audit-list .history-values dd { max-width: 70%; white-space: pre-wrap; }
+@media (max-width: 700px) { .admin-audit-list > li { padding: 18px; } .admin-audit-list .history-values > div { display: block; } .admin-audit-list .history-values dd { max-width: 100%; margin-top: 5px; } }

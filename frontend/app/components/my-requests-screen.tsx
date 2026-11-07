@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { redirectForAuthError, type CurrentUser } from "@/lib/auth-api";
 import {
@@ -62,6 +63,7 @@ function RequestDetails({ request, onClose, onEdit, onAction, actorId }: {
       {request.actions.withdraw && <button className="button button-secondary" onClick={() => onAction("withdraw")}>{request.effective ? "Wycofaj propozycję" : "Wycofaj wniosek"}</button>}
       {request.actions.cancel && <button className="button button-secondary" onClick={() => onAction("cancel")}>Anuluj urlop</button>}
     </div>}
+    {(request.actions.approve || request.actions.reject || request.actions.correct) && <div className="requests-inline-actions"><Link href={`/management?id=${request.id}`} prefetch={false} className="button button-secondary">Przejdź do obsługi wniosku</Link></div>}
     <RequestHistory request={request} />
   </section>;
 }
