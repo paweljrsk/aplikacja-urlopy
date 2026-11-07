@@ -170,6 +170,11 @@ function calendarResponse(url) {
     await dialog.getByRole('status', { name: 'Podsumowanie wniosku' }).getByText('3 h', { exact: true }).waitFor();
     assert.equal(await dialog.getByLabel('Data', { exact: true }).inputValue(), '2026-11-10');
     await dialog.getByText('77 h = 9 dni i 5 h', { exact: true }).waitFor();
+    assert.equal(await dialog.evaluate(element => {
+      const bounds = element.getBoundingClientRect();
+      return Math.abs(bounds.x + bounds.width / 2 - innerWidth / 2) <= 2
+        && Math.abs(bounds.y + bounds.height / 2 - innerHeight / 2) <= 2;
+    }), true, 'The desktop request dialog must be centered in the viewport.');
     await page.screenshot({ path: join(screenshotDir, 'request-hourly-desktop.png'), fullPage: true });
     await dialog.getByRole('button', { name: 'Złóż wniosek', exact: true }).dblclick({ force: true });
     await dialog.getByRole('button', { name: 'Ponów wysłanie', exact: true }).waitFor();

@@ -213,6 +213,14 @@ testów pozostają w TEST_PLAN. Sam wpis nie oznacza zaliczenia odbioru.
 
 ## Problemy i ograniczenia
 
+### E13 — pozycja dialogu na komputerze
+
+Po zielonym CI #28 odbiór zrzutów wykrył dialog przy lewej górnej krawędzi:
+reset CSS usunął domyślny margines okna. Dialog ma teraz jawne `inset: 0`
+i `margin: auto`; telefon nadal używa pełnego ekranu z marginesem 0.
+Test Chrome sprawdza wyśrodkowanie względem okna, oprócz dotychczasowych
+kontroli rozmiaru i klawiatury.
+
 ### E12 — nawigacja klawiaturą w dialogu
 
 CI #27 wykrył wyjście fokusu z dialogu przy Shift+Tab. Samo natywne `showModal()`

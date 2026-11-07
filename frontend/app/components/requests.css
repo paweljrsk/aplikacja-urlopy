@@ -59,7 +59,7 @@
 .requests-history li p { margin: 8px 0; font-size: 12px; }
 .requests-history li small { display: block; color: #69717f; font-size: 11px; margin-top: 4px; }
 .requests-history li .requests-history-reason { background: #f5f6f9; padding: 10px 12px; border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.requests-dialog { padding: 0; border: 0; border-radius: 20px; width: min(590px, calc(100vw - 40px)); max-height: calc(100svh - 48px); color: #15171d; background: #fff; box-shadow: 0 25px 100px #17132238; overflow-y: auto; }
+.requests-dialog { inset: 0; margin: auto; padding: 0; border: 0; border-radius: 20px; width: min(590px, calc(100vw - 40px)); max-height: calc(100svh - 48px); color: #15171d; background: #fff; box-shadow: 0 25px 100px #17132238; overflow-y: auto; }
 .requests-dialog::backdrop { background: #171b2b66; backdrop-filter: blur(3px); }
 .requests-dialog-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding: 30px 30px 22px; border-bottom: 1px solid #eceef2; }
 .requests-dialog-heading h2 { font-size: 27px; line-height: 1.15; font-weight: 600; margin: 0 0 10px; }
