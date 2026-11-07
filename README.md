@@ -2,7 +2,20 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 8 — formularz, widoki pracownika i kalendarz Notus — ukończony.**
+**Bieżący zakres: etap 9 — filtry i dopracowanie kalendarza — weryfikacja.**
+Wspólne filtry pracownika i statusu zawężają kalendarz oraz listę kolejnych dwóch
+miesięcy. Zatwierdzony termin i propozycja zmiany tworzą jedną pozycję listy,
+z osobnymi wymiarami. Uprawnione osoby otwierają szczegóły w oknie, zachowując
+okres i filtry; istniejące API zawsze ponownie sprawdza dostęp.
+Widok 1/2 tygodnie i prosty formularz pozostają bez zmian.
+
+Gałąź: `codex/etap-9-kalendarz-filtry`, oparta na końcowym etapie 8
+`531d418d833aaa336adeb8427e241849ff499a57` ([CI #30 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42410557413)).
+Lokalnie: 12 testów kalendarza / 1625 asercji, PHPStan, ESLint, TypeScript i build
+— PASS. Końcowa regresja Chrome i odbiór wizualny oczekują na CI.
+Bez zmian schematu, rozliczeń i reguł uprawnień; bez nowych zależności.
+
+**Ukończony wcześniej etap 8 — formularz, widoki pracownika i kalendarz Notus.**
 Dostępny jest nowy ekran główny z kalendarzem zespołu (dwa tygodnie na komputerze,
 jeden na telefonie, z przełącznikiem), listą kolejnych dwóch miesięcy i przyciskiem
 „Złóż wniosek”. Krótki formularz otwiera się w dialogu, na telefonie na pełnym ekranie.
@@ -23,7 +36,7 @@ kontrole statyczne, build, regresja Chrome, rzeczywisty E2E formularza przez
 Nginx/PHP-FPM, zachowanie danych po restarcie i workery — PASS.
 Sprawdzono wizualnie desktop/mobile; dialog na komputerze jest wyśrodkowany.
 Lokalne kontrole również PASS. Bez nowych zależności aplikacji i migracji.
-PR pozostaje niescalony; dalszy rozwój kalendarza wymaga polecenia etapu 9.
+PR pozostaje niescalony; dalszy rozwój kalendarza odbywa się w zleconym etapie 9.
 
 **Ukończony wcześniej etap 7.**
 Dostępne są logowanie, panel administracji `/admin`, limity i saldo `/balances`
@@ -86,7 +99,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/etap-8-formularz-kalendarz-notus
+git switch codex/etap-9-kalendarz-filtry
 make init
 make verify
 make db-validate
@@ -94,7 +107,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 8, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–8 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 9, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–9 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 
@@ -168,6 +181,17 @@ strzałkami lub wróć do dzisiaj. Współpracownicy widzą jedynie nazwiska, da
 i godziny; rodzaje nieobecności i salda są prywatne. Administrator może wybrać zespół.
 Lista pod kalendarzem obejmuje najbliższe dwa miesiące niezależnie od przesunięcia
 górnego widoku. Przycisk „Złóż wniosek” jest w głównej nawigacji.
+
+Filtry **Pracownik** i **Status nieobecności** dotyczą obu widoków. „Zatwierdzone”
+pokazuje obowiązujące urlopy, również podczas oczekiwania na ich zmianę/anulowanie;
+„Oczekujące” pokazuje nowe wnioski; „Zmiany i anulowania” powiązane wersje.
+„Wyczyść filtry” wraca do pełnego dostępnego zespołu. Zmiana okresu zachowuje filtry,
+zmiana zespołu administratora je czyści. Lista nie sumuje godzin dwóch wersji.
+
+Przycisk szczegółów pojawia się tylko dla uprawnionej osoby i otwiera świeży odczyt
+w dialogu. Zamknięcie pozostawia wybrany okres i filtry. Pracownik widzi własne
+szczegóły; przełożony uprawnione wnioski zespołu. Historyczny dostęp może obejmować
+wyłącznie część wersji, co ekran oznacza. Panel decyzji pozostaje w etapie 10.
 
 W formularzu wybierz rodzaj i daty. Domyślnie są pełne dni po 8 h; „Część dnia”
 pozwala wybrać 1–7 h w jednym dniu. Podsumowanie pokazuje godziny i saldo przed/po,

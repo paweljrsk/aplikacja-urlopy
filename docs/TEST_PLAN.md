@@ -707,3 +707,31 @@ zielonym CI #29; nie pominięto ani nie osłabiono wcześniejszych asercji.
    braku salda, konfliktu, wygasłej sesji i bezpiecznego ponowienia po utracie odpowiedzi.
 
 Kolejka decyzji i formularze korekt przełożonego pozostają w etapie 10.
+
+## Etap 9 — weryfikacja w toku
+
+Lokalny `TeamCalendarApiTest`: **12 testów / 1625 asercji — PASS**, 49,3 s,
+PHP 8.4.24 + MySQL 8.0.32, UTC. Dwa nowe testy łączą wskazówkę kalendarza z faktycznym
+odczytem szczegółów dla wszystkich ról oraz sprawdzają odebranie dostępu po
+przeniesieniu pracownika o północy mimo nadal aktywnej sesji kierownika.
+Uzupełniono kontrolę ukrytej propozycji i mieszanej historii zespołów.
+PHPStan zmienionego testu, ESLint, TypeScript i produkcyjny build — PASS.
+Kod produkcyjny backendu, schemat i zależności pozostają bez zmian.
+
+Nowa regresja Chrome obejmie wspólne filtry, powiązane wersje w jednej pozycji,
+szczegóły dla uprawnionej osoby, odmowę/stare uprawnienie, historyczny zakres,
+reset zespołu, nawigację i widoki desktop/mobile. Sam zapis skryptu nie oznacza
+zaliczenia — wynik CI i oględziny zrzutów zostaną dopisane po wykonaniu.
+
+### Ręczny odbiór etapu 9
+
+1. Na kalendarzu wybierz osobę i status. Sprawdź, że zawężają również listę
+   kolejnych dwóch miesięcy. Przesuń okres, a następnie wyczyść filtry.
+2. Wybierz „Zatwierdzone”: urlop oczekujący na zmianę lub anulowanie nadal obowiązuje.
+   „Oczekujące” pokazuje nowe wnioski, „Zmiany i anulowania” odpowiednie procesy.
+3. Przy zmianie terminu sprawdź jedną pozycję listy z osobno opisanymi terminami
+   i wymiarami. Dwa niezależne wnioski 3 h + 5 h pozostają osobnymi pozycjami.
+4. Jako przełożony otwórz dozwolone szczegóły i historię, zamknij okno i sprawdź
+   zachowanie okresu, filtrów i fokusu. Zwykły współpracownik nie ma tego przycisku.
+5. Na telefonie sprawdź filtry, listę dni i pełnoekranowe szczegóły. Administrator
+   po zmianie zespołu rozpoczyna z wyczyszczonymi filtrami.
