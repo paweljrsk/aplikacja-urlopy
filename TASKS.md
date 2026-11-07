@@ -6,6 +6,7 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 4 — administracja — zakończony.** Q5 rozstrzygnięto w B22–B24.
 **Etap 5 — kalendarz roboczy, limity i saldo — zakończony.**
 **Etap 6 — wnioski, rezerwacje i decyzje — zakończony.** Q2 o dzisiaj i Q10 zatwierdzone jako B30–B31.
+**Etap 7 — rozpoczęta analiza; pozostałe Q2/Q4 oczekują na odpowiedź.**
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -86,6 +87,16 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Sprawdzić scenariusze ról, przełomu roku, współbieżnych wniosków i decyzji oraz zachowanie dotychczasowych danych. CI #22: 337 testów / 10 662 asercje, SUCCESS.
 - [x] Uzupełnić kontrakt API, README, plan testów i rzeczywisty raport odbioru; opublikować PR #6 i zweryfikować pełny CI.
 
+## Etap 7 — w trakcie analizy
+
+- [x] Odczytać aktualny prompt 7, wymagania, decyzje, otwarte pytania, PR #6 i podstawowe usługi wniosków/rozliczeń.
+- [-] Rozstrzygnąć tryb indywidualnych korekt rozpoczętych/przeszłych wniosków (Q2) i korekt starego roku po wykorzystaniu przeniesionej puli (Q4); propozycje w OPEN_QUESTIONS nie są zatwierdzone.
+- [ ] Dodać API propozycji zmiany/anulowania i decyzji oraz odczyt wersji obowiązującej i proponowanej.
+- [ ] Sprawdzić dodatkowe rezerwacje per rok/pula, ochronę obu terminów i maksymalną zajętość dnia bez podwójnego sumowania wersji.
+- [ ] Wdrożyć uzgodnione korekty historyczne z kontrolą uprawnień, podglądem wpływu, audytem i zachowaniem danych początkowych.
+- [ ] Sprawdzić zmiany rodzaju i roku, transfery, niedobór, zwroty, ponowienia i rzeczywistą współbieżność na MySQL.
+- [ ] Uzupełnić kontrakt API, dokumentację i faktyczne wyniki odbioru; zachować brak zmian UI do etapu 8.
+
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
@@ -93,7 +104,7 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Etap 4 — administracja użytkownikami, zespołami i słownikami.
 - [x] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
 - [x] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
-- [ ] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
+- [-] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
 - [ ] Etap 8 — formularz i widoki pracownika w stylistyce Notus.
 - [ ] Etap 9 — główny kalendarz zespołu i lista nieobecności.
 - [ ] Etap 10 — widoki przełożonego/administratora, salda i historia.
@@ -171,7 +182,7 @@ Nowe ekrany: `/balances` i `/calendar-settings`. Aktualizacja lokalna:
 `make stop`, pobranie gałęzi, `make init`, `make verify`, `make db-validate`.
 Dotychczasowe konto administratora i dane pozostają zachowane.
 
-### Bieżący punkt wznowienia — po etapie 6, 7 listopada 2026 r.
+### Historyczny odbiór etapu 6 — 7 listopada 2026 r.
 
 Etap 6 odebrano na commicie `58f30102b85567952f5967663ad8f04028d79384`:
 [CI #22](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42360588801)
@@ -187,10 +198,8 @@ Etap 6 udostępnia wnioski przez API opisane w REQUESTS_API; formularz i stylist
 Notus pozostają w etapie 8. Bez nowych zależności ani migracji. Aktualizacja:
 `make stop`, pobranie gałęzi, `make init`, `make verify`, `make db-validate`.
 
-Następny jest **etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty**,
-wyłącznie po kolejnym poleceniu użytkownika. Przed zależną implementacją odczytać
-prompt 7 i rozstrzygnąć pozostałe procedury Q2/Q4 w OPEN_QUESTIONS. Nie scalać PR
-bez osobnego polecenia.
+Etap 7 użytkownik zlecił 7 listopada 2026 r.; bieżący punkt wznowienia znajduje się poniżej.
+Nie scalać PR bez osobnego polecenia.
 
 Usługi etapu 6 korzystają z poniższych zabezpieczeń; należy zachować je w etapie 7:
 korzystać z `RequestAccessPolicy`, blokować
@@ -205,3 +214,27 @@ przypisania z daty nieobecności. Nie rozciągać starego otwartego przypisania 
 utrwalony zakres. Poprzednią oczekującą wersję zastępować nową w jednej transakcji,
 rozliczając tylko końcowy stan. Uprawnienia do historii sprawdzać osobno dla każdej
 wersji; dostęp do obecnego wniosku nie pozwala ujawnić całej historii innego zespołu.
+
+### Bieżący punkt wznowienia — początek etapu 7, 7 listopada 2026 r.
+
+Gałąź `codex/etap-7-zmiany-anulowania-korekty` bazuje na końcowym commicie etapu 6
+`6c0be6b3a292ae427bc286d97ee5eeee394d810f` (CI #23 SUCCESS).
+Przeczytano wymagania i prompt 7 oraz sprawdzono model wersji, aktualny workflow,
+API odczytu, politykę dostępu i rozliczanie wniosków. Analiza nie stanowi odbioru etapu 7.
+
+Zależną implementację wznowić po odpowiedziach na dwie propozycje Q2/Q4 zapisane
+w OPEN_QUESTIONS. Najpierw utrwalić odpowiedzi w REQUIREMENTS i DECISIONS.
+Potwierdzenia z etapu 6 dotyczyły dzisiejszego dnia i powodu odrzucenia;
+nie rozstrzygają korekt przeszłości ani dodatkowych uprawnień do niedoboru.
+
+Istniejący model zawiera wersję obowiązującą i oczekującą, ale publiczny workflow
+etapu 6 obsługuje tylko INITIAL. Polityka decyzji sprawdza również wersję zastępowaną.
+Rozliczenia wymagają osobnego sprawdzenia różnicy zapotrzebowania per rok i pula:
+obecne liczenie dodatku per dzień nie wystarcza jako dowód poprawnego rozliczania
+przeniesionego terminu. Zachować ochronę starych i nowych dni przez maksimum wymiaru.
+Nie utożsamiać dostępności całego salda z prawem przełożonego starego zespołu do korekty.
+
+Środowisko wykonawcze przy rozpoczęciu tego etapu było niedostępne. Analizę i zapis
+dokumentacji wykonano przez GitHub; nie uruchomiono nowych testów i nie zmieniono
+kodu aplikacji. Dalsza weryfikacja wymaga działającego środowiska lub właściwego CI
+na nowym kodzie. Etap 8 pozostaje nierozpoczęty.

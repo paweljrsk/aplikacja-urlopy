@@ -1,6 +1,6 @@
 # Otwarte pytania
 
-Stan: 7 listopada 2026 r., po odpowiedziach przed etapem 6. Q1, Q3, Q5, Q6, Q8,
+Stan: 7 listopada 2026 r., rozpoczęcie etapu 7; propozycje Q2/Q4 poniżej czekają na odpowiedź. Q1, Q3, Q5, Q6, Q8,
 Q9 i Q10 rozstrzygnięte; Q4 rozstrzygnięte dla etapu 5, Q2 w zakresie etapu 6.
 Otwarte pozostają Q7 oraz procedury indywidualnych korekt wniosków w etapie 7.
 
@@ -42,3 +42,28 @@ danych początkowych i kalendarza rozstrzygnięto dla etapu 5. Do ustalenia przy
 kolejnych etapach pozostają procedury indywidualnych korekt wniosków. Uzasadnienie
 odrzucenia jest obowiązkowe według B31. Szczegóły wyglądu proponuje wykonawca w ramach stylistyki Notus;
 decyzji biznesowych nie zastępuje domyślnym zachowaniem biblioteki UI.
+
+### Do rozstrzygnięcia na początku etapu 7 — propozycje, nie decyzje
+
+1. **Q2 — tryb korekty rozpoczętego/przeszłego wniosku.** Propozycja: uprawniony
+   kierownik, zastępca lub administrator zapisuje korektę bezpośrednio, po podglądzie
+   skutków i jawnym potwierdzeniu, z obowiązkowym powodem. Ta operacja zapisuje również
+   decyzję i pełną historię; nie tworzy kolejnej kolejki akceptacji. Kierownik może
+   skorygować własny wniosek, natomiast własny wniosek zastępcy koryguje kierownik albo
+   administrator w swoim dozwolonym zakresie. Zachować B22–B24 i kontrolę obu wersji,
+   w tym obsługę zakresu przekraczającego zespoły przez administratora.
+   Zwykłe przyszłe zmiany/anulowania pozostają propozycją wymagającą osobnej decyzji.
+   Dzisiejszy dzień rozpatrywać jak dotąd według B30; ta propozycja dotyczy przypadków
+   zawierających wcześniejsze daty. Przeszłość sprzed początku ewidencji nadal koryguje
+   się przez dane początkowe (B28), nie przez ponowne księgowanie starych wniosków.
+2. **Q4 — historyczna korekta zwiększająca niedobór po wykorzystaniu przeniesienia.**
+   Propozycja: wolno ją zatwierdzić wyłącznie administratorowi po podglądzie wpływu
+   i jawnym potwierdzeniu niedoboru, z obowiązkowym uzasadnieniem. Korekta pozostawia
+   źródło i rok pochodzenia godzin oraz historię zmian; nie anuluje innych zaakceptowanych
+   urlopów. System pokazuje niedobór i blokuje nowe obciążenia, które go zwiększają.
+   Kierownik/zastępca wykonuje korekty w swoim zakresie, jeśli nie zwiększają niedoboru;
+   w przeciwnym razie sprawę obsługuje administrator. To propozycja rozszerzenia na
+   historyczne wnioski, nie zmiana zatwierdzonych uprawnień do korekt limitów z B26/B27.
+
+Odpowiedź musi poprzedzić implementację zależnych reguł. Zapis powyższych propozycji
+ani polecenie rozpoczęcia etapu nie są ich akceptacją.
