@@ -302,7 +302,7 @@ użytkownika nie zalicza całego scenariusza wniosków, kalendarza czy rozlicze�
 | T22 | Dodanie/usunięcie dnia wolnego z istniejącymi wnioskami | Kontrolowany wpływ na godziny, saldo i historię zgodnie z Q9 |
 | T23 | Dwa równoczesne wnioski po 6 h na ten sam dzień, także nieobciążające salda | Tylko jeden może przejść; suma aktywnych nieobecności nie przekracza 8 h |
 
-## Etap 4 — weryfikacja w toku, 7 listopada 2026 r.
+## Etap 4 — odbiór zakończony, 7 listopada 2026 r.
 
 Zakres: administracja kontami, przypisaniami, zespołami i wersjonowanymi słownikami,
 Q5 oraz aktualizacja istniejącej bazy. Testy UI ze sztucznym API i rzeczywistego
@@ -328,10 +328,9 @@ przeniesienia, brak przypisania, role oraz propozycję zmiany wraz z wersją zas
 Nie są odbiorem nieistniejącego jeszcze procesu wniosków.
 
 Lokalny Chromium nie wystartował z powodu ograniczenia socketów środowiska.
-Testów przeglądarkowych nie zaliczono lokalnie. CI ma uruchomić je w Chrome,
-sprawdzić właściwy PHP 8.3, migrację z historycznymi słownikami etapu 3, rzeczywisty
-HTTP przez Nginx/PHP-FPM, restart danych i workery. Wynik odbioru zostanie dopisany
-po zakończeniu konkretnego przebiegu.
+Testów przeglądarkowych nie zaliczono lokalnie; wykonano je później w Chrome na CI,
+łącznie z kontrolą PHP 8.3, migracją historycznych słowników, rzeczywistym HTTP
+przez Nginx/PHP-FPM, restartem i workerami. Wyniki końcowe są poniżej.
 
 ### Odbiór ręczny etapu 4
 
@@ -349,7 +348,7 @@ po zakończeniu konkretnego przebiegu.
 
 Nie używaj danych produkcyjnych do testów ani `make demo` na bazie z własnymi kontami.
 
-### Dodatkowa weryfikacja lokalna i punkt zatrzymania
+### Dodatkowa weryfikacja lokalna
 
 - Migracja nowej izolowanej bazy do etapu 3, zapis historycznych słowników, migracja
   etapu 4 i sprawdzenie starych nazw/aktywności/reguł/dostępności/wersji — **OK**.
@@ -363,8 +362,34 @@ Nie używaj danych produkcyjnych do testów ani `make demo` na bazie z własnymi
   wersje słowników, prywatne dane po odebraniu uprawnień, czyszczenie haseł.
   Nie jest to test wizualny ani wykonanie Chrome.
 
-Publikację początkowo zatrzymano przed wysłaniem zmian do GitHuba. Użytkownik
-7 listopada 2026 r. potwierdził zgodę na push, roboczy PR i CI. Etap 4
-pozostaje **w trakcie odbioru**, bez deklaracji zielonego CI, screenshotów,
-restartu całego stosu czy gotowości produkcyjnej. Kod i dokumentacja są zapisane
-w lokalnych commitach gałęzi `codex/etap-4-administracja`.
+### Końcowy odbiór w Dockerze i Chrome
+
+Commit implementacji: `4b1f4f42fd02c7550d17974f1dee6de465f4008d`.
+[CI #16 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42349188537),
+7 listopada 2026 r., PHP **8.3.36**, MySQL **8.0.32**.
+
+| Kontrola | Wynik |
+|---|---|
+| Uruchomienie kontenerów i HTTP/baza | PASS |
+| Migracje świeżej bazy, ponowienie, zgodność schematu | PASS |
+| Migracja istniejących kont etapu 2 i słowników etapu 3 | PASS — zachowane nazwy, aktywność, reguły, dostępność i wersje |
+| Jawne demo uruchomione dwukrotnie | PASS — bez duplikacji |
+| PHPUnit | **198 testów / 4599 asercji — PASS** |
+| Rzeczywiste komendy bootstrap i recovery administratora | PASS |
+| PHPStan, YAML/container lint, ESLint, TypeScript | PASS |
+| Produkcyjny build frontendu | PASS |
+| Chrome: logowanie oraz administracja ze sztucznym API | PASS — uprawnienia, formularze, CSRF, wersje, filtry, hasła, przypisania, słowniki, desktop/mobile |
+| Restart i zachowanie danych | PASS |
+| HTTP przez Nginx/PHP-FPM | PASS — sesja, hasła, słowniki/konta, konflikty i odmowa administracji pracownikowi |
+| Messenger i Scheduler | PASS — stabilne procesy |
+| Zrzuty ekranu 1366 px / 390 px | Przejrzane: czytelne formularze/listy, brak poziomego przepełnienia; układ roboczy |
+
+Zrzuty `stage4-users-desktop.png` i `stage4-dictionary-mobile.png` są w artefakcie
+`synthetic-ui-screenshots` przebiegu CI (retencja 7 dni). Korzystają z danych
+syntetycznych. Widoczne znaczniki developerskie Next i zachowanie elementów
+przy zrzucie całej przewiniętej strony nie są elementem projektu produkcyjnego.
+
+Test przeglądarkowy ze sztucznym API oraz rzeczywiste testy backendu/HTTP są
+oddzielnymi kontrolami — nie deklarujemy pełnego przeglądarkowego E2E wszystkich
+procesów urlopowych. Wnioski, kalendarz, limity i saldo należą do kolejnych etapów.
+Końcowy styl Notus pozostaje w etapie 8; wdrożenie produkcyjne w etapie 12.

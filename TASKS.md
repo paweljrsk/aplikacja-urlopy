@@ -3,7 +3,8 @@
 Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacja — zakończony**.
 **Etap 2 — model danych i migracje — zakończony**.
 **Etap 3 — logowanie lokalne i kontrola dostępu — zakończony**.
-**Etap 4 — administracja — w trakcie.** Użytkownik zlecił etap i potwierdził pozostałe zasady Q5 (B22–B24).
+**Etap 4 — administracja — zakończony.** Q5 rozstrzygnięto w B22–B24.
+Następny: etap 5, po kolejnym poleceniu użytkownika i odpowiedziach na pytania tego etapu.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
 Statusy: `[ ]` do zrobienia, `[-]` w trakcie, `[x]` wykonane i zweryfikowane.
@@ -52,21 +53,21 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Przetestować API i UI, migracje, rzeczywiste Nginx/PHP-FPM oraz zachowanie istniejących danych.
 - [x] Uzupełnić dokumentację i rzeczywisty raport odbioru.
 
-## Etap 4 — w trakcie
+## Etap 4 — ukończony
 
 - [x] Odczytać aktualny kod i uzyskać odpowiedzi na Q5; zapisać B22–B24.
 - [x] Wdrożyć API administracji, wersjonowanie słowników, datowane przypisania i audyt.
 - [x] Wdrożyć ochronę ostatniego administratora, konflikty zapisów i zachowanie historii.
-- [-] Przygotować funkcjonalne ekrany administracji użytkownikami, zespołami i słownikami. Implementacja, build i test interakcji DOM gotowe; Chrome/układ do odbioru w CI.
+- [x] Przygotować funkcjonalne ekrany administracji; sprawdzić interakcje Chrome i zrzuty desktop/mobile.
 - [x] Sprawdzić politykę widoczności i decyzji po przeniesieniu na podstawie dat nieobecności.
-- [-] Wykonać testy API i UI, migracje oraz kontrolę zachowania istniejących danych. Lokalny PHPUnit 198/4599 OK; pełny Docker/Chrome oczekuje na CI.
-- [-] Uzupełnić README, kontrakt administracji i decyzje techniczne. Lokalne wyniki zapisane; końcowy raport po CI.
+- [x] Wykonać testy API i UI, migracje, zachowanie danych, Nginx/PHP-FPM, restart i workery. CI #16: 198 testów / 4599 asercji, SUCCESS.
+- [x] Uzupełnić README, kontrakt administracji, decyzje techniczne i raport odbioru.
 
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
 - [x] Etap 3 — logowanie lokalne i kontrola dostępu w API.
-- [-] Etap 4 — administracja użytkownikami, zespołami i słownikami.
+- [x] Etap 4 — administracja użytkownikami, zespołami i słownikami.
 - [ ] Etap 5 — kalendarz roboczy, limity, salda początkowe i przejście roku.
 - [ ] Etap 6 — wnioski, rezerwacje, decyzje i wycofanie.
 - [ ] Etap 7 — edycja zaakceptowanych wniosków, anulowanie i korekty.
@@ -103,7 +104,7 @@ logowanie przez Nginx/PHP-FPM, migracja danych etapu 2, lint/build, restart i wo
 `codex/etap-3-logowanie-uprawnienia` bazuje na PR #2. PR-y pozostają niescalone.
 Szczegóły oraz granice testów są w TEST_PLAN; API i obsługa administratora w AUTHENTICATION.
 
-Punkt dalszej pracy: **etap 4 — administracja użytkownikami, zespołami i słownikami**.
+Historyczny punkt po etapie 3: **etap 4 — administracja użytkownikami, zespołami i słownikami**.
 Przed rozpoczęciem przeczytać prompt 4, wymagania i aktualne otwarte pytania.
 Logowanie i bieżące profile są dostępne; wnioski, kalendarz i pełne rozliczenia
 pozostają zakresem kolejnych etapów. Aktualizacja: `make stop`, pobranie gałęzi,
@@ -115,15 +116,27 @@ Q8 nadal wymaga procedury korekt sprzed granicy ewidencji. Pozostałe pytania s�
 nie wolno rozstrzygać ich domyślnie w modelu ani implementować zależnych operacji.
 Etap 4 rozpoczęto na polecenie użytkownika; nie rozpoczynać etapu 5 bez kolejnego polecenia.
 
-### Bieżący punkt wznowienia etapu 4 — 7 listopada 2026 r.
+### Bieżący punkt wznowienia — po etapie 4, 7 listopada 2026 r.
 
-Implementacja i dokumentacja są zapisane w lokalnych commitach gałęzi
-`codex/etap-4-administracja`, bazującej na `f00f9c2` z PR #3. Użytkownik 7 listopada 2026 r. wyraził zgodę na publikację gałęzi, roboczy PR i CI.
-Publikacja i odbiór CI są w trakcie. Nie powtarzać pytań biznesowych Q5 — użytkownik zatwierdził B22–B24.
+Etap 4 odebrano na commicie `4b1f4f42fd02c7550d17974f1dee6de465f4008d`:
+[CI #16](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42349188537)
+**SUCCESS**, PHP 8.3.36 + MySQL 8.0.32, **198 testów / 4599 asercji**.
+Przeszły migracje istniejących danych, zgodność schematu, PHPStan/lint/build,
+Chrome (logowanie i administracja), rzeczywisty HTTP przez Nginx/PHP-FPM,
+zachowanie danych po restarcie i workery. Zrzuty desktop/mobile przejrzano.
 
-Lokalnie: PHP 8.4.24 + MySQL 8.0.32, **198 testów / 4599 asercji**, PHPStan, lint,
-build, migracje z historycznymi słownikami, pełna zgodność schematu, rzeczywisty
-HTTP na serwerze PHP i interakcje komponentu React w DOM — OK. Pełny Docker
-PHP 8.3, Chrome, screenshoty, Nginx/PHP-FPM i restart nadal do wykonania w CI.
-Po zgodzie: push gałęzi, PR do `codex/etap-3-logowanie-uprawnienia`, kontrola CI,
-przegląd zrzutów i końcowy raport. Nie scalać PR ani nie zaczynać etapu 5.
+Kod jest w [PR #4](https://github.com/paweljrsk/aplikacja-urlopy/pull/4), gałąź
+`codex/etap-4-administracja`, oparta na PR #3. PR-y pozostają niescalone.
+Użytkownik zatwierdził publikację gałęzi i CI; Q5 jest zamknięte (B22–B24).
+
+Aktualizacja lokalna: `make stop`, pobranie gałęzi, `make init`, `make verify`,
+`make db-validate`. Logowanie dotychczasowym kontem administratora i `/admin`;
+na pustej bazie jawnie dodaj słowniki startowe, zespół i konta. Nie uruchamiaj
+ponownie bootstrap ani demo, jeśli masz już własne konta. Wygląd nadal roboczy,
+dopasowanie do Notus w etapie 8.
+
+Następny: **etap 5 — kalendarz roboczy, limity i saldo**. Najpierw rozstrzygnąć
+Q3, Q4, Q6, pozostałą część Q8 i Q9 zgodnie z promptem 5. Nie zaczynać tego etapu
+ani nie scalać PR bez kolejnego polecenia. Usługi wniosków w etapach 6–7 mają
+korzystać z `RequestAccessPolicy` i blokować agregat użytkownika przed zapisem
+przypisań dni; samo zapisane `RequestDay.assignment` nie określa uprawnień.

@@ -11,9 +11,11 @@ Wnioski, kalendarz i pełne rozliczenia powstaną w kolejnych etapach.
 `GET /api/health` sprawdza kernel/routing, nie gotowość bazy. Zakres opisują
 [administracja](docs/ADMINISTRATION.md) i [model danych](docs/DATA_MODEL.md).
 
-Gałąź etapu 4: `codex/etap-4-administracja`, oparta na
-[PR #3](https://github.com/paweljrsk/aplikacja-urlopy/pull/3). Poprzednie etapy pozostają
+Kod etapu 4: [PR #4](https://github.com/paweljrsk/aplikacja-urlopy/pull/4), gałąź
+`codex/etap-4-administracja`, oparta na [PR #3](https://github.com/paweljrsk/aplikacja-urlopy/pull/3). Poprzednie etapy pozostają
 niescalone; instrukcja poniżej wybiera pełną gałąź etapu 4.
+[CI #16](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42349188537) przeszło:
+198 testów / 4599 asercji, migracje, kontrole kodu, build, Chrome, HTTP, restart i workery.
 
 
 ## Technologie
