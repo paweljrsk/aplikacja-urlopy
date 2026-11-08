@@ -12,7 +12,7 @@ const target = new URL(baseUrl);
 assert.ok(target.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(target.hostname));
 const screenshotDir = process.env.UI_SCREENSHOT_DIR || '/tmp/urlopy-ui-screens';
 mkdirSync(screenshotDir, { recursive: true });
-const today = '2026-11-09';
+let today = '2026-11-09';
 const teams = [{ id: 1, name: 'Zespół testowy' }, { id: 2, name: 'Drugi zespół testowy' }];
 const people = new Map([
   [1, { id: 1, firstName: 'Anna', lastName: 'Testowa' }],
@@ -134,7 +134,7 @@ let step = 'launch';
         }
         return reply(200, calendarResponse(url, session));
       }
-      if (/^\/api\/balances\/users\/\d+\/2026$/.test(path)) return reply(200, { balance: { userId: session.id, year: 2026, configured: true, availableHours: 80 } });
+      if (/^\/api\/balances\/users\/\d+\/\d{4}$/.test(path)) return reply(200, { balance: { userId: session.id, year: Number(path.split('/').at(-1)), configured: true, availableHours: 80 } });
       const match = path.match(/^\/api\/requests\/(\d+)$/);
       if (match) {
         const id = Number(match[1]); detailCalls.push(id);
@@ -159,9 +159,22 @@ let step = 'launch';
     const expectIds = async expected => { await until(async () => JSON.stringify(await ids()) === JSON.stringify(expected), `Unexpected visible request groups; expected ${expected.join(',')}`); };
     const clear = () => page.getByRole('button', { name: 'Wyczyść filtry', exact: true }).first().click();
     const loaded = async () => { await page.getByRole('heading', { name: 'Kalendarz zespołu', exact: true }).waitFor(); await page.getByRole('table').waitFor(); await expectIds([101, 102, 103, 104, 105, 106, 110, 111]); };
+    const monthButton = () => page.getByRole('button', { name: 'Miesiąc', exact: true });
+    const expectMonth = async (from, to, count, team = null) => {
+      const label = new Intl.DateTimeFormat('pl-PL', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${from}T12:00:00Z`));
+      await until(async () => {
+        const dates = await page.locator('.team-calendar-table thead th[data-date]').evaluateAll(elements => elements.map(element => element.dataset.date));
+        return dates.length === count && dates[0] === from && dates.at(-1) === to
+          && await monthButton().getAttribute('aria-pressed') === 'true'
+          && await page.locator('.calendar-period-heading h2').textContent() === label
+          && await page.locator('.calendar-loading').count() === 0
+          && calendarCalls.some(call => call.from === from && call.to === to && call.team === team);
+      }, `Expected the whole calendar month ${from}–${to} (${count} days).`);
+    };
 
     step = 'employee calendar grouping and private detail affordances';
     await page.goto(baseUrl); await loaded();
+    await expectMonth('2026-11-01', '2026-11-30', 30);
     assert.equal(await person.locator('option[value="7"]').count(), 1, 'People from the upcoming feed must be selectable.');
     assert.equal(await person.locator('option[value="20"]').count(), 0, 'Other-team names must never enter employee filters.');
     assert.equal(await group(104).count(), 1, 'Effective and proposed dates are one request group.');
@@ -331,12 +344,78 @@ let step = 'launch';
     await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'detached' });
     assert.ok(calendarCalls.some(call => call.team === '2' && call.from === today && call.to === '2027-01-08'), 'Team choice scopes the two-month API feed as well.');
 
+    step = 'whole month preserves team, filters and request details';
+    await monthButton().click(); await expectMonth('2026-11-01', '2026-11-30', 30, '2');
+    await monthButton().click(); await expectMonth('2026-11-01', '2026-11-30', 30, '2');
+    assert.match(await page.locator('.team-calendar-table thead th[data-date="2026-11-01"]').getAttribute('class'), /is-day-off/);
+    assert.equal(await page.locator('.team-calendar-table thead th[data-date="2026-11-11"]').getAttribute('title'), 'Święto Niepodległości');
+    assert.equal(await page.getByLabel('Zespół', { exact: true }).inputValue(), '2');
+    await person.selectOption('20'); await status.selectOption('approved'); await expectIds([201]);
+    const monthTrigger = page.locator('.calendar-desktop-view button.calendar-entry');
+    assert.equal(await monthTrigger.count(), 1);
+    await monthTrigger.click(); dialog = page.getByRole('dialog', { name: 'Szczegóły nieobecności', exact: true });
+    await dialog.getByText('Bartosz Drugi-Zespół', { exact: true }).first().waitFor();
+    await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'detached' });
+    await expectMonth('2026-11-01', '2026-11-30', 30, '2');
+    assert.equal(await person.inputValue(), '20'); assert.equal(await status.inputValue(), 'approved');
+    assert.equal(await page.getByLabel('Zespół', { exact: true }).inputValue(), '2');
+    await clear(); await expectIds([201]);
+
+    step = 'month navigation uses calendar boundaries and keeps upcoming window';
+    const upcomingBeforePaging = await page.locator('.upcoming-section').innerText();
+    const upcomingCallsBeforePaging = calendarCalls.filter(call => call.from === today && call.to === '2027-01-08').length;
+    await page.getByRole('button', { name: 'Następny okres', exact: true }).click(); await expectMonth('2026-12-01', '2026-12-31', 31, '2');
+    await page.getByRole('button', { name: 'Następny okres', exact: true }).click(); await expectMonth('2027-01-01', '2027-01-31', 31, '2');
+    await page.getByRole('button', { name: 'Następny okres', exact: true }).click(); await expectMonth('2027-02-01', '2027-02-28', 28, '2');
+    await page.getByRole('button', { name: 'Poprzedni okres', exact: true }).click(); await expectMonth('2027-01-01', '2027-01-31', 31, '2');
+    assert.equal(await page.locator('.upcoming-section').innerText(), upcomingBeforePaging, 'Paging months does not move the independent two-month list.');
+    assert.equal(calendarCalls.filter(call => call.from === today && call.to === '2027-01-08').length, upcomingCallsBeforePaging, 'Paging months does not refetch or expand the upcoming scope.');
+    await page.getByRole('button', { name: 'Dzisiaj', exact: true }).click(); await expectMonth('2026-11-01', '2026-11-30', 30, '2');
+    // Re-selecting the same range must retain the loaded table instead of
+    // clearing it while no fetch effect dependency changes.
+    await page.getByRole('button', { name: 'Dzisiaj', exact: true }).click(); await expectMonth('2026-11-01', '2026-11-30', 30, '2');
+    await page.getByLabel('Zespół', { exact: true }).selectOption(''); await expectMonth('2026-11-01', '2026-11-30', 30);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+    await page.screenshot({ path: join(screenshotDir, 'calendar-month-desktop.png'), fullPage: true });
+
+    step = 'leap February and month switch from a week beginning in the previous month';
+    session = employee; today = '2028-02-29'; await page.reload();
+    await expectMonth('2028-02-01', '2028-02-29', 29);
+    await page.getByRole('button', { name: 'Następny okres', exact: true }).click(); await expectMonth('2028-03-01', '2028-03-31', 31);
+    await page.getByRole('button', { name: 'Dzisiaj', exact: true }).click(); await expectMonth('2028-02-01', '2028-02-29', 29);
+    today = '2026-11-01'; await page.reload(); await expectMonth('2026-11-01', '2026-11-30', 30);
+    await page.getByRole('button', { name: '2 tygodnie', exact: true }).click();
+    await page.locator('.team-calendar-table th[data-date="2026-10-26"]').waitFor();
+    assert.ok(calendarCalls.some(call => call.from === '2026-10-26' && call.to === '2026-11-08'), 'Two-week view spans the preceding Monday.');
+    await monthButton().click(); await expectMonth('2026-11-01', '2026-11-30', 30);
+    await page.getByRole('button', { name: 'Tydzień', exact: true }).click();
+    await until(async () => await page.locator('.team-calendar-table thead th').count() === 8, 'Switching back from month preserves a valid week.');
+    assert.ok(calendarCalls.some(call => call.from === '2026-10-26' && call.to === '2026-11-01'));
+    today = '2026-11-09'; session = administrator;
+
     step = 'mobile filters and details, session revocation';
     await page.setViewportSize({ width: 390, height: 844 }); await page.reload();
     await page.locator('.mobile-calendar-day').first().waitFor();
-    assert.equal(await page.locator('.mobile-calendar-day').count(), 7);
+    assert.equal(await page.locator('.mobile-calendar-day').count(), 30);
+    assert.equal(await monthButton().getAttribute('aria-pressed'), 'true');
+    await page.getByRole('button', { name: 'Tydzień', exact: true }).click();
+    await until(async () => await page.locator('.mobile-calendar-day').count() === 7, 'Mobile week shows seven days.');
     await page.getByRole('button', { name: '2 tygodnie', exact: true }).click();
     await until(async () => await page.locator('.mobile-calendar-day').count() === 14, 'Mobile period switch expands to fourteen days.');
+    await monthButton().click();
+    await until(async () => await page.locator('.mobile-calendar-day').count() === 30, 'Mobile month shows all thirty November dates.');
+    const mobileDates = page.locator('.mobile-calendar-day .mobile-day-label > strong');
+    assert.equal(await mobileDates.first().innerText(), '1'); assert.equal(await mobileDates.last().innerText(), '30');
+    assert.equal(await page.locator('.mobile-calendar-day').first().getAttribute('data-date'), '2026-11-01');
+    assert.equal(await page.locator('.mobile-calendar-day').last().getAttribute('data-date'), '2026-11-30');
+    assert.equal(await monthButton().getAttribute('aria-pressed'), 'true');
+    await person.selectOption('6'); await status.selectOption('changes'); await expectIds([105]);
+    assert.equal(await page.locator('.mobile-calendar-day').count(), 30, 'Person/status filters retain all dates of the month.');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+    await page.locator('.team-calendar-panel').evaluate(element => window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 12));
+    await page.screenshot({ path: join(screenshotDir, 'calendar-month-mobile.png'), fullPage: false });
+    await page.getByRole('button', { name: '2 tygodnie', exact: true }).click();
+    await until(async () => await page.locator('.mobile-calendar-day').count() === 14, 'Returning to two weeks keeps the selected filters.');
     await person.selectOption('6'); await status.selectOption('changes'); await expectIds([105]);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
     await page.screenshot({ path: join(screenshotDir, 'calendar-filters-mobile.png'), fullPage: true });
@@ -358,7 +437,7 @@ let step = 'launch';
     assert.equal(await page.getByText(privateType, { exact: true }).count(), 0);
     assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
     assert.deepEqual(errors, [], 'No unhandled browser exceptions.');
-    console.log('PASS Chrome calendar UI: combined person/status filters in both date windows, grouped effective/proposed versions without summing, hidden-change projection, empty/reset, history/upcoming people, preserved period/filter context, employee/manager/deputy/admin details, server denial and fresh focus reauthorization, team scoping, mobile layout and revoked session. API responses are synthetic.');
+    console.log('PASS Chrome calendar UI: combined person/status filters in both date windows, grouped effective/proposed versions without summing, hidden-change projection, empty/reset, history/upcoming people, preserved period/filter context, employee/manager/deputy/admin details, server denial and fresh focus reauthorization, team scoping, full calendar months with 28/29/30/31 days and year boundaries, month details/filter context, independent upcoming window, mobile month and revoked session. API responses are synthetic.');
     await context.close();
   } catch (error) {
     if (page) await page.screenshot({ path: join(screenshotDir, 'calendar-failure.png'), fullPage: true }).catch(() => {});

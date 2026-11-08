@@ -14,7 +14,7 @@ export function guideOptions(user: CurrentUser): GuideOption[] {
 
 export function guideSteps(kind: GuideKind): GuideStep[] {
   if (kind === "employee") return [
-    { path: "/", target: "team-calendar", title: "Zacznij od kalendarza", body: "Tutaj zobaczysz, kto i kiedy jest nieobecny. Przełączaj tydzień lub dwa tygodnie i używaj filtrów, aby znaleźć interesujący Cię termin.", tip: "Status odróżnia zatwierdzony urlop od wniosku, który czeka na decyzję." },
+    { path: "/", target: "team-calendar", title: "Zacznij od kalendarza", body: "Tutaj zobaczysz, kto i kiedy jest nieobecny. Wybierz tydzień, dwa tygodnie lub cały miesiąc i używaj filtrów, aby znaleźć interesujący Cię termin.", tip: "Status odróżnia zatwierdzony urlop od wniosku, który czeka na decyzję." },
     { path: "/", target: "new-request", title: "Nowy wniosek jest pod ręką", body: "Przycisk „Złóż wniosek” otwiera krótki formularz. Wybierz rodzaj nieobecności, daty albo część dnia. Licznik od razu pominie weekendy, święta i firmowe dni wolne.", tip: "Formularz pokaże wpływ na saldo przed zapisem. W tym przewodniku niczego nie wysyłamy." },
     { path: "/", target: "upcoming-absences", title: "Spójrz trochę dalej", body: "Pod kalendarzem czeka lista nadchodzących nieobecności na około dwa miesiące. Obowiązujący urlop i proponowana zmiana pozostają czytelnie rozróżnione." },
     { path: "/requests", target: "my-requests", title: "Śledź własne wnioski", body: "Otwórz szczegóły, aby sprawdzić status i historię. Oczekujący wniosek możesz zmienić lub wycofać, jeśli jego termin na to pozwala.", tip: "Zmiana lub anulowanie zatwierdzonego urlopu wymaga kolejnej decyzji. Do niej obowiązuje dotychczasowy urlop." },

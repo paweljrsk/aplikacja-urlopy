@@ -1,6 +1,6 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.10 • stan uzgodnień z 8 listopada 2026 r., wydzielenie zarządzania i przewodniki.
+Wersja 1.11 • stan uzgodnień z 8 listopada 2026 r., widok pełnego miesiąca w kalendarzu.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
 [decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
@@ -157,6 +157,8 @@ Historia obejmuje autora operacji, czas, zmienione wartości, decyzję i powiąz
 
 ### 1.8. Interfejs
 
+Górny pasek pokazuje logo Notus prowadzące do kalendarza zespołu (B38).
+
 Głównym ekranem jest kalendarz zespołu. Wygląd powinien korzystać ze stylistyki https://notus.pl i https://notus.pl/banki/ oraz zapewniać prostą, czytelną obsługę. Widok ma rozróżniać oczekujące i zaakceptowane nieobecności, także bez polegania wyłącznie na kolorze.
 
 Już w etapie 8 ekran po zalogowaniu pokazuje kalendarz nieobecności pracowników,
@@ -168,8 +170,8 @@ pozostawiono ocenie wykonawcy; nie zmienia to zasad uprawnień i rozliczeń.
 
 Etap 9 rozwija ten ekran o filtrowanie osoby i statusu, czytelną prezentację
 obowiązującego urlopu wraz z propozycją zmiany oraz szczegóły dla uprawnionych osób.
-Użytkownik zlecił etap po przedstawieniu tego zakresu. Główny widok pozostaje
-jedno/dwutygodniowy; widok miesiąca jest opcjonalnym późniejszym dodatkiem.
+Użytkownik zlecił etap po przedstawieniu tego zakresu. Widok jedno/dwutygodniowy
+rozszerzono późniejszym poleceniem B37 o pełny miesiąc kalendarzowy.
 Filtry kalendarza i listy nie rozszerzają zakresu danych przyznanego przez API.
 Szczegóły ponownie sprawdzają uprawnienia, także po zmianie zespołu.
 
@@ -198,6 +200,13 @@ przez odpowiednie miejsca aplikacji. Wariant zastępcy uwzględnia ograniczenie 
 decyzji i brak edycji limitów. Przewodnik można uruchomić ponownie, cofnąć krok lub
 zamknąć; tutorial nie zapisuje danych biznesowych. Musi działać klawiaturą i na
 telefonie. Ten zakres jest dodatkową zmianą UX; etap 12 pozostaje nierozpoczęty.
+
+B37: przełącznik kalendarza obejmuje „Tydzień”, „2 tygodnie” i „Miesiąc”. Miesiąc
+pokazuje dni od pierwszego do ostatniego, odpowiednio 28–31 dni. Strzałki przechodzą
+między miesiącami, a „Dzisiaj” wraca do bieżącego miesiąca. Wybór miesiąca zachowuje
+filtry osoby/statusu/zespołu i dostęp do szczegółów. Lista nadchodzących nieobecności
+nadal obejmuje około dwa miesiące od dzisiaj. Od B39 domyślnym widokiem na komputerze
+i telefonie jest bieżący miesiąc. Telefon pokazuje miesiąc jako listę dni.
 
 ## 9. Granice MVP i późniejszy rozwój
 

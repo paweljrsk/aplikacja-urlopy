@@ -6,10 +6,13 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { errorMessage, getCurrentUser, postApi, redirectForAuthError, roleLabel, type CurrentUser } from "@/lib/auth-api";
 import { GuideLauncher } from "./guided-tour";
 
-export function NotusBrand() {
+export function NotusBrand({ showLabel = true }: { showLabel?: boolean }) {
   return <Link href="/" prefetch={false} className="notus-brand" aria-label="Notus Urlopy — kalendarz zespołu">
     <Image src="/brand/notus.svg" width={148} height={31} alt="Notus" priority />
-    <span className="notus-brand-divider" aria-hidden="true" /><span>Urlopy</span>
+    {showLabel && <>
+      <span className="notus-brand-divider" aria-hidden="true" />
+      <span>Urlopy</span>
+    </>}
   </Link>;
 }
 
@@ -60,7 +63,7 @@ export function AppHeader({ user, active, onNewRequest, onLogout, logoutBusy = f
   return <>
     <header className={`app-header${mode === "management" ? " management-header" : ""}`}>
       <div className="app-header-inner">
-        <NotusBrand />
+        <NotusBrand showLabel={false} />
         {user && <>
           {mode === "employee" ? <nav className="app-navigation" aria-label="Nawigacja główna" data-tour="employee-navigation">
             <Link href="/" prefetch={false} aria-current={active === "calendar" ? "page" : undefined}>Kalendarz</Link>

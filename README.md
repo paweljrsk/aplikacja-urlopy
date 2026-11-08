@@ -2,6 +2,23 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
+Logo Notus w górnym pasku prowadzi do kalendarza zespołu.
+Kalendarz otwiera bieżący miesiąc na komputerze i telefonie (B39).
+
+**Ukończona zmiana B37 — pełny miesiąc w kalendarzu.**
+Gałąź `codex/kalendarz-widok-miesiaca` bazuje na ukończonej zmianie modułu zarządzania.
+Przełącznik „Miesiąc” pokazuje cały miesiąc kalendarzowy; strzałki zmieniają miesiące,
+a „Dzisiaj” przywraca bieżący. Filtry, szczegóły i lista dwóch miesięcy pozostają
+dostępne. Na telefonie miesiąc ma postać listy dni. Bez nowych bibliotek i migracji.
+Asystent AI jest odłożony; etap 12 pozostaje nierozpoczęty.
+
+[PR #13](https://github.com/paweljrsk/aplikacja-urlopy/pull/13),
+[CI #45 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42519955628)
+dla kodu `f63de212562a9c0566427a2a43b272658f89916a`: 445 testów / 21 607 asercji,
+statyczne/build, Chrome z miesiącami 28/29/30/31 dni, filtry/szczegóły, telefon
+i pełna regresja rzeczywistego HTTP/E2E — PASS. Zrzuty desktop/mobile sprawdzono.
+Raport i ręczny odbiór są w [TEST_PLAN](docs/TEST_PLAN.md). PR pozostaje niescalony.
+
 **Ukończona zmiana UX — moduł zarządzania i przewodniki ról.**
 Gałąź `codex/modul-zarzadzania-przewodniki` bazuje na końcowym etapie 11
 `4882ba6751bbbd2846bf3be8a01acf87d5187db8` ([CI #40 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42488853313)).
@@ -180,7 +197,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/modul-zarzadzania-przewodniki
+git switch codex/kalendarz-widok-miesiaca
 make init
 make verify
 make db-validate
@@ -188,7 +205,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź `codex/modul-zarzadzania-przewodniki`, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–11 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź `codex/kalendarz-widok-miesiaca`, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–11 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 
@@ -261,7 +278,7 @@ firmowe dni zastępcze wpisuje administrator. [Zasady kalendarza](docs/CALENDAR.
 
 ## Codzienna praca
 
-Po logowaniu `/` pokazuje kalendarz. Przełącz tydzień/dwa tygodnie, przesuń okres
+Po logowaniu `/` pokazuje kalendarz. Wybierz tydzień, dwa tygodnie lub miesiąc, przesuń okres
 strzałkami lub wróć do dzisiaj. Współpracownicy widzą jedynie nazwiska, daty, status
 i godziny; rodzaje nieobecności i salda są prywatne. Administrator może wybrać zespół.
 Lista pod kalendarzem obejmuje najbliższe dwa miesiące niezależnie od przesunięcia
