@@ -23,7 +23,7 @@ FROM composer:2@sha256:8de2184c6de224f4689e8f80ed5f5edaf0030b6b8b7839a22a2bcb672
 FROM php:8.3-fpm@sha256:03af352853b05e35ee15ab898a2755532573684c7d1120b246dbd4e3c90f5007 AS backend-default
 WORKDIR /var/www/html/backend
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        unzip librabbitmq-dev libssl-dev libonig-dev \
+        unzip librabbitmq-dev libssl-dev libonig-dev zlib1g \
     && docker-php-ext-install pdo_mysql mbstring \
     && pecl install amqp-2.2.0 redis-6.3.0 \
     && docker-php-ext-enable amqp redis \
