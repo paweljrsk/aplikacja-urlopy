@@ -1,9 +1,5 @@
 # Plan testów i odbioru
 
-## Kolor przycisku w nagłówku B38
-
-Lokalnie przeszły ESLint, produkcyjny build i kontrola reguł w wygenerowanym CSS. Kontrast białej etykiety z tłem wynosi 4,56:1. Ręczny odbiór polega na sprawdzeniu tła `rgb(21, 132, 120)` przycisku „Złóż wniosek” w nagłówku po zalogowaniu.
-
 ## Pełny miesiąc w kalendarzu B37 — odbiór zakończony (8 listopada 2026 r.)
 
 Baza: `e7165f265bed6063b110a04a3152805eb0926a93`, ukończona zmiana UX B36.

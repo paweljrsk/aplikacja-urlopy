@@ -2,8 +2,6 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-Przycisk „Złóż wniosek” w nagłówku ma tło `rgb(21, 132, 120)` (B38).
-
 **Ukończona zmiana B37 — pełny miesiąc w kalendarzu.**
 Gałąź `codex/kalendarz-widok-miesiaca` bazuje na ukończonej zmianie modułu zarządzania.
 Przełącznik „Miesiąc” pokazuje cały miesiąc kalendarzowy; strzałki zmieniają miesiące,

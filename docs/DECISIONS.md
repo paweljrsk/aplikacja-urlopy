@@ -167,10 +167,6 @@ test Chrome; ponownie przeszły wszystkie przewodniki, w tym wygaśnięcie sesji
 445 testów backendu i pełna regresja HTTP/E2E PASS. Zrzuty desktop/mobile sprawdzono.
 Szczegółowy raport i ograniczenia są w TEST_PLAN; etap 12 pozostaje wstrzymany.
 
-### B38 — kolor przycisku „Złóż wniosek”, 8 listopada 2026 r.
-
-Przycisk w nagłówku korzysta z istniejącego `--teal` (`rgb(21, 132, 120)`). Po najechaniu tło ciemnieje do `#106c62`.
-
 ### Zasady wspólne
 
 | ID | Zasada | Status |
