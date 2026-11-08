@@ -540,4 +540,15 @@ Wąski override sprawdzono parserem i porównaniem wzorców; pełny audit npm
 ma być blokowany od poziomu low. ZAP i Trivy zachowują pełne wyniki; wykonanie
 skanera bez błędu nie jest równoznaczne z brakiem zgłoszeń.
 Nie zmieniono zakresu ról ani długości dopuszczalnego wniosku bez ustalenia.
-Migracja przestarzałego MySQL wymaga próby zachowania danych w zakresie etapu12.
+Migracje MySQL/RabbitMQ i zmiana bazy OS Redisa po EOL wymagają próby zachowania
+danych w zakresie etapu 12. Q11 pozostaje otwarte; proponowane 366 dni nie zostało
+wprowadzone jako nowa reguła biznesowa.
+
+Końcowy kod `44bdd6d76ae51933cbcfe529ac63104c2abc1ac2` zaliczył CI #54:
+458 testów / 21 703 asercje oraz 181 negatywnych żądań / 3203 asercje, pełna
+regresja, build i workery. npm aplikacji oraz Composer bez advisory. Rzeczywisty
+iframe Chrome zablokowany; aktualizacja zlib PHP zamknęła trzy zgłoszenia.
+Globalne npm podniesiono do 11.21.2: zgodne z Node 22.23.4, usuwa poprawialne HIGH
+narzędzia; wersja 12 zachowywała te same dwa MEDIUM co 11. Nie nadpisano zależności
+wewnątrz npm. Zakres obrazów Trivy i ostrzeżenia ZAP pozostają jawne w raporcie.
+Dokumentacja końcowa nie oznacza akceptacji pozostałych ryzyk przez organizację.

@@ -1,5 +1,11 @@
 # Etap 11 — przegląd bezpieczeństwa
 
+**Aktualizacja po etapie 11:** późniejsze badanie i poprawki opisuje
+[raport pentestów przed etapem 12](PENTEST_PRE_STAGE12.md), CI #54 SUCCESS.
+S11-SEC-01 dotyczące minimatch w bibliotekach aplikacji zamknięto; aktualne audyty
+npm/Composer nie mają zgłoszeń. Odrębne zgłoszenia obrazów i globalnego npm
+pozostają w nowym raporcie. Poniżej zachowano historyczny wynik etapu 11.
+
 Data kontroli: 8 listopada 2026 r. Punkt wyjścia: kod etapu 10,
 `4191f2ca26ebd205e36c4d5c7fcb606cb91bb1a4`. Raport opisuje zakres i faktyczne wyniki;
 nie stanowi certyfikacji ani potwierdzenia bezpieczeństwa środowiska produkcyjnego.

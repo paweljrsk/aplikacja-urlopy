@@ -1,0 +1,247 @@
+{
+  "commit": "158b252ff1d0f0904001756f24b9616802a18128",
+  "run": "https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42526271655",
+  "workflowConclusion": "failure",
+  "failure": "Browser framing probe timed out waiting for a diagnostic event; independent HTTP and scanner results below completed.",
+  "backend": {
+    "tests": 458,
+    "assertions": 21703,
+    "status": "passed"
+  },
+  "http": {
+    "status": "passed",
+    "assertions": 3203,
+    "requests": 181,
+    "passed": [
+      "edge rejects oversized bodies and hides version banners",
+      "anonymous routes reject unauthenticated identities and spoofed headers",
+      "login rejects missing and foreign-session CSRF tokens",
+      "authenticated identities and session fixation checks",
+      "IDOR and role escalation fail across requests, profiles, administration and balances",
+      "missing and foreign CSRF tokens cannot write, preview or log out",
+      "strict input rejects mass assignment, SQL payloads, arrays and malformed JSON",
+      "rejected operations leave identities, request histories and all balances unchanged",
+      "calendar projects permitted metadata and excludes a foreign team",
+      "password reset revokes every old session and forces a change",
+      "deactivation revokes an existing manager session",
+      "logout invalidates captured cookies",
+      "credential errors are generic and repeated attempts are throttled"
+    ],
+    "diagnostics": {
+      "loginTiming": {
+        "samplesPerPath": 3,
+        "thresholdEnforced": false,
+        "unknownMedianMs": 365,
+        "wrongPasswordMedianMs": 368
+      }
+    },
+    "scope": "Loopback CI development stack, synthetic data, real nginx/PHP/MySQL; production transport excluded"
+  },
+  "containers": {
+    "scanner": "Trivy 0.76.2",
+    "archiveSha256": "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf",
+    "scope": "running isolated Compose images, not production sign-off",
+    "execution": "complete",
+    "assessment": "findings_require_review",
+    "images": [
+      {
+        "service": "php",
+        "execution": "complete",
+        "imageId": "sha256:bdf70ebf449775b48237e0ddd2fd74042a98112467f2afb86f1d18806a733b43",
+        "findings": 1376,
+        "bySeverity": {
+          "LOW": 849,
+          "HIGH": 84,
+          "MEDIUM": 442,
+          "CRITICAL": 1
+        },
+        "withFix": 3,
+        "osEndOfLife": false
+      },
+      {
+        "service": "node",
+        "execution": "complete",
+        "imageId": "sha256:760001779b13ab5ac0ebc884a51027b3e530e90685897a39c3b107684636816f",
+        "findings": 217,
+        "bySeverity": {
+          "LOW": 85,
+          "HIGH": 34,
+          "MEDIUM": 97,
+          "CRITICAL": 1
+        },
+        "withFix": 2,
+        "osEndOfLife": false
+      },
+      {
+        "service": "nginx",
+        "execution": "complete",
+        "imageId": "sha256:ad17c5ddb5673c6b99cdd00e879509244dd901786dfd1c777d604209c82602ce",
+        "findings": 1,
+        "bySeverity": {
+          "MEDIUM": 1
+        },
+        "withFix": 1,
+        "osEndOfLife": false
+      },
+      {
+        "service": "mysql",
+        "execution": "complete",
+        "imageId": "sha256:412b8cc72e4a28e086097c3fcb1ca391beaefe86bc421a57bc53f7596461ce3b",
+        "findings": 519,
+        "bySeverity": {
+          "HIGH": 192,
+          "MEDIUM": 286,
+          "LOW": 35,
+          "CRITICAL": 5,
+          "UNKNOWN": 1
+        },
+        "withFix": 519,
+        "osEndOfLife": false
+      },
+      {
+        "service": "redis",
+        "execution": "complete",
+        "imageId": "sha256:4411f08636929d5d118f2ae9e294edeefaad44c28560c1eb2f0a8ea35c449b07",
+        "findings": 1,
+        "bySeverity": {
+          "MEDIUM": 1
+        },
+        "withFix": 1,
+        "osEndOfLife": true
+      },
+      {
+        "service": "rabbit",
+        "execution": "complete",
+        "imageId": "sha256:f16d7c941eea7d487de50af6d5e95b1a30f52188c4b11bd37ad8d80808a4a788",
+        "findings": 27,
+        "bySeverity": {
+          "HIGH": 2,
+          "MEDIUM": 21,
+          "LOW": 4
+        },
+        "withFix": 9,
+        "osEndOfLife": false
+      }
+    ],
+    "databaseMetadata": {
+      "Version": 2,
+      "NextUpdate": "2026-11-09T18:58:44.715199055Z",
+      "UpdatedAt": "2026-11-08T18:58:44.715199225Z",
+      "DownloadedAt": "2026-11-08T21:46:17.940113754Z"
+    }
+  },
+  "zap": {
+    "status": "WARNINGS",
+    "exitCode": 2,
+    "scannerVersion": "2.17.0",
+    "scope": "anonymous passive scan of isolated HTTP development stack; not authenticated or active scan",
+    "alerts": [
+      {
+        "id": "10055",
+        "name": "CSP: Failure to Define Directive with No Fallback",
+        "risk": "Medium (High)",
+        "instances": 2
+      },
+      {
+        "id": "10055",
+        "name": "CSP: Wildcard Directive",
+        "risk": "Medium (High)",
+        "instances": 2
+      },
+      {
+        "id": "10055",
+        "name": "CSP: script-src unsafe-inline",
+        "risk": "Medium (High)",
+        "instances": 2
+      },
+      {
+        "id": "10055",
+        "name": "CSP: style-src unsafe-inline",
+        "risk": "Medium (High)",
+        "instances": 2
+      },
+      {
+        "id": "90004",
+        "name": "Cross-Origin-Embedder-Policy Header Missing or Invalid",
+        "risk": "Low (Medium)",
+        "instances": 2
+      },
+      {
+        "id": "90004",
+        "name": "Cross-Origin-Opener-Policy Header Missing or Invalid",
+        "risk": "Low (Medium)",
+        "instances": 2
+      },
+      {
+        "id": "90004",
+        "name": "Cross-Origin-Resource-Policy Header Missing or Invalid",
+        "risk": "Low (Medium)",
+        "instances": 4
+      },
+      {
+        "id": "10110",
+        "name": "Dangerous JS Functions",
+        "risk": "Low (Low)",
+        "instances": 2
+      },
+      {
+        "id": "10096",
+        "name": "Timestamp Disclosure - Unix",
+        "risk": "Low (Low)",
+        "instances": 1
+      },
+      {
+        "id": "10027",
+        "name": "Information Disclosure - Suspicious Comments",
+        "risk": "Informational (Medium)",
+        "instances": 24
+      },
+      {
+        "id": "10109",
+        "name": "Modern Web Application",
+        "risk": "Informational (Medium)",
+        "instances": 2
+      },
+      {
+        "id": "10049",
+        "name": "Non-Storable Content",
+        "risk": "Informational (Medium)",
+        "instances": 5
+      },
+      {
+        "id": "10112",
+        "name": "Session Management Response Identified",
+        "risk": "Informational (Medium)",
+        "instances": 1
+      },
+      {
+        "id": "10049",
+        "name": "Storable but Non-Cacheable Content",
+        "risk": "Informational (Medium)",
+        "instances": 5
+      }
+    ]
+  },
+  "applicationDependencies": {
+    "production": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "all": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "composer": {
+    "advisories": [],
+    "abandoned": []
+  }
+}
