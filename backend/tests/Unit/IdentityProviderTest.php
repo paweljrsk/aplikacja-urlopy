@@ -33,7 +33,7 @@ final class IdentityProviderTest extends TestCase
         $user = 'unknown' === $case ? null : $this->user();
         if (null !== $user) {
             if ('no-password' !== $case) {
-                $user->replacePasswordHash('synthetic-hash', 'expired' === $case,
+                $user->replacePasswordHash($this->passwordHash(), 'expired' === $case,
                     'expired' === $case ? new \DateTimeImmutable('2026-11-01T00:00:00Z') : null);
             }
             if ('inactive' === $case) {
@@ -61,7 +61,8 @@ final class IdentityProviderTest extends TestCase
     public function testEligibleLoginLeavesPasswordVerificationToSymfony(): void
     {
         $user = $this->user();
-        $user->replacePasswordHash('synthetic-hash', false, null);
+        $hash = $this->passwordHash();
+        $user->replacePasswordHash($hash, false, null);
         $repository = $this->createMock(EntityRepository::class);
         $repository->expects(self::once())->method('findOneBy')->willReturn($user);
         $em = $this->createMock(EntityManagerInterface::class);
@@ -73,13 +74,13 @@ final class IdentityProviderTest extends TestCase
 
         $identity = $provider->loadUserByIdentifier($user->getEmail());
         self::assertSame(1, $identity->getId());
-        self::assertSame('synthetic-hash', $identity->getPassword());
+        self::assertSame($hash, $identity->getPassword());
     }
 
     public function testRefreshingRevokedSessionDoesNotPerformLoginHashWork(): void
     {
         $user = $this->user();
-        $user->replacePasswordHash('synthetic-hash', false, null);
+        $user->replacePasswordHash($this->passwordHash(), false, null);
         $clock = new MockClock('2026-11-08T12:00:00Z');
         $factory = new IdentityFactory(new CurrentAssignmentResolver(), $clock);
         $snapshot = $factory->create($user);
@@ -92,6 +93,11 @@ final class IdentityProviderTest extends TestCase
 
         $this->expectException(UserNotFoundException::class);
         $provider->refreshUser($snapshot);
+    }
+
+    private function passwordHash(): string
+    {
+        return password_hash('Synthetic test secret', PASSWORD_BCRYPT, ['cost' => 4]);
     }
 
     private function user(): User

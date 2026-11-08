@@ -121,7 +121,11 @@ jobs:
       - name: Authenticated negative HTTP security probes
         id: pentest_http
         continue-on-error: true
-        run: BASE_URL=http://localhost:8080 node .github/scripts/pentest-http-check.cjs
+        run: |
+          # Each real security suite has its own limiter budget on synthetic CI data.
+          # Do not change the production login limits to accommodate other tests.
+          docker compose exec -T php php bin/console cache:pool:clear cache.app
+          BASE_URL=http://localhost:8080 node .github/scripts/pentest-http-check.cjs
       - name: Measure representative API and rendered views
         id: performance
         continue-on-error: true

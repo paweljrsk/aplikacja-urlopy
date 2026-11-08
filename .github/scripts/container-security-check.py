@@ -117,6 +117,9 @@ def main():
         failed = True
         summary["errorClass"] = type(error).__name__
         print(f"Scanner setup failed ({type(error).__name__}); not a clean result", flush=True)
+    metadata = pathlib.Path("/tmp/urlopy-trivy-cache/db/metadata.json")
+    if metadata.is_file():
+        summary["databaseMetadata"] = json.loads(metadata.read_text())
     summary["execution"] = "failed" if failed else "complete"
     if not failed:
         summary["assessment"] = ("findings_require_review" if any(
