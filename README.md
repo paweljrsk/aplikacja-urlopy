@@ -2,7 +2,15 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 10 — obsługa zespołu, salda i historia — ukończony.**
+**Bieżący zakres: automatyczny licznik dni oraz etap 11 — weryfikacja całego systemu — w trakcie.**
+Formularz pokazuje pod datami liczbę dni roboczych i godzin. Wynik pochodzi z kalendarza
+aplikacji, pomija weekendy, święta i firmowe dni wolne oraz jest niezależny od salda.
+Podgląd wpływu i walidacja zapisu nadal sprawdzają wszystkie reguły.
+Gałąź `codex/etap-11-testy-systemu` bazuje na końcowym etapie 10, CI #38 SUCCESS.
+Etap obejmuje dodatkowe E2E, kontrole bezpieczeństwa i pomiary większego zestawu danych.
+Wyniki zostaną zapisane po wykonaniu kontroli; etap 12 nie został rozpoczęty.
+
+**Ukończony wcześniej etap 10 — obsługa zespołu, salda i historia.**
 W `/management` jest kolejka nowych wniosków, zmian i anulowań oraz dostępna historia.
 Decyzję poprzedza podgląd wpływu na saldo; odrzucenie wymaga uzasadnienia.
 Przeszłe wnioski można skorygować po podglądzie i jawnym potwierdzeniu, zgodnie
@@ -20,7 +28,7 @@ zespołu przez administratora i historyczną korektę 6 h → 3 h z poprawnym zw
 oraz historią autora/uzasadnienia. Restart z zachowaniem danych i workery — PASS.
 Sprawdzono zrzuty desktop/mobile, klawiaturę, konflikty i utracone odpowiedzi.
 PR pozostaje niescalony. Szczegółowy raport jest w [TEST_PLAN.md](docs/TEST_PLAN.md).
-Bez nowych bibliotek ani migracji. Etap 11 wymaga kolejnego polecenia użytkownika.
+Bez nowych bibliotek ani migracji. Użytkownik zlecił etap 11, opisany powyżej.
 
 **Ukończony wcześniej etap 9 — filtry i dopracowanie kalendarza.**
 Wspólne filtry pracownika i statusu zawężają kalendarz oraz listę kolejnych dwóch

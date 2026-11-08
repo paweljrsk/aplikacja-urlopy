@@ -10,6 +10,8 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 8 — formularz, widoki pracownika i podstawowy kalendarz Notus — ukończony.** B34; CI #29 SUCCESS.
 **Etap 9 — filtry i dopracowanie kalendarza — ukończony.** CI #32 SUCCESS.
 **Etap 10 — obsługa zespołu, salda i historia — ukończony.** CI #37 SUCCESS.
+**Etap 11 — testy całego systemu i usunięcie problemów — w trakcie (8 listopada).**
+Najpierw realizujemy zlecony automatyczny licznik dni roboczych w formularzu (B35).
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -126,6 +128,16 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Zweryfikować wszystkie role, realny proces, współbieżność, mobile i klawiaturę.
 - [x] Uzupełnić kontrakty, dokumentację i raport rzeczywistych wyników CI #37: 437 testów / 20 849 asercji, Chrome i rzeczywisty E2E — PASS.
 
+## Etap 11 — w trakcie
+
+- [-] Dodać automatyczny wymiar urlopu pod datami, niezależny od dostępnego salda, i testy weekendów/świąt/starych odpowiedzi.
+- [-] Porównać wymagania i T01–T23 z aktualną implementacją i testami; zapisać luki.
+- [-] Uzupełnić rzeczywiste E2E wszystkich ról, zmian/anulowań, roku, niepłatnych wniosków i transferu.
+- [-] Sprawdzić negatywne API, sesje, CSRF, XSS, zależności i sekrety; naprawić potwierdzone problemy.
+- [-] Zmierzyć podstawowe widoki na większym zestawie danych według zapisanego protokołu.
+- [ ] Zweryfikować pełny CI, komputer/telefon, saldo, uprawnienia i współbieżność na MySQL.
+- [ ] Zapisać faktyczny raport, ograniczenia i instrukcję odbioru; nie rozpoczynać etapu 12.
+
 ## Kolejne etapy
 
 - [x] Etap 2 — model danych, ograniczenia i migracje Doctrine.
@@ -137,7 +149,7 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Etap 8 — formularz i widoki pracownika w stylistyce Notus, podstawowy kalendarz i lista według B34.
 - [x] Etap 9 — dalsze doskonalenie kalendarza zespołu i listy nieobecności; podstawowy ekran już w etapie 8.
 - [x] Etap 10 — widoki przełożonego/administratora, salda i historia.
-- [ ] Etap 11 — weryfikacja pełnych procesów, bezpieczeństwa i wydajności.
+- [-] Etap 11 — weryfikacja pełnych procesów, bezpieczeństwa i wydajności.
 - [ ] Etap 12 — przygotowanie produkcji, backup/restore i pilotaż.
 
 ## Punkt wznowienia
@@ -340,7 +352,7 @@ wskazówka `canViewDetails` nie zastępuje autoryzacji. Naprawiono wyścig błę
 pobrania kalendarza/opcji (E14). Ręczny odbiór zapisano w TEST_PLAN.
 Następny punkt: odbiór użytkownika, potem etap 10 wyłącznie na jego polecenie.
 
-### Bieżący punkt wznowienia — po ukończeniu etapu 10
+### Historyczny punkt wznowienia — po ukończeniu etapu 10
 
 Użytkownik zlecił etap 10. Gałąź `codex/etap-10-obsluga-zespolu` bazuje na końcowym
 etapie 9 `207ee253ab1ca2900d1affd24e053948915efeaf`. Kod etapu 9 przeszedł CI #32;
@@ -359,3 +371,10 @@ restart z zachowaniem danych i workery. Zrzuty desktop/mobile sprawdzono.
 DT54–DT58 opisują nowe widoki i podglądy; E15–E18 naprawione wyścigi i układ.
 Bez nowych bibliotek, migracji ani zmian B22–B33. README zawiera kroki odbioru.
 Następny punkt: odbiór użytkownika, następnie etap 11 wyłącznie na jego polecenie.
+
+### Bieżący punkt wznowienia — etap 11
+
+8 listopada użytkownik zlecił licznik dni roboczych w modalu, następnie etap 11.
+Gałąź `codex/etap-11-testy-systemu` bazuje na `4191f2ca26ebd205e36c4d5c7fcb606cb91bb1a4`.
+Końcowy CI #38 etapu 10 jest SUCCESS. Zachować uzgodnione reguły biznesowe,
+prostotę UI i dane. Q7 pozostaje przed produkcją; nie scalać PR automatycznie.

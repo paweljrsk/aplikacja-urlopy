@@ -22,10 +22,12 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
     let historyFailure = false;
     let historyGate = null;
     const historyCursors = [];
+    const storedMarkup = '<img src="x" onerror="window.__syntheticStoredXss=true">';
     const auditEvents = [
       { id: 102, action: 'admin.assignment_changed', occurredAt: '2026-11-07T10:00:00+00:00', actorName: 'Operator Historyczny',
         subject: { id: 2, firstName: 'Anna', lastName: 'Demonstracyjna' }, targetType: 'user', targetReference: '2',
-        changes: [{ field: 'assignments', label: 'Przypisania', before: '2026-01-01 – 2030-01-01 · Historyczny dział · B2B · Pracownik', after: '2030-01-01 – bez końca · Rozwój aplikacji · B2B · Zastępca' }] },
+        changes: [{ field: 'assignments', label: 'Przypisania', before: '2026-01-01 – 2030-01-01 · Historyczny dział · B2B · Pracownik', after: '2030-01-01 – bez końca · Rozwój aplikacji · B2B · Zastępca' },
+          { field: 'firstName', label: 'Imię', before: 'Syntetyczne', after: storedMarkup }] },
       { id: 101, action: 'security.password_reset', occurredAt: '2026-11-06T09:00:00+00:00', actorName: 'Paweł Testowy',
         subject: { id: 2, firstName: 'Anna', lastName: 'Demonstracyjna' }, targetType: 'user', targetReference: '2',
         changes: [{ field: 'mustChangePassword', label: 'Wymagana zmiana hasła', before: 'Nie', after: 'Tak' }] },
@@ -224,6 +226,9 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
     await historyPanel.getByText('Pokaż zmienione wartości', { exact: true }).click();
     await historyPanel.getByText(auditEvents[0].changes[0].before, { exact: true }).waitFor();
     await historyPanel.getByText(auditEvents[0].changes[0].after, { exact: true }).waitFor();
+    await historyPanel.getByText(storedMarkup, { exact: true }).waitFor();
+    assert.equal(await historyPanel.locator('img, script').count(), 0, 'Stored administrative values are rendered as text, never executable markup.');
+    assert.equal(await page.evaluate(() => window.__syntheticStoredXss === true), false, 'A stored event-handler payload must not execute.');
     await historyPanel.getByRole('button', { name: 'Pokaż wcześniejsze operacje', exact: true }).click();
     await historyPanel.getByText('Zresetowano hasło', { exact: true }).waitFor();
     assert.equal(await historyPanel.locator('.admin-audit-list > li').count(), 2, 'Earlier operations append without replacing the first page.');

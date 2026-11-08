@@ -1,6 +1,6 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.8 • stan uzgodnień z 7 listopada 2026 r., po zleceniu etapu 10.
+Wersja 1.9 • stan uzgodnień z 8 listopada 2026 r., licznik dni i etap 11.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
 [decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
@@ -180,6 +180,11 @@ uprawnienia i aktualną wersję, a ponowienie zachowuje tożsamość operacji.
 Nie zmienia to B22–B33 ani zakresu dostępu do historycznych wersji i bieżącego salda.
 
 Potrzebne widoki: logowanie i zmiana hasła, kalendarz, formularz, moje wnioski i szczegóły, moje saldo, kolejka decyzji przełożonego, salda zespołu oraz administracja. Widoki mają działać na telefonie i komputerze. Dane z innych zespołów lub prywatne dane kolegów nie mogą trafiać do nieuprawnionego klienta przez API.
+
+Po wybraniu dat formularz automatycznie pokazuje obliczony wymiar urlopu w dniach
+i godzinach (B35). Pomija weekendy, święta oraz firmowe dni wolne według istniejącego
+kalendarza. Wynik jest widoczny pod datami także przy braku dostępnego salda;
+nie zastępuje walidacji podglądu i zapisu. Zmiana dat usuwa nieaktualny wynik.
 
 ## 9. Granice MVP i późniejszy rozwój
 

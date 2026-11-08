@@ -6,6 +6,7 @@ import { hoursLabel } from "@/lib/balance-api";
 import { getRequest, getRequestOptions, requestRange, unconfirmedRequest, type RequestDetail, type RequestMode, type RequestOptions } from "@/lib/request-api";
 import { correctionConflict, correctionError, previewCorrection, saveCorrection, type CorrectionApplication, type CorrectionConfirmation, type CorrectionPreview, type CorrectionSnapshot } from "@/lib/request-correction-api";
 import { RequestModal } from "./request-dialog";
+import { RequestDurationSummary } from "./request-duration-summary";
 import "./request-correction.css";
 
 type Props = { request: RequestDetail; user: CurrentUser; onClose: () => void; onSaved: () => void };
@@ -250,6 +251,7 @@ function CorrectionForm({ request, user, onClose, onSaved }: Props) {
                     <div className="requests-date-fields"><div className="field"><label htmlFor={`${id}-from`}>{fields.mode === "hourly" ? "Data" : "Data od"}</label><input id={`${id}-from`} type="date" min="2025-01-01" max="2100-12-31" required value={fields.startDate} onChange={event => update({ startDate: event.target.value })} /></div>
                       {fields.mode === "full_days" ? <div className="field"><label htmlFor={`${id}-to`}>Data do</label><input id={`${id}-to`} type="date" min={fields.startDate || "2025-01-01"} max="2100-12-31" required value={fields.endDate} onChange={event => update({ endDate: event.target.value })} /></div> : <div className="field"><label htmlFor={`${id}-hours`}>Liczba godzin</label><select id={`${id}-hours`} value={fields.hours} onChange={event => update({ hours: event.target.value })}>{[1, 2, 3, 4, 5, 6, 7].map(hours => <option key={hours} value={hours}>{hours} h</option>)}</select></div>}
                     </div>
+                    <RequestDurationSummary mode={fields.mode} startDate={fields.startDate} endDate={fields.mode === "hourly" ? fields.startDate : fields.endDate} hours={fields.mode === "hourly" ? Number(fields.hours) : undefined} />
                     <p className="requests-field-note">Podgląd uwzględnia dni robocze i zapisane zasady rozliczenia. Godziny oznaczają wymiar, bez pory dnia.</p>
                   </> : <p className="correction-cancel-note">{base.effective ? "Anulowanie zakończy obowiązujący urlop i rozliczy zwrot godzin." : "Oczekujący wniosek zostanie wycofany, a jego rezerwacja zwolniona."}</p>}
                   <div className="field correction-reason"><label htmlFor={`${id}-reason`}>Uzasadnienie korekty</label><textarea id={`${id}-reason`} value={fields.reason} onChange={event => update({ reason: event.target.value })} required maxLength={1000} rows={3} /><small>Wymagane, do 1000 znaków. Widoczne w historii wniosku.</small></div>

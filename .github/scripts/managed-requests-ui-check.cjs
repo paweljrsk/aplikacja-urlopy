@@ -70,7 +70,7 @@ let step = 'launch';
     ].map(value => [value.id, value]));
     const writes = []; const previews = []; const reads = []; const receipts = new Map(); const errors = [];
     let loseResponseId = 101; let malformedReceiptId = 104; let deniedDetailId = null; let conflictId = null; let staleCorrection = false; let deficit = false; let paginate = false;
-    let decisionPreviewGate = null; let correctionPreviewGate = null; let heldPreviews = 0;
+    let decisionPreviewGate = null; let correctionPreviewGate = null; let heldPreviews = 0; let malformedCorrectionReceipt = true;
     const canRead = value => value.id !== deniedDetailId && (session.isAdministrator || (session.role !== 'employee' && value.teamId === session.team?.id) || value.user.id === session.id);
     const canDecide = value => canRead(value) && (session.isAdministrator || session.role === 'manager' || session.role === 'deputy' && value.user.id !== session.id);
     function dto(value) {
@@ -110,6 +110,15 @@ let step = 'launch';
         throw new Error(`Unexpected synthetic GET ${path}`);
       }
       assert.equal(method, 'POST'); assert.equal(req.headers()['x-csrf-token'], 'synthetic-managed-csrf', 'Every preview and write needs fresh CSRF.');
+      if (path === '/api/requests/duration') {
+        const body = req.postDataJSON();
+        assert.equal('operationKey' in body, false);
+        let workingDays = 0;
+        for (let date = new Date(`${body.startDate}T12:00:00Z`); date.toISOString().slice(0, 10) <= body.endDate; date.setUTCDate(date.getUTCDate() + 1)) {
+          if (![0, 6].includes(date.getUTCDay()) && date.toISOString().slice(0, 10) !== '2026-11-11') ++workingDays;
+        }
+        return reply(200, { duration: { workingDays, totalHours: workingDays * (body.mode === 'hourly' ? body.hours : 8), hoursPerDay: 8, timezone: 'Europe/Warsaw' } });
+      }
       const match = path.match(/^\/api\/requests\/(\d+)\/(decision-preview|approve|reject|correction-preview|correct)$/);
       assert.ok(match, `Unexpected synthetic mutation ${path}`);
       const id = Number(match[1]); const action = match[2]; const value = requests.get(id); const body = req.postDataJSON();
@@ -144,6 +153,9 @@ let step = 'launch';
       if (receipts.has(body.operationKey)) {
         const previous = receipts.get(body.operationKey);
         assert.equal(previous.path, path); assert.deepEqual(previous.body, body, 'An uncertain response must be retried with the identical operation key and payload.');
+        if (action === 'correct' && malformedCorrectionReceipt) {
+          malformedCorrectionReceipt = false; return reply(200, { operation: { ...previous.response.operation, revision: 0 } });
+        }
         return reply(200, previous.response);
       }
       if (id === conflictId) {
@@ -394,9 +406,14 @@ let step = 'launch';
     assert.equal(mutationCount(106), 2, 'A stale attempt and one new correction are the only writes before retry.');
     assert.equal(await dialog.getByLabel('Uzasadnienie korekty', { exact: true }).isDisabled(), true);
     assert.equal(await dialog.getByLabel('Liczba godzin', { exact: true }).isDisabled(), true);
+    await dialog.getByRole('button', { name: 'Ponów zapis korekty', exact: true }).click();
+    await until(() => mutationCount(106) === 3, 'The correction retry must reach its cached receipt.');
+    await dialog.getByRole('button', { name: 'Ponów zapis korekty', exact: true }).waitFor();
+    assert.equal(await dialog.getByLabel('Liczba godzin', { exact: true }).isDisabled(), true, 'A matching ID without a valid revision is not confirmation of the correction.');
+    assert.equal(requests.get(106).history.length, 2);
     await dialog.getByRole('button', { name: 'Ponów zapis korekty', exact: true }).click(); await dialog.waitFor({ state: 'detached' });
     assert.equal(requests.get(106).effective.totalHours, 3); assert.equal(requests.get(106).history.length, 2);
-    assert.equal(mutationCount(106), 3);
+    assert.equal(mutationCount(106), 4, 'Both failed acknowledgements replay one correction with the same payload and key.');
 
     step = 'administrator works in another team and confirms a deficit explicitly';
     session = administrator; await open(201); dialog = await decision('approve'); await previewDecision(dialog);

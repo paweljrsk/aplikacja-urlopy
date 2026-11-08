@@ -1,5 +1,22 @@
 # Plan testów i odbioru
 
+## Etap 11 — weryfikacja w toku (8 listopada 2026 r.)
+
+Punkt wyjścia: końcowy etap 10 `4191f2ca26ebd205e36c4d5c7fcb606cb91bb1a4`,
+[CI #38 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42418164212).
+Użytkownik zlecił licznik dni roboczych (B35), następnie pełny odbiór systemu.
+
+- [Mapa wymagań i scenariuszy T01–T23](STAGE11_COVERAGE.md).
+- [Zakres bezpieczeństwa, skanów i pozostałe ustalenia](STAGE11_SECURITY.md).
+- [Protokół pomiaru większego zestawu danych](STAGE11_PERFORMANCE.md), zapisany przed pomiarem.
+
+Lokalnie: pełny ESLint, TypeScript i produkcyjny build frontendu PASS; składnia
+skryptów Node/Python, YAML workflow i diff PASS. Dodano testy licznika dni,
+negatywnego API, redakcji błędów, XSS oraz niepełnych potwierdzeń zapisów.
+PHP/MySQL nie są dostępne lokalnie, a Chromium nie wystartował przez ograniczenie
+`socket() EPERM`; te nowe testy i pomiary wymagają rzeczywistego wykonania w CI.
+Nie traktujemy samego zapisania scenariuszy jako ich zaliczenia.
+
 Wersja 1.2 • 6 listopada 2026 r.
 
 Poniższe scenariusze są kryteriami przyszłej implementacji. Ich obecność w tym

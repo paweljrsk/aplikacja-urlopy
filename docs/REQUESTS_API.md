@@ -1,4 +1,4 @@
-# API wniosków — etapy 6–10
+# API wniosków — etapy 6–11
 
 Reguły biznesowe: [REQUIREMENTS.md](REQUIREMENTS.md), B18–B33 w
 [DECISIONS.md](DECISIONS.md). Rozliczenia: [ACCOUNTING.md](ACCOUNTING.md).
@@ -44,6 +44,33 @@ udostępnia zbiorczy filtr oczekujących procesów i podgląd skutków decyzji
 przełożonego, bez zmiany zasad akceptacji ani rozliczeń.
 
 ## Endpointy
+
+### Automatyczna liczba dni w formularzu
+
+`POST /api/requests/duration` jest odczytem kalendarza dla aktywnej sesji z docelowym
+hasłem i poprawnym CSRF. Akceptuje wyłącznie `startDate`, `endDate`, obowiązkowy
+`mode` (`full_days` albo `hourly`) i opcjonalne `hours` (tylko godzinowy: 1–7,
+pojedynczy dzień). Daty mają format `YYYY-MM-DD`, zakres jest uporządkowany
+i mieści się w istniejących granicach kalendarza 2025–2100.
+
+Przykład: `{"mode":"full_days","startDate":"2026-11-09","endDate":"2026-11-15"}`
+zwraca `{"duration":{"workingDays":4,"totalHours":32,"hoursPerDay":8,"timezone":"Europe/Warsaw"}}`
+przy braku dodatkowego firmowego dnia wolnego w tym okresie.
+Odczyt korzysta z tego samego `WorkingCalendar` co zapis: pomija weekendy,
+święta ustawowe i aktywne firmowe dni wolne. Zakres obejmujący wyłącznie wolne
+dni zwraca `workingDays: 0`, `totalHours: 0`, także w trybie godzinowym.
+W godzinowym dniu roboczym `workingDays` wynosi 1, a `totalHours` wybraną liczbę
+godzin; dni rozliczeniowe prezentuje się według `hoursPerDay`.
+
+Endpoint nie wymaga rodzaju nieobecności, salda, limitu ani przypisania osoby.
+Nie przyjmuje identyfikatora pracownika/wniosku, klucza operacji ani wymiaru
+wyliczonego przez klienta. Nie zapisuje wniosku, rezerwacji lub audytu i nie
+zwraca danych pracowników. Dopuszcza przeszłe daty jako odczyt kalendarza,
+aby ten sam licznik działał w korekcie. Nie jest podglądem skutków finansowych
+ani zgodą na zapis: istniejące preview i mutacje nadal osobno sprawdzają
+saldo, pojemność dnia, termin, uprawnienia i wersję. Interfejs może więc pokazać
+liczbę wybranych dni także przy błędzie brakującego salda, a po zmianie dat
+odrzuca odpowiedź dotyczącą wcześniejszego wyboru.
 
 `{id}` jest dodatnim identyfikatorem wniosku. Mutacje poza utworzeniem zwracają
 HTTP `200`. Utworzenie zwraca `201`, także przy identycznym ponowieniu operacji.

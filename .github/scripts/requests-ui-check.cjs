@@ -55,8 +55,10 @@ function calendarResponse(url) {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1050 } });
     let session = user;
     const requests = new Map(); const receipts = new Map();
-    const writes = []; const previews = []; const calendarCalls = []; const errors = [];
-    let available = 80; let loseCreateResponse = true; let listFailure = false; let denyPreview = false; let conflictNextEdit = false;
+    const writes = []; const previews = []; const calendarCalls = []; const errors = []; const durationCalls = [];
+    let durationFailure = false; let delayedDuration = null; let durationHeld = false;
+    let available = 80; let loseCreateResponse = true; let malformedCreateReceipt = true; let malformedWithdrawalReceipt = true; let malformedCancellationReceipt = true;
+    let listFailure = false; let denyPreview = false; let conflictNextEdit = false;
     await context.route('**/api/**', async route => {
       const req = route.request(); const url = new URL(req.url()); const path = url.pathname; const method = req.method();
       const reply = (status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -82,6 +84,17 @@ function calendarResponse(url) {
       assert.equal(method, 'POST', `Unexpected synthetic method ${method} ${path}`);
       assert.equal(req.headers()['x-csrf-token'], 'synthetic-request-csrf', `Missing CSRF on ${path}`);
       const body = req.postDataJSON();
+      if (path === '/api/requests/duration') {
+        durationCalls.push(structuredClone(body));
+        assert.deepEqual(Object.keys(body).sort(), (body.mode === 'hourly' ? ['mode', 'startDate', 'endDate', 'hours'] : ['mode', 'startDate', 'endDate']).sort());
+        if (durationFailure) return error(503, 'REQUEST_FAILED');
+        let workingDays = 0;
+        for (let date = new Date(`${body.startDate}T12:00:00Z`); date.toISOString().slice(0, 10) <= body.endDate; date.setUTCDate(date.getUTCDate() + 1)) {
+          if (![0, 6].includes(date.getUTCDay()) && !['2026-11-11', '2026-11-12'].includes(date.toISOString().slice(0, 10))) ++workingDays;
+        }
+        if (delayedDuration && body.startDate === '2026-11-23' && body.endDate === '2026-11-25') { durationHeld = true; await delayedDuration; }
+        return reply(200, { duration: { workingDays, totalHours: workingDays * (body.mode === 'hourly' ? body.hours : 8), hoursPerDay: 8, timezone: 'Europe/Warsaw' } });
+      }
       if (path.endsWith('/preview') || path.endsWith('-preview')) {
         assert.equal('operationKey' in body, false, 'Preview must not claim a mutation key.');
         assert.equal(typeof body.absenceTypeId, 'number');
@@ -100,6 +113,10 @@ function calendarResponse(url) {
       if (receipts.has(body.operationKey)) {
         const cached = receipts.get(body.operationKey);
         assert.equal(path, cached.path); assert.deepEqual(body, cached.body, 'Retry must preserve the complete original payload.');
+        if (path === '/api/requests' && malformedCreateReceipt) {
+          malformedCreateReceipt = false;
+          return reply(201, { operation: { ...cached.response.operation, id: 0 } });
+        }
         return reply(path === '/api/requests' ? 201 : 200, cached.response);
       }
       let value;
@@ -134,6 +151,12 @@ function calendarResponse(url) {
       }
       const response = operation(value); receipts.set(body.operationKey, { path, body: structuredClone(body), response: structuredClone(response) });
       if (path === '/api/requests' && loseCreateResponse) { loseCreateResponse = false; await new Promise(resolve => setTimeout(resolve, 100)); return route.abort('failed'); }
+      if (path === '/api/requests/1/withdraw' && malformedWithdrawalReceipt) {
+        malformedWithdrawalReceipt = false; return reply(200, { operation: { id: value.id } });
+      }
+      if (path === '/api/requests/2/cancel' && malformedCancellationReceipt) {
+        malformedCancellationReceipt = false; return reply(200, { operation: { ...response.operation, id: 999 } });
+      }
       return reply(path === '/api/requests' ? 201 : 200, response);
     });
 
@@ -163,6 +186,41 @@ function calendarResponse(url) {
     await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'detached' });
     assert.equal(new URL(page.url()).searchParams.has('new'), false, 'Closing the linked form clears its one-shot URL intent.');
 
+    // The count is independent of balance validation and follows only the newest dates.
+    denyPreview = true; await create.click(); dialog = page.getByRole('dialog', { name: 'Nowy wniosek', exact: true });
+    const duration = dialog.getByRole('status', { name: 'Obliczony wymiar urlopu', exact: true });
+    await dialog.getByLabel('Data od', { exact: true }).fill('2026-11-10');
+    await dialog.getByLabel('Data do', { exact: true }).fill('2026-11-16');
+    await duration.getByText('3 dni', { exact: false }).waitFor();
+    assert.match(await duration.innerText(), /24 h/);
+    await dialog.getByRole('alert').filter({ hasText: 'Brakuje dostępnych godzin' }).waitFor();
+    assert.equal(await dialog.getByRole('button', { name: 'Złóż wniosek', exact: true }).isDisabled(), true, 'A duration count does not authorize submission.');
+    await page.screenshot({ path: join(screenshotDir, 'request-working-days-desktop.png') });
+    await dialog.getByLabel('Data od', { exact: true }).fill('2026-11-14');
+    await dialog.getByLabel('Data do', { exact: true }).fill('2026-11-15');
+    await duration.getByText('0 dni', { exact: false }).waitFor();
+    await duration.getByText('W tym terminie nie ma dni roboczych.', { exact: true }).waitFor();
+    let releaseDuration;
+    delayedDuration = new Promise(resolve => { releaseDuration = resolve; });
+    await dialog.getByLabel('Data od', { exact: true }).fill('2026-11-23');
+    await dialog.getByLabel('Data do', { exact: true }).fill('2026-11-25');
+    await waitFor(() => durationHeld, 'The older duration response should be held.');
+    const oldDurationResponse = page.waitForResponse(response => response.url().endsWith('/api/requests/duration') && response.request().postDataJSON().endDate === '2026-11-25');
+    await dialog.getByLabel('Data od', { exact: true }).fill('2026-11-26');
+    assert.equal(await duration.getByText('3 dni', { exact: false }).count(), 0, 'Changing dates removes the previous count immediately.');
+    await duration.getByText('1 dzień', { exact: false }).waitFor();
+    releaseDuration(); await (await oldDurationResponse).finished(); delayedDuration = null;
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.match(await duration.innerText(), /1 dzień/); assert.doesNotMatch(await duration.innerText(), /3 dni/);
+    durationFailure = true; await dialog.getByLabel('Data od', { exact: true }).fill('2026-11-27');
+    await duration.getByText('Nie udało się obliczyć wymiaru urlopu.', { exact: true }).waitFor();
+    assert.equal(await duration.locator('strong').count(), 0, 'An error cannot retain a stale count.');
+    durationFailure = false; await duration.getByRole('button', { name: 'Ponów obliczenie dni', exact: true }).click();
+    await duration.getByText('1 dzień', { exact: false }).waitFor();
+    assert.equal(writes.length, 0, 'Automatic duration reads never write a request or balance.');
+    await page.keyboard.press('Escape'); await dialog.getByRole('button', { name: 'Zamknij formularz', exact: true }).last().click();
+    await dialog.waitFor({ state: 'detached' }); denyPreview = false;
+
     await create.click(); dialog = page.getByRole('dialog', { name: 'Nowy wniosek', exact: true });
     await dialog.getByLabel('Data od', { exact: true }).fill('2026-11-10');
     await dialog.getByRole('radio', { name: /Część dnia/ }).check();
@@ -181,8 +239,13 @@ function calendarResponse(url) {
     assert.equal(writes.length, 1, 'Double click must start only one submission.');
     assert.equal(await dialog.getByLabel('Data', { exact: true }).isDisabled(), true, 'Uncertain submission freezes the original payload.');
     await dialog.getByRole('button', { name: 'Ponów wysłanie', exact: true }).click();
+    await waitFor(() => writes.length === 2, 'The first retry must reach the receipt replay.');
+    await dialog.getByRole('button', { name: 'Ponów wysłanie', exact: true }).waitFor();
+    assert.equal(await dialog.getByLabel('Data', { exact: true }).isDisabled(), true, 'An incomplete HTTP 201 receipt must keep the original submission frozen.');
+    assert.equal(requests.size, 1); assert.equal(available, 77);
+    await dialog.getByRole('button', { name: 'Ponów wysłanie', exact: true }).click();
     await dialog.waitFor({ state: 'detached' });
-    assert.equal(writes.length, 2); assert.deepEqual(writes[0], writes[1]); assert.equal(requests.size, 1);
+    assert.equal(writes.length, 3); assert.deepEqual(writes[0], writes[1]); assert.deepEqual(writes[1], writes[2]); assert.equal(requests.size, 1);
     await page.getByRole('button', { name: 'Szczegóły wniosku 1', exact: true }).click();
     await page.getByRole('button', { name: 'Edytuj wniosek', exact: true }).click();
     dialog = page.getByRole('dialog', { name: 'Edytuj wniosek', exact: true });
@@ -197,7 +260,13 @@ function calendarResponse(url) {
     assert.equal(await page.locator('.requests-history li').count(), 2, 'Both versions remain in the visible history.');
     await page.getByRole('button', { name: 'Wycofaj wniosek', exact: true }).click();
     await page.getByRole('button', { name: 'Potwierdź wycofanie', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Ponów wysłanie', exact: true }).waitFor();
+    const withdrawnVersion = requests.get(1).version;
+    assert.equal(available, 80, 'The first withdrawal committed despite its incomplete receipt.');
+    await page.getByRole('dialog').getByRole('button', { name: 'Ponów wysłanie', exact: true }).click();
     await page.getByRole('dialog').waitFor({ state: 'detached' });
+    assert.equal(requests.get(1).version, withdrawnVersion, 'Withdrawal receipt retry must not create another version or refund.');
+    assert.deepEqual(writes.at(-1), writes.at(-2));
     await waitFor(() => requests.get(1).status === 'withdrawn', 'Withdrawal was not sent.');
     assert.equal(available, 80);
     await page.getByLabel('Status', { exact: true }).selectOption('pending');
@@ -229,7 +298,13 @@ function calendarResponse(url) {
     await page.getByRole('button', { name: 'Anuluj urlop', exact: true }).click();
     assert.equal(available, 64);
     await page.getByRole('button', { name: 'Wyślij prośbę o anulowanie', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Ponów wysłanie', exact: true }).waitFor();
+    const cancellationHistoryLength = requests.get(2).history.length;
+    assert.equal(available, 64, 'A malformed cancellation receipt does not authorize an early refund.');
+    await page.getByRole('dialog').getByRole('button', { name: 'Ponów wysłanie', exact: true }).click();
     await page.getByRole('dialog').waitFor({ state: 'detached' });
+    assert.deepEqual(writes.at(-1), writes.at(-2));
+    assert.equal(requests.get(2).history.length, cancellationHistoryLength, 'Replaying cancellation cannot add another proposal.');
     await waitFor(() => requests.get(2).status === 'cancellation_pending', 'Cancellation proposal was not sent.');
     assert.equal(available, 64, 'No early refund on cancellation proposal.');
     const cancellationBadge = page.getByRole('region', { name: 'Szczegóły wniosku', exact: true }).locator('.requests-status-cancellation_pending');
