@@ -1,6 +1,6 @@
 # Plan testów i odbioru
 
-## Etap 11 — weryfikacja w toku (8 listopada 2026 r.)
+## Etap 11 — odbiór zakończony (8 listopada 2026 r.)
 
 Punkt wyjścia: końcowy etap 10 `4191f2ca26ebd205e36c4d5c7fcb606cb91bb1a4`,
 [CI #38 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42418164212).
@@ -10,18 +10,63 @@ Użytkownik zlecił licznik dni roboczych (B35), następnie pełny odbiór syste
 - [Zakres bezpieczeństwa, skanów i pozostałe ustalenia](STAGE11_SECURITY.md).
 - [Protokół pomiaru większego zestawu danych](STAGE11_PERFORMANCE.md), zapisany przed pomiarem.
 
-Lokalnie: pełny ESLint, TypeScript i produkcyjny build frontendu PASS; składnia
-skryptów Node/Python, YAML workflow i diff PASS. Dodano testy licznika dni,
-negatywnego API, redakcji błędów, XSS oraz niepełnych potwierdzeń zapisów.
-PHP/MySQL nie są dostępne lokalnie, a Chromium nie wystartował przez ograniczenie
-`socket() EPERM`; te nowe testy i pomiary wymagają rzeczywistego wykonania w CI.
-Nie traktujemy samego zapisania scenariuszy jako ich zaliczenia.
+Kod `f8bc8b37a2e645d817524bedaffa9a8881ae8221` przeszedł pełny
+[CI #39 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42487633929).
+Środowisko: PHP 8.3.36, MySQL 8.0.32, Node 22.23.4, Chrome 156; rzeczywiste kontenery
+projektu i dane syntetyczne. [PR #11](https://github.com/paweljrsk/aplikacja-urlopy/pull/11)
+bazuje na końcowym etapie 10 i pozostaje niescalony.
 
-Wersja 1.2 • 6 listopada 2026 r.
+| Kontrola | Faktyczny wynik |
+|---|---|
+| `make init`, migracje, walidacja schematu i `make verify` | PASS, również zgodność istniejących danych; bez nowych migracji etapu 11 |
+| `make test` | PASS: **445 testów / 21 607 asercji**; kalendarz, saldo, role, transfery, idempotencja i rzeczywista współbieżność MySQL |
+| `make lint`, produkcyjny build frontendu | PASS; Symfony, PHPStan, ESLint, TypeScript i Next.js |
+| Syntetyczne testy Chrome | PASS; logowanie, administracja, salda, kalendarz, wnioski i zarządzanie. Nowe regresje: licznik weekendów/świąt/dni firmowych, zero, opóźnienia i błąd z ponowieniem, XSS w historii oraz niepełne potwierdzenia zapisu |
+| Rzeczywisty HTTP przez Nginx/PHP-FPM | PASS; sesja, CSRF, administracja, limity, cały obieg wniosków, korekty, konflikty, izolacja i wylogowanie |
+| Rzeczywiste E2E pracownika i przełożonego | PASS; pełny zapis/podgląd/odczyt, decyzje wszystkich ról, odmowa własnej decyzji zastępcy, korekta 6 h → 3 h i audyt |
+| Nowe E2E całego procesu | PASS; automatyczne 2 dni / 16 h, zatwierdzenie, zmniejszenie do 5 h i zwrot po decyzji, anulowanie, historia, niepłatne 3 h + 5 h oraz odmowa dziewiątej godziny, podział grudzień/styczeń i korekta po transferze zespołu bez ujawnienia bieżących pul |
+| Sekrety i niebezpieczne operacje HTML/JS | PASS: 270 śledzonych plików i 552 historyczne bloby, ograniczony skaner 5 wzorców sekretów; zakres w raporcie bezpieczeństwa |
+| Audity zależności | Composer: 0 zgłoszeń i 0 porzuconych pakietów; npm produkcyjny: 0 zgłoszeń; pełny npm: 8 wpisów moderate z jednego zgłoszenia developerskiego minimatch. Brak high/critical; **S11-SEC-01 pozostaje otwarte** |
+| Pomiary | PASS funkcjonalny, bez ostrzeżeń budżetowych: 100 osób / 5 zespołów / 2000 wniosków. Sześć odczytów API i cztery widoki desktop/mobile; najwyższe p95 API 445,8 ms, widoku 1402,3 ms |
+| Restart i workery | PASS: trwałość po stop/start oraz działające procesy w tle; nie jest to test restore kopii |
+| Odbiór wizualny | Przejrzano zrzuty formularza pełnych dni na komputerze i godzin na telefonie: licznik widoczny pod datami, brak przycięcia treści licznika, czytelny stan niedostatecznego salda |
 
-Poniższe scenariusze są kryteriami przyszłej implementacji. Ich obecność w tym
-pliku nie oznacza wykonania ani zaliczenia testu. Testy dodajemy wraz z funkcją;
-etap 11 scala weryfikację całego systemu.
+Lokalnie pełny ESLint, TypeScript, produkcyjny build, składnia Node/Python, YAML
+workflow i diff — PASS. Brak lokalnego PHP/MySQL oraz `socket() EPERM` podczas
+startu Chromium uniemożliwiały wykonanie tych kontroli lokalnie; wszystkie właściwe
+testy PHP, Chrome i pomiary wykonano następnie w powyższym CI. Artefakty przebiegu
+zawierają zrzuty UI i `stage11-check-reports` z surowymi raportami pomiarów/auditów.
+
+Naprawiony problem E19: niepełne lub niespójne potwierdzenie HTTP 200/201 nie kończy
+formularza fałszywym sukcesem; UI zachowuje oryginalną treść i klucz bezpiecznego
+ponowienia. Regresje nie wykonują drugiego obciążenia ani zwrotu. B35 korzysta
+z istniejącego kalendarza backendu niezależnie od dostępnego salda. Nie dodano bibliotek.
+
+Granice odbioru: mobile jest emulowanym viewportem Chrome, pomiary są małą sekwencyjną
+próbą na stosie developerskim, bez VPN i produkcyjnego SLA. Nie wykonano odbioru
+firmowego serwera ani backup/restore. S11-SEC-01 i Q7 są zapisane jawnie; T20 w części
+restore oraz przygotowanie produkcji pozostają etapem 12. Etap 12 nie został rozpoczęty.
+
+### Ręczny odbiór zmiany i całego procesu
+
+1. Zaktualizuj gałąź `codex/etap-11-testy-systemu` według README i otwórz `http://localhost:8080/`.
+2. Po zalogowaniu wybierz „Złóż wniosek” i zakres 10–16 listopada 2026 r. Bez dodatkowych
+   firmowych dni wolnych licznik powinien pokazać **4 dni (32 h)**: pomija 11 listopada oraz weekend.
+3. Wybierz sam weekend 14–15 listopada: oczekiwane **0 dni (0 h)**. Zmień daty kilka razy;
+   wcześniejsza odpowiedź nie może zastąpić wyniku nowego zakresu. Dla części dnia roboczego
+   wybierz 3 h — licznik powinien pokazać **3 h**. Nie trzeba zatwierdzać formularza.
+4. Złóż prawidłowy wniosek na syntetycznym koncie z limitem; zaakceptuj jako kierownik.
+   Po zmniejszeniu wymiaru lub zgłoszeniu anulowania sprawdź, że zwrot pojawia się dopiero
+   po akceptacji. Odśwież ekran i sprawdź trwałość salda oraz autora decyzji w historii.
+5. Sprawdź modal na telefonie oraz role/transfer według mapy STAGE11_COVERAGE.
+   Własny wniosek zastępcy musi pozostać niedostępny do własnej decyzji.
+
+## Pierwotny plan i historyczne wyniki etapów
+
+Wersja bazowa 1.2 • 6 listopada 2026 r.
+
+Poniższe scenariusze określono przed implementacją. Sama ich obecność nie oznacza
+zaliczenia testu; aktualne dowody i ograniczenia opisano w odbiorze etapu 11 powyżej.
 
 ## Sposób weryfikacji
 

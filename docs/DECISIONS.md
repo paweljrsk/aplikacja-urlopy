@@ -255,7 +255,12 @@ pracownika bez pełnego potwierdzenia operacji. Wspólna walidacja potwierdzeń
 sprawdza identyfikator, wersję, rewizję, referencję i status dla wszystkich operacji
 wniosków. Niepełna odpowiedź oznacza niepewny wynik i zachowuje pierwotny klucz
 ponowienia. Regresje obejmują utworzenie, wycofanie, anulowanie i korektę, bez
-drugiego obciążenia ani zwrotu. Wynik wykonania zostanie zapisany w TEST_PLAN.
+drugiego obciążenia ani zwrotu. Regresje Chrome i cały system przeszły
+[CI #39](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42487633929)
+dla kodu `f8bc8b37a2e645d817524bedaffa9a8881ae8221`: SUCCESS.
+Automatyczny wymiar B35 również sprawdzono przez API, syntetyczny UI i rzeczywisty
+proces wniosku. Raport etapu 11 jest w TEST_PLAN; S11-SEC-01 w STAGE11_SECURITY
+pozostaje jawnym ostrzeżeniem developerskiej zależności, bez wymuszonej zmiany major.
 
 Poprawki E15–E18 zweryfikowano w pełnym [CI #37](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42417402132)
 dla kodu `ed777e033e1a04341a87157bf4efad864897f096`: SUCCESS, w tym Chrome i rzeczywisty E2E.

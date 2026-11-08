@@ -2,8 +2,11 @@
 
 Przegląd: 8 listopada 2026 r. Baza: etap 10, commit
 `4191f2ca26ebd205e36c4d5c7fcb606cb91bb1a4`, CI #38 SUCCESS.
-Poniższa mapa wskazuje rzeczywiste pliki i sprawdzane zachowanie. Obecność testu
-nie jest wynikiem jego uruchomienia; odbiór bieżącego kodu opisuje TEST_PLAN.
+Odbiór kodu `f8bc8b37a2e645d817524bedaffa9a8881ae8221`:
+[CI #39 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42487633929).
+Zaliczono **445 testów / 21 607 asercji**, dotychczasowe testy ekranów,
+rzeczywisty HTTP oraz rzeczywiste E2E pracownika, przełożonego i nowego pełnego procesu.
+Poniższa mapa wskazuje pliki i sprawdzane zachowanie; szczegółowy raport jest w TEST_PLAN.
 
 ## Kryteria T01–T23
 
@@ -78,9 +81,15 @@ node .github/scripts/system-e2e-check.cjs
 
 `CI=true` jest dodatkowym wymaganiem, ustawianym przez workflow. Skrypt sam
 uruchamia wyłącznie chronioną fixture. Nie należy go wykonywać na produkcji.
-Wstępnie wykonano `node --check` oraz `git diff --check`; wykonanie PHP/MySQL
-oraz Chrome połączonego z API wymaga rzeczywistego przebiegu CI. Wynik tego
-przebiegu i ewentualne poprawki muszą zostać zapisane w TEST_PLAN przed odbiorem.
+Lokalne `node --check` i `git diff --check` — PASS. Pełny CI #39 wykonał fixture
+na PHP/MySQL oraz Chrome połączonego z rzeczywistym API — **PASS**. Nowy przebieg
+potwierdził automatyczny licznik dni, złożenie i akceptację pełnych dni, zmniejszenie
+do godzin ze zwrotem dopiero po decyzji, anulowanie i historię, limit dzienny
+niepłatnej nieobecności bez obciążenia salda, rozdzielenie godzin między latami,
+korektę po zmianie zespołu z ukryciem bieżących pul, trwałość oraz widok mobilny.
+W tym samym przebiegu zaliczono istniejące testy syntetycznego UI i rzeczywiste
+procesy HTTP, pracownika oraz przełożonego. Wynik dotyczy wskazanego commita,
+nie stanowi potwierdzenia wdrożenia na firmowym serwerze.
 
 ## Granice i dalszy odbiór
 

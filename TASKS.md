@@ -1,6 +1,6 @@
 # Zadania aplikacji urlopowej
 
-Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacja — zakończony**.
+Aktualizacja: 8 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacja — zakończony**.
 **Etap 2 — model danych i migracje — zakończony**.
 **Etap 3 — logowanie lokalne i kontrola dostępu — zakończony**.
 **Etap 4 — administracja — zakończony.** Q5 rozstrzygnięto w B22–B24.
@@ -10,8 +10,8 @@ Aktualizacja: 7 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 8 — formularz, widoki pracownika i podstawowy kalendarz Notus — ukończony.** B34; CI #29 SUCCESS.
 **Etap 9 — filtry i dopracowanie kalendarza — ukończony.** CI #32 SUCCESS.
 **Etap 10 — obsługa zespołu, salda i historia — ukończony.** CI #37 SUCCESS.
-**Etap 11 — testy całego systemu i usunięcie problemów — w trakcie (8 listopada).**
-Najpierw realizujemy zlecony automatyczny licznik dni roboczych w formularzu (B35).
+**Etap 11 — testy całego systemu i usunięcie problemów — ukończony.** CI #39 SUCCESS.
+Automatyczny licznik dni roboczych w formularzu (B35) wdrożono i sprawdzono.
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -128,15 +128,19 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Zweryfikować wszystkie role, realny proces, współbieżność, mobile i klawiaturę.
 - [x] Uzupełnić kontrakty, dokumentację i raport rzeczywistych wyników CI #37: 437 testów / 20 849 asercji, Chrome i rzeczywisty E2E — PASS.
 
-## Etap 11 — w trakcie
+## Etap 11 — ukończony
 
-- [-] Dodać automatyczny wymiar urlopu pod datami, niezależny od dostępnego salda, i testy weekendów/świąt/starych odpowiedzi.
-- [-] Porównać wymagania i T01–T23 z aktualną implementacją i testami; zapisać luki.
-- [-] Uzupełnić rzeczywiste E2E wszystkich ról, zmian/anulowań, roku, niepłatnych wniosków i transferu.
-- [-] Sprawdzić negatywne API, sesje, CSRF, XSS, zależności i sekrety; naprawić potwierdzone problemy.
-- [-] Zmierzyć podstawowe widoki na większym zestawie danych według zapisanego protokołu.
-- [ ] Zweryfikować pełny CI, komputer/telefon, saldo, uprawnienia i współbieżność na MySQL.
-- [ ] Zapisać faktyczny raport, ograniczenia i instrukcję odbioru; nie rozpoczynać etapu 12.
+- [x] Dodać automatyczny wymiar urlopu pod datami, niezależny od dostępnego salda, i testy weekendów/świąt/starych odpowiedzi.
+- [x] Porównać wymagania i T01–T23 z aktualną implementacją i testami; zapisać luki w STAGE11_COVERAGE.
+- [x] Uzupełnić rzeczywiste E2E wszystkich ról, zmian/anulowań, roku, niepłatnych wniosków i transferu.
+- [x] Sprawdzić negatywne API, sesje, CSRF, XSS, zależności i sekrety; poprawić obsługę niepełnych potwierdzeń E19. Ostrzeżenie developerskie S11-SEC-01 pozostaje jawnie opisane.
+- [x] Zmierzyć podstawowe widoki na większym zestawie danych według zapisanego protokołu: 100 osób / 5 zespołów / 2000 wniosków, wszystkie 14 przypadków w proponowanych budżetach.
+- [x] Zweryfikować pełny CI, komputer/telefon, saldo, uprawnienia i współbieżność na MySQL: CI #39 SUCCESS, 445 testów / 21 607 asercji oraz Chrome/HTTP/E2E.
+- [x] Zapisać faktyczny raport, ograniczenia i instrukcję odbioru; etap 12 pozostaje nierozpoczęty.
+
+Pozostałe ustalenia: zgodna aktualizacja developerskiego minimatch i ponowny audit
+(S11-SEC-01); odtworzenie backupu z T20, Q7 i odbiór firmowego środowiska w etapie 12.
+Nie stwierdzono niewyjaśnionego błędu krytycznego ani niezweryfikowanego salda/uprawnień.
 
 ## Kolejne etapy
 
@@ -149,7 +153,7 @@ T01–T23 oraz zachowanie instrukcji frontendu. To nie jest weryfikacja działan
 - [x] Etap 8 — formularz i widoki pracownika w stylistyce Notus, podstawowy kalendarz i lista według B34.
 - [x] Etap 9 — dalsze doskonalenie kalendarza zespołu i listy nieobecności; podstawowy ekran już w etapie 8.
 - [x] Etap 10 — widoki przełożonego/administratora, salda i historia.
-- [-] Etap 11 — weryfikacja pełnych procesów, bezpieczeństwa i wydajności.
+- [x] Etap 11 — weryfikacja pełnych procesów, bezpieczeństwa i wydajności.
 - [ ] Etap 12 — przygotowanie produkcji, backup/restore i pilotaż.
 
 ## Punkt wznowienia
@@ -378,3 +382,15 @@ Następny punkt: odbiór użytkownika, następnie etap 11 wyłącznie na jego po
 Gałąź `codex/etap-11-testy-systemu` bazuje na `4191f2ca26ebd205e36c4d5c7fcb606cb91bb1a4`.
 Końcowy CI #38 etapu 10 jest SUCCESS. Zachować uzgodnione reguły biznesowe,
 prostotę UI i dane. Q7 pozostaje przed produkcją; nie scalać PR automatycznie.
+
+Kod `f8bc8b37a2e645d817524bedaffa9a8881ae8221` przeszedł pełny
+[CI #39 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42487633929):
+445 testów / 21 607 asercji, kontrole statyczne, build, Chrome, rzeczywiste HTTP/E2E,
+współbieżność MySQL, restart z zachowaniem danych, workery, pomiary i bramki auditu.
+Zrzuty licznika na komputerze i telefonie sprawdzono. Szczegóły w TEST_PLAN oraz
+trzech raportach STAGE11. [PR #11](https://github.com/paweljrsk/aplikacja-urlopy/pull/11)
+bazuje na niescalonym PR #10. Bez nowych bibliotek ani migracji.
+
+Punkt wznowienia: odbiór użytkownika, następnie **etap 12 — przygotowanie produkcji
+i pilotażu**, wyłącznie po osobnym poleceniu. Przed konfiguracją rozstrzygnąć Q7;
+uwzględnić S11-SEC-01, backup/restore i pomiar docelowego środowiska. Nie scalać PR automatycznie.

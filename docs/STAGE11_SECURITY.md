@@ -19,8 +19,9 @@ nie stanowi certyfikacji ani potwierdzenia bezpieczeństwa środowiska produkcyj
 
 ## Wykonane kontrole lokalne
 
-Środowisko pomocnicze nie zawiera PHP/Composer, Dockera ani Chrome. Testów PHP i
-przeglądarkowych nie oznaczamy jako wykonanych lokalnie; uruchamia je pełny CI.
+W środowisku pomocniczym nie były dostępne PHP/Composer ani Docker. Lokalny
+Chromium (`/usr/bin/chromium`) nie uruchomił się z powodu błędu `socket(): EPERM`.
+Testów PHP i przeglądarkowych nie oznaczamy jako wykonanych lokalnie; uruchomił je CI.
 
 | Polecenie/kontrola | Wynik |
 |---|---|
@@ -29,8 +30,29 @@ przeglądarkowych nie oznaczamy jako wykonanych lokalnie; uruchamia je pełny CI
 | `python .github/scripts/security-source-check.py --history` | PASS na punkcie wyjścia: 257 śledzonych plików, 519 historycznych blobów, 5 wzorców sekretów oraz wzorce niebezpiecznych operacji HTML/JS w kodzie przeglądarki. Nie wyświetlano dopasowanych wartości. |
 | `node --check .github/scripts/admin-ui-check.cjs` | PASS. To sprawdzenie składni, nie wykonanie testu XSS w Chrome. |
 | `git diff --check` | PASS dla zmian bezpieczeństwa. |
-| `composer audit --locked --format=json` | Do wykonania w kontenerze CI; brak lokalnego PHP/Composer. |
-| Nowe testy PHP oraz test XSS w Chrome | Do wykonania w CI. Wynik pełnego odbioru należy zapisać w TEST_PLAN po faktycznym przebiegu. |
+| `composer audit --locked --format=json` | Nie wykonywano lokalnie; wynik kontenera CI poniżej. |
+| Nowe testy PHP oraz test XSS w Chrome | Nie wykonywano lokalnie; wykonano je w CI opisanym poniżej. |
+
+## Wyniki pełnego CI
+
+[CI #39 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42487633929)
+dla kodu `f8bc8b37a2e645d817524bedaffa9a8881ae8221` zakończył się powodzeniem.
+Wyniki zależności odczytano z rzeczywistych artefaktów `stage11-check-reports`,
+plików `urlopy-security/composer.json`, `npm-all.json` i `npm-production.json`.
+
+| Kontrola | Wynik |
+|---|---|
+| Pełna regresja backendu na MySQL | **445 testów / 21 607 asercji — PASS**, w tym nowe testy podszywania się i redakcji wyjątków. |
+| Administracja w Chrome | PASS, w tym syntetyczny zapisany payload XSS w historii: widoczny tekst, brak elementów HTML i brak wykonania event handlera. |
+| Skan źródeł i pełnej historii Git | PASS: **270 śledzonych plików / 552 historyczne bloby**, 5 wzorców sekretów i wzorce operacji HTML/JS. Checkout zawierał pełną historię. Nadal obowiązują ograniczenia detektora opisane niżej. |
+| `composer audit --locked --format=json` | PASS; artefakt zawiera `advisories: []` oraz `abandoned: []`. Brak zgłoszonych podatności i porzuconych pakietów. |
+| `npm audit --omit=dev --audit-level=low --json` | PASS; 0 info/low/moderate/high/critical dla zależności produkcyjnych. |
+| `npm audit --audit-level=high --json` | Próg high/critical zaliczony, ale pełny audit **nie jest czysty**: 8 wpisów moderate, 0 high/critical. Osiem wpisów wskazuje ten sam adres GHSA opisany w S11-SEC-01. |
+
+Raport Composera i raport npm nie zawierają błędu odczytu auditu. Bramka CI
+zbiera oba raporty npm, a niepowodzenie auditu kończy cały workflow błędem przez
+końcową kontrolę obowiązkową; `continue-on-error` służy wyłącznie zebraniu
+niezależnych wyników. Wynik SUCCESS nie zamyka ustalenia S11-SEC-01.
 
 Skan źródeł jest celowo ograniczony i deterministyczny. Nie wykrywa dowolnych haseł,
 tokenów nieznanych dostawców ani sekretów w plikach ignorowanych przez Git. Nie
@@ -61,6 +83,6 @@ Do tego czasu wzorce projektu i konfigurację narzędzi należy traktować jako 
 podlegający przeglądowi. To jawne ograniczenie narzędzi developerskich, nie zielony
 wynik pełnego auditu zależności.
 
-CI powinno zachować pełny raport npm (również moderate), blokować dowolne wykryte
-problemy zależności produkcyjnych oraz high/critical w pełnym lockfile i wykonać
-audyt Composera. Ten próg nie usuwa ani nie wycisza powyższego zgłoszenia.
+CI zachowuje pełny raport npm (również moderate), blokuje dowolne wykryte problemy
+zależności produkcyjnych oraz high/critical w pełnym lockfile i wykonuje audyt
+Composera. Ten próg nie usuwa ani nie wycisza powyższego zgłoszenia.

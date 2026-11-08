@@ -1,7 +1,9 @@
 # Etap 11 — protokół pomiaru wydajności
 
-Protokół zapisano przed pomiarem 8 listopada 2026 r. Wyniki pozostają do potwierdzenia
-w CI; obecność skryptu nie oznacza wykonania testu.
+Protokół zapisano przed pomiarem 8 listopada 2026 r. Pomiar wykonano w
+[CI #39 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42487633929)
+dla kodu `f8bc8b37a2e645d817524bedaffa9a8881ae8221`. Wszystkie 14 przypadków
+zmieściło się w proponowanych budżetach diagnostycznych; brak ostrzeżeń.
 
 ## Środowisko i dane
 
@@ -70,6 +72,53 @@ Skrypt uruchamia chronioną fixture i zapisuje `/tmp/urlopy-performance/report.j
 Raport zapisuje się również po częściowym przebiegu lub błędzie, z ostatnim krokiem.
 Należy zachować go jako artefakt CI i przepisać rzeczywiste czasy do końcowego
 raportu odbioru. Nie zapisujemy żadnego wyniku pomiaru przed jego wykonaniem.
+
+## Wynik CI #39 — 8 listopada 2026 r.
+
+Przebieg pomiarowy trwał od 15:05:54 do 15:06:44 czasu Europe/Warsaw. Zbudowanie
+syntetycznego zestawu zajęło **24 191 ms**, poza mierzonymi odczytami. Dodano
+100 osób, 5 zespołów i 2000 wniosków (1000 zatwierdzonych, 1000 oczekujących).
+Łącznie z wcześniejszymi danymi E2E baza zawierała **120 osób i 2019 wniosków**.
+Mierzono zakres kierownika: 20 osób / 400 wniosków; kalendarz 8–21 listopada
+oraz listę 8 listopada 2026 – 7 stycznia 2027.
+
+Środowisko: PHP **8.3.36**, MySQL **8.0.32**, Node **22.23.4**, Chrome
+**156.0.8078.79**, aplikacja `dev`; Linux x64 `7.0.0-1017-azure`, host CI z
+4 logicznymi CPU (AMD EPYC 9V45) i około 15,6 GiB pamięci. To parametry hosta
+raportowane przez Node, nie gwarantowana wyłączna rezerwacja zasobów.
+
+| Odczyt API | Próby po rozgrzewce | p50 [ms] | p95 / maksimum [ms] | Budżet [ms] |
+|---|---:|---:|---:|---:|
+| Kalendarz 14 dni | 10 | 80,0 | 114,9 | 2000 |
+| Kalendarz/lista 61 dni | 10 | 128,8 | 150,8 | 2000 |
+| Własne wnioski, pierwsza strona | 10 | 29,8 | 38,1 | 2000 |
+| Kolejka do decyzji, pierwsza strona | 10 | 44,6 | 50,0 | 2000 |
+| Saldo jednej osoby | 10 | 27,4 | 445,8 | 2000 |
+| Lista osób do sald | 10 | 26,3 | 34,2 | 2000 |
+
+| Gotowy widok w Chrome | Próby po rozgrzewce | p50 [ms] | p95 / maksimum [ms] | Budżet [ms] |
+|---|---:|---:|---:|---:|
+| Kalendarz — desktop | 3 | 917,7 | 934,4 | 5000 |
+| Moje wnioski — desktop | 3 | 273,3 | 893,2 | 5000 |
+| Obsługa wniosków — desktop | 3 | 310,3 | 333,4 | 5000 |
+| Salda zespołu — desktop | 3 | 933,7 | 1402,3 | 5000 |
+| Kalendarz — mobile | 3 | 461,2 | 873,7 | 5000 |
+| Moje wnioski — mobile | 3 | 285,5 | 868,0 | 5000 |
+| Obsługa wniosków — mobile | 3 | 273,9 | 277,1 | 5000 |
+| Salda zespołu — mobile | 3 | 884,9 | 1380,2 | 5000 |
+
+Każdy zmierzony przebieg strony wykonał odpowiednio 6 odpowiedzi API dla
+kalendarza, 3 dla własnych wniosków, 2 dla obsługi wniosków i 26 dla sald zespołu,
+tak samo na desktop i mobile. Nie wystąpiły błędy JS/API ani poziome przepełnienie.
+Najdłuższy odczyt API wyniósł 445,8 ms; najdłuższe uzyskanie gotowego widoku
+1402,3 ms. To pojedyncze maksima małych prób, nie oszacowanie stabilnego p95
+produkcyjnego ani przyczyny obserwowanego rozrzutu.
+
+Surowe próbki i metadane są w artefakcie CI `urlopy-performance/report.json`.
+Wynik potwierdza działanie tych odczytów w opisanym większym zestawie i lokalnym
+środowisku dev. Nie obejmuje jednoczesnej pracy wielu użytkowników, opóźnień VPN,
+fizycznego telefonu ani administracyjnego widoku wszystkich 100 osób; nie stanowi
+produkcyjnego SLA. Nie zmieniano kodu aplikacji w celu dopasowania wyniku pomiaru.
 
 ## Zaobserwowana struktura odczytów przed pomiarem
 
