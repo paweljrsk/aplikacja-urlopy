@@ -1,14 +1,32 @@
 # Plan testów i odbioru
 
-## Pełny miesiąc w kalendarzu B37 — weryfikacja w toku
+## Pełny miesiąc w kalendarzu B37 — odbiór zakończony (8 listopada 2026 r.)
 
 Baza: `e7165f265bed6063b110a04a3152805eb0926a93`, ukończona zmiana UX B36.
 Lokalnie pełne ESLint, TypeScript i produkcyjny build — PASS. Sprawdzenie pomocników
 dat: miesiące 28/29/30/31 dni, rok 2100 nieprzestępny, grudzień/styczeń, tydzień
 zaczynający się w poprzednim miesiącu i granice lat API — PASS.
-Odbiór przeglądarkowy obejmie filtry/szczegóły, prawidłowe zakresy API, nawigację
-miesiącami, powrót do dzisiaj oraz zrzuty desktop/mobile. Wynik zostanie dopisany
-po wykonaniu; lokalny Chromium ma znane ograniczenie `socket() EPERM`.
+Kod `f63de212562a9c0566427a2a43b272658f89916a` przeszedł pełny
+[CI #45 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42519955628).
+[PR #13](https://github.com/paweljrsk/aplikacja-urlopy/pull/13) bazuje na niescalonym
+PR #12. Kontenery projektu, PHP 8.3, MySQL 8, Node 22 i Chrome; dane syntetyczne.
+
+| Kontrola | Wynik |
+|---|---|
+| Backend, statyczne i build | PASS: 445 testów / 21 607 asercji; Symfony, PHPStan, ESLint, TypeScript i produkcyjny Next.js |
+| Miesiąc w Chrome | PASS: 28/29/30/31 dni, grudzień/styczeń, luty 2028, wybór listopada z tygodnia zaczynającego się w październiku, strzałki i Dzisiaj, weekend/święto, dokładne zakresy API i daty DOM |
+| Kontekst kalendarza | PASS: zachowane zespół, osoba, status i miesiąc po zamknięciu szczegółów; lista nadchodzących dwóch miesięcy pozostaje niezależna; ponowny Miesiąc/Dzisiaj nie pozostawia spinnera |
+| Telefon i zrzuty | PASS: 30 dni miesiąca na telefonie, brak poziomego przewijania dokumentu. Przejrzano miesięczną tabelę desktop, listę dni mobile i pełny widok mobilny z przełącznikiem trzech okresów; godziny/statusy pozostają czytelne |
+| Regresje | PASS: dotychczasowe UI, wszystkie cztery przewodniki, rzeczywiste HTTP i E2E pracownika, przełożonego oraz pełnego procesu; restart z zachowaniem danych i workery |
+| Skan, pomiary i audity | Skan źródeł/historii PASS; wszystkie 14 pomiarów w proponowanych budżetach diagnostycznych. Composer/produkcyjny npm: 0 zgłoszeń; pełny npm nadal 8 wpisów moderate z developerskiego minimatch, bez high/critical. S11-SEC-01 pozostaje otwarte |
+
+Testy Chrome i backend wykonano w CI; lokalny Chromium ma znane ograniczenie
+`socket() EPERM`. Telefon jest emulowanym viewportem, a pomiary dotyczą stosu
+developerskiego, nie produkcyjnego SLA. Raporty i zrzuty są w artefaktach tego CI.
+Nie wdrażano na serwer firmowy ani nie wykonywano backup/restore. Bez nowych
+bibliotek, migracji i zmian zasad rozliczeń/API.
+
+### Ręczny odbiór B37
 
 Ręcznie: wybierz „Miesiąc”, sprawdź pierwszy/ostatni dzień, przejdź przez grudzień
 do stycznia i do lutego, następnie wybierz „Dzisiaj”. Ustaw filtr osoby/statusu,

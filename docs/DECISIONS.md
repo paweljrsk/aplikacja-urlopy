@@ -158,7 +158,14 @@ Przy tej zmianie uzupełniono test wygaśnięcia sesji tutorialu: CI #44 po samy
 uzupełnieniu dokumentacji B36 ujawnił przerwane oczekiwanie Playwright na pojedynczą
 nawigację, gdy dwie odpowiedzi 401 równolegle kierują na logowanie. Test czeka teraz
 na końcowy adres i widoczny ekran logowania, tak jak istniejący test kalendarza;
-kontrola usunięcia przewodnika pozostaje. Faktyczny odbiór B37 zapisujemy w TEST_PLAN.
+kontrola usunięcia przewodnika pozostaje.
+
+Odbiór B37: kod `f63de212562a9c0566427a2a43b272658f89916a`,
+[CI #45 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42519955628).
+Pełne miesiące, rok przestępny, przełom roku, filtry/szczegóły i telefon przeszły
+test Chrome; ponownie przeszły wszystkie przewodniki, w tym wygaśnięcie sesji.
+445 testów backendu i pełna regresja HTTP/E2E PASS. Zrzuty desktop/mobile sprawdzono.
+Szczegółowy raport i ograniczenia są w TEST_PLAN; etap 12 pozostaje wstrzymany.
 
 ### Zasady wspólne
 

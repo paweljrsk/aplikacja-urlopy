@@ -1,8 +1,8 @@
 # Zadania aplikacji urlopowej
 
-**Bieżąca zmiana B37 — widok pełnego miesiąca w kalendarzu — w trakcie.**
-- [-] Dodać przełącznik miesiąca, nawigację miesiącami i powrót do bieżącego miesiąca; zachować filtry, szczegóły i listę nadchodzących nieobecności.
-- [ ] Sprawdzić długości miesięcy, przełom roku, rok przestępny i układ desktop/mobile; zapisać odbiór.
+**Bieżąca zmiana B37 — widok pełnego miesiąca w kalendarzu — ukończona.** CI #45 SUCCESS.
+- [x] Dodać przełącznik miesiąca, nawigację miesiącami i powrót do bieżącego miesiąca; zachować filtry, szczegóły i listę nadchodzących nieobecności.
+- [x] Sprawdzić długości miesięcy, przełom roku, rok przestępny i układ desktop/mobile; zapisać odbiór.
 Temat asystenta AI odłożony. Etap 12 pozostaje nierozpoczęty.
 
 Aktualizacja: 8 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacja — zakończony**.
@@ -408,7 +408,7 @@ Punkt wznowienia: odbiór użytkownika, następnie **etap 12 — przygotowanie p
 i pilotażu**, wyłącznie po osobnym poleceniu. Przed konfiguracją rozstrzygnąć Q7;
 uwzględnić S11-SEC-01, backup/restore i pomiar docelowego środowiska. Nie scalać PR automatycznie.
 
-### Bieżący punkt wznowienia — dodatkowa zmiana UX B36
+### Historyczny punkt wznowienia — dodatkowa zmiana UX B36
 
 Użytkownik zlecił osobny moduł zarządzania i przewodniki po rolach oraz jawnie
 wstrzymał etap 12. Gałąź `codex/modul-zarzadzania-przewodniki` bazuje na końcowym
@@ -422,3 +422,15 @@ Sprawdzono zrzuty modułu i tutoriali desktop/mobile. Raport i ręczny odbiór s
 [PR #12 — zmiana UX](https://github.com/paweljrsk/aplikacja-urlopy/pull/12) bazuje na
 niescalonym PR #11. Bez nowych bibliotek ani migracji.
 Punkt wznowienia: odbiór użytkownika. Etap 12 nadal wstrzymany; nie scalać PR automatycznie.
+
+### Bieżący punkt wznowienia — miesiąc w kalendarzu B37
+
+Gałąź `codex/kalendarz-widok-miesiaca` bazuje na `e7165f265bed6063b110a04a3152805eb0926a93`.
+Dodano pełny miesiąc, nawigację miesiącami i zachowanie filtrów. Kod
+`f63de212562a9c0566427a2a43b272658f89916a` przeszedł pełny
+[CI #45 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42519955628):
+445 testów / 21 607 asercji, statyczne/build, Chrome miesiąca i dotychczasowych
+ekranów/przewodników, rzeczywiste HTTP/E2E, restart, workery, pomiary i audity.
+Lokalne kontrole i przypadki dat PASS; zrzuty desktop/mobile sprawdzono.
+[PR #13](https://github.com/paweljrsk/aplikacja-urlopy/pull/13) pozostaje niescalony.
+Punkt wznowienia: odbiór użytkownika. Asystent AI odłożony; etap 12 nadal wstrzymany.

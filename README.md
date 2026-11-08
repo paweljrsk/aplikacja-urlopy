@@ -2,12 +2,19 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżąca zmiana B37 — pełny miesiąc w kalendarzu — w weryfikacji.**
+**Ukończona zmiana B37 — pełny miesiąc w kalendarzu.**
 Gałąź `codex/kalendarz-widok-miesiaca` bazuje na ukończonej zmianie modułu zarządzania.
 Przełącznik „Miesiąc” pokazuje cały miesiąc kalendarzowy; strzałki zmieniają miesiące,
 a „Dzisiaj” przywraca bieżący. Filtry, szczegóły i lista dwóch miesięcy pozostają
 dostępne. Na telefonie miesiąc ma postać listy dni. Bez nowych bibliotek i migracji.
 Asystent AI jest odłożony; etap 12 pozostaje nierozpoczęty.
+
+[PR #13](https://github.com/paweljrsk/aplikacja-urlopy/pull/13),
+[CI #45 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42519955628)
+dla kodu `f63de212562a9c0566427a2a43b272658f89916a`: 445 testów / 21 607 asercji,
+statyczne/build, Chrome z miesiącami 28/29/30/31 dni, filtry/szczegóły, telefon
+i pełna regresja rzeczywistego HTTP/E2E — PASS. Zrzuty desktop/mobile sprawdzono.
+Raport i ręczny odbiór są w [TEST_PLAN](docs/TEST_PLAN.md). PR pozostaje niescalony.
 
 **Ukończona zmiana UX — moduł zarządzania i przewodniki ról.**
 Gałąź `codex/modul-zarzadzania-przewodniki` bazuje na końcowym etapie 11
