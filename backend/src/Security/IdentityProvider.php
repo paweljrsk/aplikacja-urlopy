@@ -5,6 +5,7 @@ namespace App\Security;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -13,7 +14,7 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 /** @implements UserProviderInterface<SecurityIdentity> */
 final class IdentityProvider implements UserProviderInterface
 {
-    public function __construct(private EntityManagerInterface $em, private IdentityFactory $identities, private ClockInterface $clock)
+    public function __construct(private EntityManagerInterface $em, private IdentityFactory $identities, private ClockInterface $clock, private PasswordHasherFactoryInterface $hashers)
     {
     }
 
@@ -21,7 +22,18 @@ final class IdentityProvider implements UserProviderInterface
     {
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => strtolower(trim($identifier))]);
 
-        return $this->eligibleIdentity($user);
+        try {
+            return $this->eligibleIdentity($user);
+        } catch (UserNotFoundException $exception) {
+            // The real-account path verifies a password hash. Do equivalent work for
+            // an unavailable account, rather than exposing it through a fast exit.
+            // Use the configured algorithm/cost; the result is discarded, never
+            // persisted or usable as credentials. Symfony checks throttling and
+            // CSRF before invoking this loader. Session refresh does not use it.
+            $this->hashers->getPasswordHasher(SecurityIdentity::class)->hash('Unavailable account timing equalization');
+
+            throw $exception;
+        }
     }
 
     public function refreshUser(UserInterface $user): SecurityIdentity

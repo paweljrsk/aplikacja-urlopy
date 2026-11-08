@@ -1,0 +1,308 @@
+{
+  "commit": "44bdd6d76ae51933cbcfe529ac63104c2abc1ac2",
+  "run": "https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42527488779",
+  "workflowConclusion": "success",
+  "productionApproval": false,
+  "backend": {
+    "tests": 458,
+    "assertions": 21703,
+    "status": "passed"
+  },
+  "http": {
+    "status": "passed",
+    "assertions": 3203,
+    "requests": 181,
+    "passed": [
+      "edge rejects oversized bodies and hides version banners",
+      "anonymous routes reject unauthenticated identities and spoofed headers",
+      "login rejects missing and foreign-session CSRF tokens",
+      "authenticated identities and session fixation checks",
+      "IDOR and role escalation fail across requests, profiles, administration and balances",
+      "missing and foreign CSRF tokens cannot write, preview or log out",
+      "strict input rejects mass assignment, SQL payloads, arrays and malformed JSON",
+      "rejected operations leave identities, request histories and all balances unchanged",
+      "calendar projects permitted metadata and excludes a foreign team",
+      "password reset revokes every old session and forces a change",
+      "deactivation revokes an existing manager session",
+      "logout invalidates captured cookies",
+      "credential errors are generic and repeated attempts are throttled"
+    ],
+    "diagnostics": {
+      "loginTiming": {
+        "samplesPerPath": 3,
+        "thresholdEnforced": false,
+        "unknownMedianMs": 483,
+        "wrongPasswordMedianMs": 483
+      }
+    },
+    "scope": "Loopback CI development stack, synthetic data, real nginx/PHP/MySQL; production transport excluded"
+  },
+  "framing": {
+    "attackerUrl": "http://localhost:35861/",
+    "frameUrl": "http://localhost:8080/login",
+    "requests": [
+      {
+        "url": "http://localhost:8080/login",
+        "navigation": true
+      }
+    ],
+    "responses": [
+      {
+        "status": 200,
+        "csp": "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+        "xFrameOptions": "DENY"
+      }
+    ],
+    "failures": [
+      {
+        "url": "http://localhost:8080/login",
+        "navigation": true,
+        "error": "net::ERR_BLOCKED_BY_RESPONSE"
+      }
+    ],
+    "securityLogs": [
+      {
+        "source": "security",
+        "text": "Framing 'http://localhost:8080/' violates the following Content Security Policy directive: \"frame-ancestors 'none'\". The request has been blocked.\n"
+      }
+    ],
+    "networkFailures": [
+      {
+        "errorText": "net::ERR_BLOCKED_BY_RESPONSE",
+        "blockedReason": "other"
+      }
+    ],
+    "frameUrls": [
+      "http://localhost:35861/",
+      "chrome-error://chromewebdata/"
+    ],
+    "blockEvidence": {
+      "source": "requestfailed",
+      "error": "net::ERR_BLOCKED_BY_RESPONSE"
+    }
+  },
+  "containers": {
+    "scanner": "Trivy 0.76.2",
+    "archiveSha256": "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf",
+    "scope": "running isolated Compose images, not production sign-off",
+    "execution": "complete",
+    "assessment": "findings_require_review",
+    "images": [
+      {
+        "service": "php",
+        "execution": "complete",
+        "imageId": "sha256:4d66f6c2a98ec07a92d8191cbfc618d621d2d1033dcb56ee9977e05e6e015ad6",
+        "findings": 1373,
+        "bySeverity": {
+          "LOW": 849,
+          "HIGH": 82,
+          "MEDIUM": 441,
+          "CRITICAL": 1
+        },
+        "withFix": 0,
+        "osEndOfLife": false
+      },
+      {
+        "service": "node",
+        "execution": "complete",
+        "imageId": "sha256:28a21ddadf34276dda2c13d5fc530f75f992fd0742af6ecb5b5daa2638de80e6",
+        "findings": 217,
+        "bySeverity": {
+          "LOW": 85,
+          "HIGH": 34,
+          "MEDIUM": 97,
+          "CRITICAL": 1
+        },
+        "withFix": 2,
+        "osEndOfLife": false
+      },
+      {
+        "service": "nginx",
+        "execution": "complete",
+        "imageId": "sha256:9cb0ed588efc34baf01d2c596f17f3f4b7624f8c088a16ded1c4f9a1d45b7a7d",
+        "findings": 1,
+        "bySeverity": {
+          "MEDIUM": 1
+        },
+        "withFix": 1,
+        "osEndOfLife": false
+      },
+      {
+        "service": "mysql",
+        "execution": "complete",
+        "imageId": "sha256:412b8cc72e4a28e086097c3fcb1ca391beaefe86bc421a57bc53f7596461ce3b",
+        "findings": 519,
+        "bySeverity": {
+          "HIGH": 192,
+          "MEDIUM": 286,
+          "LOW": 35,
+          "CRITICAL": 5,
+          "UNKNOWN": 1
+        },
+        "withFix": 519,
+        "osEndOfLife": false
+      },
+      {
+        "service": "redis",
+        "execution": "complete",
+        "imageId": "sha256:f9dd5262610637c4ce86dfc0f25e3f8108ace26929df69c4b94c6d2d5f1499a6",
+        "findings": 1,
+        "bySeverity": {
+          "MEDIUM": 1
+        },
+        "withFix": 1,
+        "osEndOfLife": true
+      },
+      {
+        "service": "rabbit",
+        "execution": "complete",
+        "imageId": "sha256:f16d7c941eea7d487de50af6d5e95b1a30f52188c4b11bd37ad8d80808a4a788",
+        "findings": 27,
+        "bySeverity": {
+          "HIGH": 2,
+          "MEDIUM": 21,
+          "LOW": 4
+        },
+        "withFix": 9,
+        "osEndOfLife": false
+      }
+    ],
+    "databaseMetadata": {
+      "Version": 2,
+      "NextUpdate": "2026-11-09T18:58:44.715199055Z",
+      "UpdatedAt": "2026-11-08T18:58:44.715199225Z",
+      "DownloadedAt": "2026-11-08T22:02:56.733728003Z"
+    }
+  },
+  "zap": {
+    "status": "WARNINGS",
+    "exitCode": 2,
+    "scannerVersion": "2.17.0",
+    "scope": "anonymous passive scan of isolated HTTP development stack; not authenticated or active scan",
+    "alerts": [
+      {
+        "id": "10055",
+        "name": "CSP: Failure to Define Directive with No Fallback",
+        "risk": "Medium (High)",
+        "instances": 2
+      },
+      {
+        "id": "10055",
+        "name": "CSP: Wildcard Directive",
+        "risk": "Medium (High)",
+        "instances": 2
+      },
+      {
+        "id": "10055",
+        "name": "CSP: script-src unsafe-inline",
+        "risk": "Medium (High)",
+        "instances": 2
+      },
+      {
+        "id": "10055",
+        "name": "CSP: style-src unsafe-inline",
+        "risk": "Medium (High)",
+        "instances": 2
+      },
+      {
+        "id": "90004",
+        "name": "Cross-Origin-Embedder-Policy Header Missing or Invalid",
+        "risk": "Low (Medium)",
+        "instances": 2
+      },
+      {
+        "id": "90004",
+        "name": "Cross-Origin-Opener-Policy Header Missing or Invalid",
+        "risk": "Low (Medium)",
+        "instances": 2
+      },
+      {
+        "id": "90004",
+        "name": "Cross-Origin-Resource-Policy Header Missing or Invalid",
+        "risk": "Low (Medium)",
+        "instances": 5
+      },
+      {
+        "id": "10110",
+        "name": "Dangerous JS Functions",
+        "risk": "Low (Low)",
+        "instances": 2
+      },
+      {
+        "id": "10096",
+        "name": "Timestamp Disclosure - Unix",
+        "risk": "Low (Low)",
+        "instances": 1
+      },
+      {
+        "id": "10027",
+        "name": "Information Disclosure - Suspicious Comments",
+        "risk": "Informational (Medium)",
+        "instances": 24
+      },
+      {
+        "id": "10109",
+        "name": "Modern Web Application",
+        "risk": "Informational (Medium)",
+        "instances": 2
+      },
+      {
+        "id": "10049",
+        "name": "Non-Storable Content",
+        "risk": "Informational (Medium)",
+        "instances": 5
+      },
+      {
+        "id": "10112",
+        "name": "Session Management Response Identified",
+        "risk": "Informational (Medium)",
+        "instances": 1
+      },
+      {
+        "id": "10049",
+        "name": "Storable but Non-Cacheable Content",
+        "risk": "Informational (Medium)",
+        "instances": 5
+      }
+    ]
+  },
+  "applicationDependencies": {
+    "production": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "all": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "composer": {
+    "advisories": [],
+    "abandoned": [],
+    "filter": [],
+    "cooldown": []
+  },
+  "phpZlibRetest": {
+    "installed": "1:1.3.dfsg+really1.3.1-1+deb13u1",
+    "resolvedIds": [
+      "CVE-2026-76844",
+      "CVE-2026-85091",
+      "CVE-2026-27171"
+    ],
+    "remainingZlibFindings": 0
+  },
+  "rawArtifact": {
+    "id": 13635824539,
+    "name": "stage11-check-reports",
+    "sha256": "a60f525d7a66b266292eb219b8db00e0b25f50fab9dbdb469f700c7a5360f744",
+    "expiresAt": "2026-11-15T22:04:41Z"
+  }
+}

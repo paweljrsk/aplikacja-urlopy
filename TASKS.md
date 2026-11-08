@@ -1,5 +1,28 @@
 # Zadania aplikacji urlopowej
 
+## Dodatkowe pentesty przed etapem 12 — badanie i retest zakończone
+
+- [x] Wykonać przegląd white-box, negatywne testy HTTP/ról/sesji i skany zależności/źródeł.
+- [x] Wprowadzić opisane poprawki aplikacyjne/runtime i uruchomić regresję na odizolowanych danych; pozostałe ryzyka są otwarte poniżej.
+- [x] Zapisać raport dowodów, ryzyk pozostałych i zakresu dla działu bezpieczeństwa.
+
+Gałąź `codex/pentesty-przed-etapem-12` bazuje na `5b927f2b0409cbb0e5499733f713423eec63acbb` (CI #50 SUCCESS). Badanie nie obejmuje firmowego serwera; etap 12 pozostaje nierozpoczęty.
+
+[CI #54 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42527488779),
+kod `44bdd6d76ae51933cbcfe529ac63104c2abc1ac2`: backend 458 / 21 703, HTTP 181 / 3203,
+pełna regresja, rzeczywista blokada iframe i retest zlib PHP. Szczegóły oraz skany
+z otwartymi zgłoszeniami: [PENTEST_PRE_STAGE12](docs/PENTEST_PRE_STAGE12.md).
+
+Pozostaje przed produkcją (nie jest to rozpoczęcie etapu 12):
+
+- [ ] Q11 / PT-07: ustalić limit pojedynczego wniosku i ograniczyć koszt operacji.
+- [ ] PT-08/PT-11/PT-13: zastąpić MySQL/RabbitMQ oraz bazę OS Redisa po EOL; sprawdzić istniejące dane, migrację i restore.
+- [ ] PT-09/PT-10/PT-12: odebrać konfigurację HTTPS, minimalne obrazy, pozostałe zgłoszenia i politykę CSP na finalnym buildzie.
+
+Aktualny punkt wznowienia: odbiór raportu i decyzja Q11; etap 12 nadal wstrzymany.
+PR #14 pozostaje niescalony. S11-SEC-01 bibliotek aplikacji zamknięto; globalny npm
+wewnątrz obrazu ma odrębne zgłoszenia.
+
 - [x] B39: otwierać kalendarz w widoku bieżącego miesiąca na komputerze i telefonie. Lokalny lint, build i kontrola renderu przeszły.
 
 - [x] B38: usunąć napis „Urlopy” i separator obok logo w górnym pasku. Lint, build i kontrola HTML przeszły.

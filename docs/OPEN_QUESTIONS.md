@@ -1,7 +1,7 @@
 # Otwarte pytania
 
-Stan: 7 listopada 2026 r., po odpowiedzi „Tak” przed implementacją etapu 7.
-Q1–Q6 oraz Q8–Q10 rozstrzygnięte. Otwarte pozostaje Q7 przed produkcją.
+Stan: 8 listopada 2026 r., dodatkowe badanie bezpieczeństwa przed etapem 12.
+Q1–Q6 oraz Q8–Q10 rozstrzygnięte. Otwarte pozostają Q7 i Q11 przed produkcją.
 
 Pytania nie blokują audytu i dokumentacji w etapie 1. Należy je zadać przed pracą,
 której wynik zależy od odpowiedzi. Jeżeli wpływ na model ujawni się wcześniej,
@@ -66,3 +66,13 @@ Obie poniższe propozycje użytkownik zatwierdził odpowiedzią „Tak” 7 list
    historyczne wnioski, nie zmiana zatwierdzonych uprawnień do korekt limitów z B26/B27.
 
 Odpowiedź zapisano w REQUIREMENTS 1.5 i DECISIONS B32–B33 przed zależną implementacją.
+
+### Q11 — maksymalna długość pojedynczego wniosku
+
+Pentest PT-02/PT-07 wykazał nadmierny koszt wieloletnich żądań. Usunięto
+kwadratową walidację duplikatów, ale pozostają tysiące operacji ORM pod blokadą.
+Propozycja do ustalenia: maksymalnie 366 dni kalendarzowych w pojedynczym wniosku
+lub 731 dni, jeżeli potrzebne są nieobecności do dwóch lat. Ograniczenie musi
+obejmować także podglądy i zmiany oraz być sprawdzane przed budową/zapisem dni.
+Pytanie o wybór limitu nie otrzymało odpowiedzi podczas badania; brak odpowiedzi
+nie stanowi zgody. Zakres obsługiwanych lat 2025–2100 nie wymaga zmiany.

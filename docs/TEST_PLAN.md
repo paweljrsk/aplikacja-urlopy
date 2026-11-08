@@ -984,3 +984,29 @@ zapisy przez API i MySQL. To odbiór etapu 10; pełny audyt systemu jest zakrese
 osobno zlecanego etapu 11, konfiguracja produkcji etapu 12.
 
 Ręczny odbiór jest opisany w README, sekcja etapu 10. PR #10 pozostaje niescalony.
+
+## Dodatkowe pentesty przed etapem 12 — raport odbioru badania
+
+Raport ustaleń i dowodów: [PENTEST_PRE_STAGE12](PENTEST_PRE_STAGE12.md).
+Nowe testy obejmują koszt odrzuconego loginu, nagłówki, duży snapshot z odległym
+duplikatem, obcy iframe i negatywny rzeczywisty HTTP z kontrolą braku zapisów.
+Do CI dołączono pasywny ZAP oraz skan faktycznie uruchomionych obrazów Trivy.
+[CI #54 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42527488779),
+kod `44bdd6d76ae51933cbcfe529ac63104c2abc1ac2`:
+
+- Backend: **458 testów / 21 703 asercje**, migracje, schemat i zachowanie danych — PASS.
+- Statyczne kontrole, produkcyjny build, wszystkie UI, rzeczywiste HTTP/E2E,
+  reprezentatywne pomiary i workery — PASS.
+- Dodatkowy harness: **13 grup, 181 żądań / 3203 asercje** — PASS. Obejmuje m.in.
+  IDOR, role, CSRF, walidację, brak skutków odmów, sesje/reset/dezaktywację i limiter.
+- Rzeczywista blokada obcego iframe: Chrome `ERR_BLOCKED_BY_RESPONSE`, komunikat
+  `frame-ancestors 'none'`, formularz niewyrenderowany w ramce — PASS.
+- Pełne i produkcyjne npm audit: zero zgłoszeń. Composer: bez advisory i abandoned.
+- Trivy ukończył sześć skanów, ale pozostawił zgłoszenia; PHP zlib retest potwierdza
+  usunięcie trzech naprawionych CVE. ZAP: 14 typów / 57 wystąpień, WARNINGS, zero high.
+  Wynik wykonania skanerów nie oznacza czystych obrazów ani odbioru produkcji.
+
+Dowody: [ci54-summary.json](security-evidence/ci54-summary.json). Brak lokalnego
+PHP/Dockera i blokada Chromium oznaczają, że zaliczenie tych kontroli pochodzi z CI.
+Nie badano firmowego środowiska. PT-07, EOL i konfiguracja produkcyjna pozostają
+otwarte w raporcie; wcześniejsze CI #51–53 nie stanowiły końcowego odbioru.

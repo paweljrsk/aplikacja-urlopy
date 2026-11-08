@@ -1,5 +1,8 @@
 # Refresh pinned runtime digests deliberately, together with smoke tests.
-FROM node:22.13-slim@sha256:83fdfa2a4de32d7f8d79829ea259bd6a4821f8b2d123204ac467fbe3966450fc AS frontend-dev
+FROM node:22.23.4-bookworm-slim@sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d AS frontend-dev
+# Node's bundled npm 10 still contains known high-severity tooling advisories.
+# npm 11 supports this Node release; keep its version explicit and test npm ci.
+RUN npm install --global --ignore-scripts npm@11.21.2 && npm cache clean --force
 WORKDIR /var/www/html/frontend
 RUN chown node:node /var/www/html/frontend
 ENV NEXT_TELEMETRY_DISABLED=1 NPM_CONFIG_CACHE=/tmp/npm-cache
@@ -20,7 +23,7 @@ FROM composer:2@sha256:8de2184c6de224f4689e8f80ed5f5edaf0030b6b8b7839a22a2bcb672
 FROM php:8.3-fpm@sha256:03af352853b05e35ee15ab898a2755532573684c7d1120b246dbd4e3c90f5007 AS backend-default
 WORKDIR /var/www/html/backend
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        unzip librabbitmq-dev libssl-dev libonig-dev \
+        unzip librabbitmq-dev libssl-dev libonig-dev zlib1g \
     && docker-php-ext-install pdo_mysql mbstring \
     && pecl install amqp-2.2.0 redis-6.3.0 \
     && docker-php-ext-enable amqp redis \

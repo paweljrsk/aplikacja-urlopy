@@ -68,6 +68,9 @@ class RequestRevision
 
     private bool $building = false;
 
+    /** @var array<string, true> Temporary constructor index, never part of persisted state. */
+    private array $buildingDates = [];
+
     /** @param list<RequestedDay> $days */
     public function __construct(LeaveRequest $request, RequestChangeKind $kind, AbsenceTypeVersion $policy, RequestMode $mode, \DateTimeImmutable $startDate, \DateTimeImmutable $endDate, array $days, AuditEvent $source, ?self $baseRevision = null, ?self $calendarSource = null, ?self $editSource = null)
     {
@@ -189,6 +192,7 @@ class RequestRevision
             }
         } finally {
             $this->building = false;
+            $this->buildingDates = [];
         }
         if (RequestChangeKind::CANCELLATION === $kind && !$this->hasSameContentAs($baseRevision)) {
             throw new \DomainException('Cancellation retains the exact content of the approved absence.');
@@ -346,11 +350,13 @@ class RequestRevision
         if (!$this->building || $day->getRevision() !== $this) {
             throw new \LogicException('Days cannot be appended to an existing request revision.');
         }
-        foreach ($this->days as $existing) {
-            if ($existing->getDate()->format('Y-m-d') === $day->getDate()->format('Y-m-d')) {
-                throw new \InvalidArgumentException('A date can appear only once in a request revision.');
-            }
+        // Public date ranges must not trigger a quadratic scan while the workflow
+        // holds the shared administration lock. Preserve duplicate rejection in O(1).
+        $date = $day->getDate()->format('Y-m-d');
+        if (isset($this->buildingDates[$date])) {
+            throw new \InvalidArgumentException('A date can appear only once in a request revision.');
         }
+        $this->buildingDates[$date] = true;
         $this->days->add($day);
     }
 

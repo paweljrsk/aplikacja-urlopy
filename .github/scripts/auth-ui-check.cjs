@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
-const { mkdirSync } = require('node:fs');
+const { mkdirSync, writeFileSync } = require('node:fs');
+const { createServer } = require('node:http');
 const { join } = require('node:path');
 const { chromium } = require('playwright-core');
 
@@ -14,6 +15,82 @@ mkdirSync(screenshotDir, { recursive: true });
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH || '/usr/bin/google-chrome',args:['--no-sandbox','--disable-dev-shm-usage']});
  try {
  const context=await browser.newContext({viewport:{width:1366,height:1000}});
+ // Inspect real HTML responses before mocking the application API.
+ for (const path of ['/login', '/', '/management/admin']) {
+  const response=await context.request.get(`${baseUrl}${path}`);
+  assert.equal(response.status(),200,`HTML route ${path} must be available.`);
+  const headers=response.headers();
+  assert.equal(headers['x-frame-options'],'DENY');
+  assert.match(headers['content-security-policy'],/frame-ancestors 'none'/);
+  assert.match(headers['content-security-policy'],/object-src 'none'/);
+  assert.match(headers['content-security-policy'],/base-uri 'self'/);
+  assert.equal(headers['x-content-type-options'],'nosniff');
+  assert.equal(headers['referrer-policy'],'strict-origin-when-cross-origin');
+  assert.match(headers['permissions-policy'],/camera=\(\)/);
+  assert.equal(headers['x-powered-by'],undefined);
+ }
+ // Serve the attack document over real HTTP at the same loopback host and a
+ // different port. This is cross-origin but same-site, avoiding unrelated local
+ // network permissions and out-of-process iframe logging differences.
+ const applicationAddress=new URL(baseUrl);
+ assert.equal(applicationAddress.protocol,'http:','Synthetic framing probe requires local HTTP.');
+ assert.ok(['localhost','127.0.0.1','[::1]'].includes(applicationAddress.hostname),'Synthetic framing probe requires a loopback application.');
+ const frameUrl=`${baseUrl}/login`;
+ const probeServer=createServer((_request,response)=>{
+  response.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
+  response.end(`<!doctype html><title>Synthetic framing probe</title><iframe src="${frameUrl}"></iframe>`);
+ });
+ await new Promise((resolve,reject)=>{probeServer.once('error',reject);probeServer.listen(0,applicationAddress.hostname.replace(/^\[|\]$/g,''),resolve);});
+ const attackerAddress=new URL(baseUrl);
+ attackerAddress.port=String(probeServer.address().port);
+ const attackerUrl=attackerAddress.href;
+ assert.notEqual(attackerAddress.origin,expectedOrigin);
+ const attacker=await context.newPage();
+ const devtools=await context.newCDPSession(attacker);
+ const diagnostic={attackerUrl,frameUrl,requests:[],responses:[],failures:[],securityLogs:[],networkFailures:[],frameUrls:[],blockEvidence:null};
+ const frameRequestIds=new Set();
+ let unblock;
+ const observedBlock=new Promise(resolve=>{unblock=resolve;});
+ const recordBlock=evidence=>{if(!diagnostic.blockEvidence){diagnostic.blockEvidence=evidence;unblock();}};
+ const onRequest=request=>{if(request.url()===frameUrl) diagnostic.requests.push({url:request.url(),navigation:request.isNavigationRequest()});};
+ const onResponse=response=>{
+  if(response.url()!==frameUrl) return;
+  const headers=response.headers();
+  diagnostic.responses.push({status:response.status(),csp:headers['content-security-policy'],xFrameOptions:headers['x-frame-options']});
+ };
+ const onRequestFailed=request=>{
+  if(request.url()!==frameUrl) return;
+  const error=request.failure()?.errorText;
+  diagnostic.failures.push({url:request.url(),navigation:request.isNavigationRequest(),error});
+  if(request.isNavigationRequest() && /^net::ERR_BLOCKED_BY_(RESPONSE|CSP)(?:\..+)?$/.test(error || '')) recordBlock({source:'requestfailed',error});
+ };
+ context.on('request',onRequest); context.on('response',onResponse); context.on('requestfailed',onRequestFailed);
+ devtools.on('Log.entryAdded',({entry})=>{
+  if(entry.source!=='security') return;
+  diagnostic.securityLogs.push({source:entry.source,text:entry.text});
+  if(/frame-ancestors|X-Frame-Options/i.test(entry.text)) recordBlock({source:'security-log',text:entry.text});
+ });
+ devtools.on('Network.requestWillBeSent',event=>{if(event.request.url===frameUrl)frameRequestIds.add(event.requestId);});
+ devtools.on('Network.loadingFailed',event=>{
+  if(!frameRequestIds.has(event.requestId)) return;
+  diagnostic.networkFailures.push({errorText:event.errorText,blockedReason:event.blockedReason});
+  if(event.blockedReason==='csp') recordBlock({source:'network-csp',blockedReason:event.blockedReason});
+ });
+ let timeout;
+ try {
+  await Promise.all([devtools.send('Log.enable'),devtools.send('Network.enable')]);
+  const deadline=new Promise((_,reject)=>{timeout=setTimeout(()=>reject(new Error('Chrome did not report a framing-policy/network block; see frame-probe.json.')),15000);});
+  await Promise.all([Promise.race([observedBlock,deadline]),attacker.goto(attackerUrl)]);
+  assert.equal(await attacker.frameLocator('iframe').locator('input[type="password"]').count(),0,'Login must not render after the browser reports the iframe navigation block.');
+ } finally {
+  clearTimeout(timeout);
+  diagnostic.frameUrls=attacker.frames().map(frame=>frame.url());
+  mkdirSync('/tmp/urlopy-security',{recursive:true});
+  writeFileSync('/tmp/urlopy-security/frame-probe.json',JSON.stringify(diagnostic,null,2));
+  context.off('request',onRequest); context.off('response',onResponse); context.off('requestfailed',onRequestFailed);
+  await devtools.detach(); await attacker.close();
+  await new Promise(resolve=>{probeServer.close(resolve);probeServer.closeAllConnections();});
+ }
  let session=null; let adminReads=0; const mutations=[]; const pageErrors=[];
  const employee={id:2,firstName:'Anna',lastName:'Testowa',email:'anna@example.test',isAdministrator:false,mustChangePassword:false,team:{id:1,code:'it',name:'Rozwój aplikacji'},role:'employee'};
  const admin={id:1,firstName:'Paweł',lastName:'Testowy',email:'admin@example.test',isAdministrator:true,mustChangePassword:false,team:null,role:null};
@@ -97,7 +174,7 @@ mkdirSync(screenshotDir, { recursive: true });
  await page.waitForURL(atPath('/login'));
  await page.getByRole('heading',{name:'Zaloguj się'}).waitFor();
  assert.equal(pageErrors.length,0,'Browser reported a JavaScript exception.');
- console.log('PASS: anonymous guard, login failure/password clearing, forced change, mismatch validation, successful change/logout, personal account without administrative reset controls, CSRF headers, empty browser storage, desktop/mobile overflow, no page errors.');
+ console.log('PASS: HTML security headers, cross-origin framing blocked, anonymous guard, login failure/password clearing, forced change, mismatch validation, successful change/logout, personal account without administrative reset controls, CSRF headers, empty browser storage, desktop/mobile overflow, no page errors.');
  } finally {
   await browser.close();
  }

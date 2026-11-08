@@ -15,7 +15,7 @@ concurrency:
 jobs:
   docker-baseline:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 50
     env:
       NEXT_TELEMETRY_DISABLED: 1
     steps:
@@ -75,6 +75,8 @@ jobs:
       - name: Production frontend build
         run: docker compose exec -T node npm run build
       - name: Browser auth screens with synthetic API responses
+        id: auth_ui
+        continue-on-error: true
         run: |
           npm install --prefix /tmp/urlopy-ui --no-package-lock --ignore-scripts playwright-core@1.62.1
           NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/auth-ui-check.cjs
@@ -118,10 +120,20 @@ jobs:
         id: system_e2e
         continue-on-error: true
         run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/system-e2e-check.cjs
+      - name: Authenticated negative HTTP security probes
+        id: pentest_http
+        continue-on-error: true
+        run: |
+          # Each real security suite has its own limiter budget on synthetic CI data.
+          # Do not change the production login limits to accommodate other tests.
+          docker compose exec -T php php bin/console cache:pool:clear cache.app
+          BASE_URL=http://localhost:8080 node .github/scripts/pentest-http-check.cjs
       - name: Measure representative API and rendered views
         id: performance
         continue-on-error: true
-        run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/performance-check.cjs
+        run: |
+          docker compose exec -T php php bin/console cache:pool:clear cache.app
+          NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/performance-check.cjs
       - name: Audit locked dependency advisories
         id: dependency_audit
         continue-on-error: true
@@ -130,8 +142,16 @@ jobs:
           failed=0
           docker compose exec -T php composer audit --locked --format=json > /tmp/urlopy-security/composer.json || failed=1
           docker compose exec -T node npm audit --omit=dev --audit-level=low --json > /tmp/urlopy-security/npm-production.json || failed=1
-          docker compose exec -T node npm audit --audit-level=high --json > /tmp/urlopy-security/npm-all.json || failed=1
+          docker compose exec -T node npm audit --audit-level=low --json > /tmp/urlopy-security/npm-all.json || failed=1
           exit "$failed"
+      - name: Scan running container image vulnerabilities
+        id: container_security
+        continue-on-error: true
+        run: python3 .github/scripts/container-security-check.py
+      - name: Passive ZAP baseline on isolated HTTP stack
+        id: zap_baseline
+        continue-on-error: true
+        run: BASE_URL=http://localhost:8080 bash .github/scripts/pentest-zap-check.sh
       - name: Verify optional Messenger and Scheduler workers
         run: |
           make workers
@@ -172,7 +192,7 @@ jobs:
           echo 'Managed request browser checks failed; independent E2E results do not override this failure.'
           exit 1
       - name: Require system, performance and dependency checks to pass
-        if: always() && (steps.system_e2e.outcome == 'failure' || steps.performance.outcome == 'failure' || steps.dependency_audit.outcome == 'failure')
+        if: always() && (steps.system_e2e.outcome == 'failure' || steps.performance.outcome == 'failure' || steps.dependency_audit.outcome == 'failure' || steps.pentest_http.outcome == 'failure' || steps.container_security.outcome == 'failure' || steps.zap_baseline.outcome == 'failure' || steps.auth_ui.outcome == 'failure')
         run: exit 1
       - name: Save performance and dependency reports
         if: always()

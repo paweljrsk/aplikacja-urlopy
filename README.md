@@ -1,5 +1,15 @@
 # Aplikacja urlopowa zespołu
 
+**Dodatkowe badanie bezpieczeństwa przed etapem 12 — zakończone, z otwartymi blokadami produkcji.**
+Poprawki, zakres i pozostałe blokady produkcji opisuje [raport pentestów](docs/PENTEST_PRE_STAGE12.md).
+[CI #54 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42527488779)
+dla kodu `44bdd6d76ae51933cbcfe529ac63104c2abc1ac2`: 458 testów backendu / 21 703 asercje,
+dodatkowe 181 żądań HTTP / 3203 asercje, pełna regresja i blokada iframe — PASS.
+Audyt bibliotek aplikacji npm/Composer bez zgłoszeń; skany obrazów i ZAP mają
+jawnie opisane pozostałe ustalenia. To nie jest odbiór produkcji.
+[PR #14](https://github.com/paweljrsk/aplikacja-urlopy/pull/14), gałąź
+`codex/pentesty-przed-etapem-12`; etap 12 pozostaje nierozpoczęty.
+
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
 Logo Notus w górnym pasku prowadzi do kalendarza zespołu.
@@ -69,8 +79,8 @@ restart z zachowaniem danych oraz workery — PASS. Sprawdzono zrzuty desktop/mo
 Uzupełniono kontrolę niepełnych potwierdzeń zapisu, zachowując bezpieczne ponowienia.
 Pomiar 100 osób / 5 zespołów / 2000 wniosków: wszystkie 14 przypadków w proponowanych
 budżetach diagnostycznych; najwyższe p95 API 445,8 ms i widoku 1402,3 ms.
-Audit Composera i produkcyjnych zależności npm bez zgłoszeń. Pozostaje jedno
-ostrzeżenie moderate w developerskim minimatch, opisane z ograniczeniami w
+Audit Composera i produkcyjnych zależności npm bez zgłoszeń. Wówczas pozostało jedno
+ostrzeżenie moderate w developerskim minimatch (zamknięte później w CI #54), opisane w
 [raporcie bezpieczeństwa](docs/STAGE11_SECURITY.md). Bez nowych bibliotek i migracji.
 Wyniki, granice pomiarów i pokrycie kryteriów są w [planie testów](docs/TEST_PLAN.md).
 PR pozostaje niescalony; etap 12 nie został rozpoczęty.
@@ -197,7 +207,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/kalendarz-widok-miesiaca
+git switch codex/pentesty-przed-etapem-12
 make init
 make verify
 make db-validate
@@ -205,7 +215,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź `codex/kalendarz-widok-miesiaca`, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–11 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź `codex/pentesty-przed-etapem-12`, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–11 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 

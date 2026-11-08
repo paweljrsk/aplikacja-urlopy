@@ -528,3 +528,27 @@ a oba pozostałe terminy zachowują zajętość do decyzji.
 Każdy wpis zawiera datę, identyfikator, decyzję lub problem, uzasadnienie, zakres
 wpływu, wynik weryfikacji i ewentualne pytanie. Odpowiedzi użytkownika należy
 powiązać z identyfikatorem Q z OPEN_QUESTIONS i odpowiednią zmianą REQUIREMENTS.
+
+## Dodatkowe pentesty przed etapem 12 — 8 listopada 2026 r.
+
+Użytkownik zlecił badanie bezpieczeństwa istniejącej aplikacji. Prace prowadzone
+na gałęzi `codex/pentesty-przed-etapem-12`, od kodu `5b927f2b0409cbb0e5499733f713423eec63acbb`
+(CI #50 SUCCESS), na odizolowanych danych. Raport: [PENTEST_PRE_STAGE12](PENTEST_PRE_STAGE12.md).
+Poprawki dotyczą kosztu nieudanych logowań, nagłówków ochronnych, duplikatów dni,
+limitu body Nginx, developerskiego minimatch i poprawki Node w linii 22.
+Wąski override sprawdzono parserem i porównaniem wzorców; pełny audit npm
+ma być blokowany od poziomu low. ZAP i Trivy zachowują pełne wyniki; wykonanie
+skanera bez błędu nie jest równoznaczne z brakiem zgłoszeń.
+Nie zmieniono zakresu ról ani długości dopuszczalnego wniosku bez ustalenia.
+Migracje MySQL/RabbitMQ i zmiana bazy OS Redisa po EOL wymagają próby zachowania
+danych w zakresie etapu 12. Q11 pozostaje otwarte; proponowane 366 dni nie zostało
+wprowadzone jako nowa reguła biznesowa.
+
+Końcowy kod `44bdd6d76ae51933cbcfe529ac63104c2abc1ac2` zaliczył CI #54:
+458 testów / 21 703 asercje oraz 181 negatywnych żądań / 3203 asercje, pełna
+regresja, build i workery. npm aplikacji oraz Composer bez advisory. Rzeczywisty
+iframe Chrome zablokowany; aktualizacja zlib PHP zamknęła trzy zgłoszenia.
+Globalne npm podniesiono do 11.21.2: zgodne z Node 22.23.4, usuwa poprawialne HIGH
+narzędzia; wersja 12 zachowywała te same dwa MEDIUM co 11. Nie nadpisano zależności
+wewnątrz npm. Zakres obrazów Trivy i ostrzeżenia ZAP pozostają jawne w raporcie.
+Dokumentacja końcowa nie oznacza akceptacji pozostałych ryzyk przez organizację.
