@@ -105,6 +105,10 @@ To decyzje realizacyjne w udzielonym zakresie, nie dodatkowe odpowiedzi biznesow
 |---|---|---|
 | B35 | Po wybraniu dni urlopu modal ma od razu pokazywać obliczoną liczbę dni, bez weekendów i świąt. Następnie rozpocząć etap 11. | Automatyczny licznik przy datach używa istniejącego kalendarza backendu, w tym firmowych dni wolnych. Działa niezależnie od salda; nie zastępuje podglądu i walidacji zapisu. |
 
+Realizacja B35: lekki odczyt wymiaru nie tworzy wniosku, rezerwacji ani audytu.
+Zakres bez dni roboczych pokazuje zero. Wariant godzinowy zachowuje pełne godziny.
+Odpowiedź starszego wyboru dat nie może zastąpić aktualnego wyniku.
+
 ## Dodatkowa zmiana UX po etapie 11 — 8 listopada 2026 r.
 
 | ID | Polecenie użytkownika | Zakres |
@@ -122,12 +126,18 @@ Przewodniki używają istniejącego React i natywnego dialogu, bez dodatkowego p
 skryptu zewnętrznego i analityki. Postęp pozostaje w pamięci bieżącej strony,
 bez localStorage/sessionStorage. Dostępne role wynikają z aktualnej sesji;
 wariant zastępcy wyjaśnia jego ograniczenia. Przyciski „Dalej” i „Wstecz” zmieniają
-wyłącznie krok/ekran; formularzy i decyzji tutorial nie wysyła. Szczegóły odbioru
-zapisujemy w TEST_PLAN po wykonaniu testów.
+wyłącznie krok/ekran; formularzy i decyzji tutorial nie wysyła.
 
-Realizacja: lekki odczyt wymiaru nie tworzy wniosku, rezerwacji ani audytu.
-Zakres bez dni roboczych pokazuje zero. Wariant godzinowy zachowuje pełne godziny.
-Odpowiedź starszego wyboru dat nie może zastąpić aktualnego wyniku.
+Odbiór B36: kod `23dba5d7067b5bbace72581e9a9d070d717b3714`,
+[CI #43 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42510298991).
+Przeszły wszystkie cztery przewodniki, role i stare adresy, 445 testów backendu
+oraz dotychczasowe UI i rzeczywiste HTTP/E2E; szczegóły w TEST_PLAN.
+Odczyt legacy `searchParams` w `/management` objęto Suspense wymaganym przez
+konfigurację Next. CI #41 i #42 ujawniły dwa problemy nowego testu: odczyt fokusu
+przed klatką przywracającą go oraz niejednoznaczny link „Moje wnioski”. Test czeka
+teraz na fokus i wskazuje link w głównej nawigacji; wymaganych asercji nie usunięto.
+Te dwa nieudane przebiegi nie stanowią odbioru. Bez zmian zależności i migracji;
+etap 12 nie został rozpoczęty.
 
 ## Ustalony sposób realizacji
 

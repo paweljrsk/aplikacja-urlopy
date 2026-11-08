@@ -2,7 +2,7 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżąca zmiana UX — moduł zarządzania i przewodniki ról — w weryfikacji.**
+**Ukończona zmiana UX — moduł zarządzania i przewodniki ról.**
 Gałąź `codex/modul-zarzadzania-przewodniki` bazuje na końcowym etapie 11
 `4882ba6751bbbd2846bf3be8a01acf87d5187db8` ([CI #40 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42488853313)).
 „Moje saldo” jest własnym podglądem bez administracji i edycji. Osobny moduł
@@ -29,7 +29,15 @@ oraz zamknięcie klawiszem Escape. Dostępne są ścieżki pracownika, kierownik
 zastępcy i administratora zgodnie z aktualnymi uprawnieniami. Postęp pozostaje
 w pamięci przeglądarki do zamknięcia przewodnika, bez storage, analityki i zapisów danych
 biznesowych. Przed rozpoczęciem zakończ edycję formularza; tutorial zmienia ekrany.
-Bez nowych bibliotek i migracji. Rzeczywiste wyniki kontroli są w TEST_PLAN.
+Bez nowych bibliotek i migracji.
+
+[Zmiana UX — PR #12](https://github.com/paweljrsk/aplikacja-urlopy/pull/12),
+[CI #43 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42510298991)
+dla kodu `23dba5d7067b5bbace72581e9a9d070d717b3714`: **445 testów / 21 607 asercji**,
+kontrole statyczne, build, testy Chrome wszystkich czterech przewodników, dotychczasowe
+UI i rzeczywiste HTTP/E2E — PASS. Sprawdzono zrzuty modułu i przewodników desktop/mobile.
+Wyniki, ograniczenia i [ręczny odbiór B36](docs/TEST_PLAN.md#ręczny-odbiór-b36)
+są w planie testów. PR pozostaje niescalony; jego numer nie oznacza etapu 12.
 
 **Ukończony etap 11 — automatyczny licznik dni i weryfikacja całego systemu.**
 Formularz pokazuje pod datami liczbę dni roboczych i godzin. Wynik pochodzi z kalendarza
@@ -204,7 +212,8 @@ Hasło tymczasowe pokaże raz; jest ważne 24 h. Otwórz `http://localhost:8080/
 zaloguj się i zmień hasło (15–128 znaków, można używać spacji). Zmiana hasła kończy
 wszystkie sesje, także bieżącą, więc zaloguj się ponownie nowym hasłem.
 
-Po zalogowaniu administrator może otworzyć **Administrację** (`/admin`). Na pustej
+Po zalogowaniu administrator otwiera **Zarządzanie → Użytkownicy i ustawienia**
+(`/management/admin`). Na pustej
 bazie wybierz **Dodaj słowniki startowe**, dodaj zespół i konta pracowników. Ta jawna
 operacja uzupełnia brakujące słowniki bez nadpisywania istniejących ustawień.
 Administrator utworzony przez terminal może otrzymać własne przypisanie do zespołu.
@@ -233,17 +242,20 @@ Szczegóły API, granice kontroli dostępu i założenia techniczne:
 
 ## Konfiguracja limitów i kalendarza
 
-Po zalogowaniu otwórz **Limity i saldo** (`/balances`). Administrator wybiera osobę,
+Po zalogowaniu otwórz **Zarządzanie → Salda i limity** (`/management/balances`).
+Administrator wybiera osobę,
 rok i **Ustaw dane początkowe**: datę startu, limit roczny, wykorzystanie bieżącej
 puli przed startem i pozostałości starszych pul UoP. Kolejne lata otrzymują ręczny
 limit. Kierownik może robić to dla innych osób własnego zespołu; jego własny limit
-zmienia administrator. Zastępca ma odczyt. Pracownik widzi własne saldo.
+zmienia administrator. Zastępca ma odczyt. W części codziennej **Moje saldo**
+(`/balances`) pokazuje wyłącznie własne dane, bez edycji, niezależnie od roli.
 
 Korekty wymagają powodu i pozostają w historii. Ujemne saldo jest jawne i nie
 anuluje zatwierdzonych urlopów. Szczegóły oraz wzór: [rozliczenia](docs/ACCOUNTING.md).
 
 Administrator zarządza przyszłymi firmowymi dniami wolnymi przez
-`/calendar-settings`: najpierw podgląd wpływu na wnioski, potem potwierdzenie.
+**Zarządzanie → Firmowe dni wolne** (`/management/calendar`): najpierw podgląd
+wpływu na wnioski, potem potwierdzenie.
 Polskie święta wyliczane są lokalnie dla lat 2025–2100 według opisanych reguł;
 firmowe dni zastępcze wpisuje administrator. [Zasady kalendarza](docs/CALENDAR.md).
 
@@ -384,17 +396,17 @@ pozostają zakresem etapu 12, w tym backup/restore i pytanie Q7.
 
 ## Odbiór widoków przełożonego — etap 10
 
-1. Zaloguj się jako kierownik i otwórz „Obsługa wniosków”. Wybierz szczegóły,
+1. Zaloguj się jako kierownik i otwórz „Zarządzanie → Obsługa wniosków”. Wybierz szczegóły,
    „Akceptuj” albo „Odrzuć”, sprawdź wpływ i potwierdź. Odrzucenie wymaga powodu.
 2. Własny oczekujący wniosek kierownika jest dostępny do decyzji. Własny wniosek
    zastępcy obsługuje kierownik albo administrator. Administrator widzi też inne zespoły.
 3. Filtr „Wszystkie i historia” udostępnia zakończone wnioski oraz dostępne wersje.
    Przy historycznym wniosku użyj „Skoryguj przeszły wniosek”, podaj powód,
    sprawdź skutki i potwierdź. Niedobór wymaga osobnej zgody administratora.
-4. „Salda zespołu” pokazują zestawienie z wyborem roku i wyszukiwaniem. Otwórz
+4. „Zarządzanie → Salda i limity” pokazuje zestawienie z wyborem roku i wyszukiwaniem. Otwórz
    osobę, sprawdź historię; dozwolona zmiana limitu/początkowych danych pokazuje
    wynik przed zapisaniem. Kierownik nie zmienia własnego limitu, zastępca tylko czyta.
-5. Administrator: karta „Historia” w `/admin` pokazuje autora, czas i dozwolone
+5. Administrator: karta „Historia” w `/management/admin` pokazuje autora, czas i dozwolone
    zmienione wartości. Szczegóły decyzji urlopowych i limitów pozostają przy ich danych.
 6. Otwórz ten sam wniosek w dwóch oknach. Zapisz decyzję w pierwszym, następnie
    spróbuj zapisać w drugim: wymagany jest świeży odczyt, a saldo zmienia się raz.
