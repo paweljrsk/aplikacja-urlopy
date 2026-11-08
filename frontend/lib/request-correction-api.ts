@@ -1,5 +1,5 @@
 import { ApiError, postApi } from "./auth-api";
-import { requestConflict, requestError, type RequestDay, type RequestMode, type RequestOperation } from "./request-api";
+import { requestConflict, requestError, requestOperationResponse, type RequestDay, type RequestMode } from "./request-api";
 
 export type CorrectionApplication = {
   expectedVersion: number; action: "change" | "cancel"; reason: string;
@@ -36,9 +36,7 @@ export async function previewCorrection(id: number, body: CorrectionApplication)
 }
 
 export async function saveCorrection(id: number, body: CorrectionConfirmation) {
-  const result = await postApi<{ operation: RequestOperation }>(`/api/requests/${id}/correct`, body);
-  if (!result.operation || result.operation.id !== id) throw new ApiError(0, "INVALID_RESPONSE");
-  return result;
+  return requestOperationResponse(await postApi<unknown>(`/api/requests/${id}/correct`, body), id);
 }
 
 export function correctionConflict(error: unknown): boolean {

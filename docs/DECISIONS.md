@@ -99,6 +99,16 @@ podgląd obliczony przez backend, a zapis ponownie sprawdza reguły. Dane kalend
 współpracowników pochodzą z osobnego, ograniczonego DTO, bez sald i rodzajów.
 To decyzje realizacyjne w udzielonym zakresie, nie dodatkowe odpowiedzi biznesowe.
 
+## Doprecyzowanie przed etapem 11 — 8 listopada 2026 r.
+
+| ID | Decyzja użytkownika | Konsekwencja |
+|---|---|---|
+| B35 | Po wybraniu dni urlopu modal ma od razu pokazywać obliczoną liczbę dni, bez weekendów i świąt. Następnie rozpocząć etap 11. | Automatyczny licznik przy datach używa istniejącego kalendarza backendu, w tym firmowych dni wolnych. Działa niezależnie od salda; nie zastępuje podglądu i walidacji zapisu. |
+
+Realizacja: lekki odczyt wymiaru nie tworzy wniosku, rezerwacji ani audytu.
+Zakres bez dni roboczych pokazuje zero. Wariant godzinowy zachowuje pełne godziny.
+Odpowiedź starszego wyboru dat nie może zastąpić aktualnego wyniku.
+
 ## Ustalony sposób realizacji
 
 | ID | Zasada | Status |
@@ -237,6 +247,20 @@ Q7 dotyczy konfiguracji przed produkcją. Zachowujemy B22–B33.
 | DT58 | Salda zespołu są drugim widokiem istniejącego `/balances`, z rokiem, wyszukiwaniem i przejściem do osoby. | Lista uprawnionych osób jest pobierana ponownie; maksymalnie cztery równoległe odczyty sald. Brak sumowania wspólnych pul między latami. Własny limit kierownika i brak edycji zastępcy pozostają zgodne z B27. |
 
 ## Problemy i ograniczenia
+
+### E19 — niepełne potwierdzenie operacji pracownika
+
+Przegląd etapu 11 wykrył, że samo poprawne HTTP/JSON mogło zamknąć formularz
+pracownika bez pełnego potwierdzenia operacji. Wspólna walidacja potwierdzeń
+sprawdza identyfikator, wersję, rewizję, referencję i status dla wszystkich operacji
+wniosków. Niepełna odpowiedź oznacza niepewny wynik i zachowuje pierwotny klucz
+ponowienia. Regresje obejmują utworzenie, wycofanie, anulowanie i korektę, bez
+drugiego obciążenia ani zwrotu. Regresje Chrome i cały system przeszły
+[CI #39](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42487633929)
+dla kodu `f8bc8b37a2e645d817524bedaffa9a8881ae8221`: SUCCESS.
+Automatyczny wymiar B35 również sprawdzono przez API, syntetyczny UI i rzeczywisty
+proces wniosku. Raport etapu 11 jest w TEST_PLAN; S11-SEC-01 w STAGE11_SECURITY
+pozostaje jawnym ostrzeżeniem developerskiej zależności, bez wymuszonej zmiany major.
 
 Poprawki E15–E18 zweryfikowano w pełnym [CI #37](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42417402132)
 dla kodu `ed777e033e1a04341a87157bf4efad864897f096`: SUCCESS, w tym Chrome i rzeczywisty E2E.

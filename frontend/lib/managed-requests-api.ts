@@ -1,5 +1,5 @@
-import { ApiError, getApi, postApi, type CurrentUser } from "./auth-api";
-import type { RequestOperation, RequestStatus, RequestsPage } from "./request-api";
+import { getApi, postApi, type CurrentUser } from "./auth-api";
+import { requestOperationResponse, type RequestStatus, type RequestsPage } from "./request-api";
 
 export type ManagedStatus = RequestStatus | "awaiting" | "";
 export type DecisionAction = "approve" | "reject";
@@ -22,10 +22,5 @@ export function previewDecision(id: number, body: DecisionApplication) {
 }
 export async function saveDecision(id: number, body: DecisionApplication, operationKey: string) {
   const { action, ...payload } = body;
-  const result = await postApi<{ operation: RequestOperation }>(`/api/requests/${id}/${action}`, { ...payload, operationKey });
-  const receipt = result?.operation;
-  if (!receipt || receipt.id !== id || !Number.isSafeInteger(receipt.version) || receipt.version < 1
-    || !Number.isSafeInteger(receipt.revision) || receipt.revision < 1 || typeof receipt.reference !== "string"
-    || !["pending", "approved", "rejected", "withdrawn", "cancelled", "change_pending", "cancellation_pending"].includes(receipt.status)) throw new ApiError(0, "INVALID_RESPONSE");
-  return result;
+  return requestOperationResponse(await postApi<unknown>(`/api/requests/${id}/${action}`, { ...payload, operationKey }), id);
 }

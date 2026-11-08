@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Security\ApiResponse;
 use App\Security\SecurityIdentity;
 use App\Service\CredentialsException;
+use App\Service\Requests\RequestDurationService;
 use App\Service\Requests\RequestQueryService;
 use App\Service\Requests\RequestWorkflowService;
 use Doctrine\DBAL\Exception\RetryableException;
@@ -24,6 +25,7 @@ final class RequestController extends AbstractController
         private EntityManagerInterface $em,
         private RequestQueryService $queries,
         private RequestWorkflowService $workflow,
+        private RequestDurationService $duration,
     ) {
     }
 
@@ -55,6 +57,12 @@ final class RequestController extends AbstractController
     public function previewCreate(Request $request): JsonResponse
     {
         return $this->execute(fn (User $actor): JsonResponse => $this->json(['preview' => $this->workflow->previewCreate($actor, $this->read($request))]));
+    }
+
+    #[Route('/api/requests/duration', methods: ['POST'])]
+    public function duration(Request $request): JsonResponse
+    {
+        return $this->execute(fn (User $actor): JsonResponse => $this->json(['duration' => $this->duration->calculate($this->read($request))]));
     }
 
     #[Route('/api/requests/{id}/edit-preview', requirements: ['id' => '[1-9]\\d{0,17}'], methods: ['POST'])]

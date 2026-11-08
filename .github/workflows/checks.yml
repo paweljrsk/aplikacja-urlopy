@@ -15,12 +15,16 @@ concurrency:
 jobs:
   docker-baseline:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       NEXT_TELEMETRY_DISABLED: 1
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Scan source and tracked history for secret patterns and unsafe sinks
+        run: python3 .github/scripts/security-source-check.py --history
       - name: Initialize development stack
         run: make init
       - name: Verify HTTP and database
@@ -107,6 +111,24 @@ jobs:
         run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/requests-e2e-check.cjs
       - name: Real manager decisions and historical correction through Chrome and Nginx
         run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/managed-requests-e2e-check.cjs
+      - name: Complete system process through Chrome and real API
+        id: system_e2e
+        continue-on-error: true
+        run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/system-e2e-check.cjs
+      - name: Measure representative API and rendered views
+        id: performance
+        continue-on-error: true
+        run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/performance-check.cjs
+      - name: Audit locked dependency advisories
+        id: dependency_audit
+        continue-on-error: true
+        run: |
+          mkdir -p /tmp/urlopy-security
+          failed=0
+          docker compose exec -T php composer audit --locked --format=json > /tmp/urlopy-security/composer.json || failed=1
+          docker compose exec -T node npm audit --omit=dev --audit-level=low --json > /tmp/urlopy-security/npm-production.json || failed=1
+          docker compose exec -T node npm audit --audit-level=high --json > /tmp/urlopy-security/npm-all.json || failed=1
+          exit "$failed"
       - name: Verify optional Messenger and Scheduler workers
         run: |
           make workers
@@ -146,6 +168,19 @@ jobs:
         run: |
           echo 'Managed request browser checks failed; independent E2E results do not override this failure.'
           exit 1
+      - name: Require system, performance and dependency checks to pass
+        if: always() && (steps.system_e2e.outcome == 'failure' || steps.performance.outcome == 'failure' || steps.dependency_audit.outcome == 'failure')
+        run: exit 1
+      - name: Save performance and dependency reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: stage11-check-reports
+          path: |
+            /tmp/urlopy-performance/
+            /tmp/urlopy-security/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Save synthetic browser screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

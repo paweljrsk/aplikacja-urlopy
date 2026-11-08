@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { redirectForAuthError } from "@/lib/auth-api";
 import { hoursLabel } from "@/lib/balance-api";
+import { RequestDurationSummary } from "./request-duration-summary";
 import {
   getRequest, getRequestOptions, previewRequest, requestConflict, requestError, saveRequest, unconfirmedRequest,
   type RequestApplication, type RequestDetail, type RequestFormMode, type RequestOptions, type RequestPreview,
@@ -224,6 +225,7 @@ export function RequestDialog({ mode, request, onClose, onSaved, initialDate }: 
                 {fields.mode === "full_days" ? <div className="field"><label htmlFor={`${id}-to`}>Data do</label><input id={`${id}-to`} type="date" required min={fields.startDate || options.today} max="2100-12-31" value={fields.endDate} onChange={event => update({ endDate: event.target.value })} /></div>
                   : <div className="field"><label htmlFor={`${id}-hours`}>Liczba godzin</label><select id={`${id}-hours`} value={fields.hours} onChange={event => update({ hours: event.target.value })}>{[1, 2, 3, 4, 5, 6, 7].map(hours => <option key={hours} value={hours}>{hours} h</option>)}</select></div>}
               </div>
+              <RequestDurationSummary mode={application.mode} startDate={application.startDate} endDate={application.endDate} hours={application.hours} />
               <p className="requests-field-note">{fields.mode === "full_days" ? "Weekendy i dni wolne nie pomniejszają salda." : "Podaj wymiar nieobecności, bez godzin rozpoczęcia i zakończenia."}</p>
             </fieldset>
             {previewBusy && <p role="status" className="requests-preview-loading">Sprawdzamy godziny i dostępne saldo…</p>}

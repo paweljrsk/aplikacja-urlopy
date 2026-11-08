@@ -2,7 +2,26 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
-**Bieżący zakres: etap 10 — obsługa zespołu, salda i historia — ukończony.**
+**Ukończony etap 11 — automatyczny licznik dni i weryfikacja całego systemu.**
+Formularz pokazuje pod datami liczbę dni roboczych i godzin. Wynik pochodzi z kalendarza
+aplikacji, pomija weekendy, święta i firmowe dni wolne oraz jest niezależny od salda.
+Podgląd wpływu i walidacja zapisu nadal sprawdzają wszystkie reguły.
+Gałąź `codex/etap-11-testy-systemu` bazuje na końcowym etapie 10, CI #38 SUCCESS.
+[PR #11](https://github.com/paweljrsk/aplikacja-urlopy/pull/11),
+[CI #39 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42487633929)
+dla kodu `f8bc8b37a2e645d817524bedaffa9a8881ae8221`: **445 testów / 21 607 asercji**,
+kontrole statyczne, build, testy Chrome, rzeczywiste HTTP/E2E, współbieżność MySQL,
+restart z zachowaniem danych oraz workery — PASS. Sprawdzono zrzuty desktop/mobile.
+Uzupełniono kontrolę niepełnych potwierdzeń zapisu, zachowując bezpieczne ponowienia.
+Pomiar 100 osób / 5 zespołów / 2000 wniosków: wszystkie 14 przypadków w proponowanych
+budżetach diagnostycznych; najwyższe p95 API 445,8 ms i widoku 1402,3 ms.
+Audit Composera i produkcyjnych zależności npm bez zgłoszeń. Pozostaje jedno
+ostrzeżenie moderate w developerskim minimatch, opisane z ograniczeniami w
+[raporcie bezpieczeństwa](docs/STAGE11_SECURITY.md). Bez nowych bibliotek i migracji.
+Wyniki, granice pomiarów i pokrycie kryteriów są w [planie testów](docs/TEST_PLAN.md).
+PR pozostaje niescalony; etap 12 nie został rozpoczęty.
+
+**Ukończony wcześniej etap 10 — obsługa zespołu, salda i historia.**
 W `/management` jest kolejka nowych wniosków, zmian i anulowań oraz dostępna historia.
 Decyzję poprzedza podgląd wpływu na saldo; odrzucenie wymaga uzasadnienia.
 Przeszłe wnioski można skorygować po podglądzie i jawnym potwierdzeniu, zgodnie
@@ -20,7 +39,7 @@ zespołu przez administratora i historyczną korektę 6 h → 3 h z poprawnym zw
 oraz historią autora/uzasadnienia. Restart z zachowaniem danych i workery — PASS.
 Sprawdzono zrzuty desktop/mobile, klawiaturę, konflikty i utracone odpowiedzi.
 PR pozostaje niescalony. Szczegółowy raport jest w [TEST_PLAN.md](docs/TEST_PLAN.md).
-Bez nowych bibliotek ani migracji. Etap 11 wymaga kolejnego polecenia użytkownika.
+Bez nowych bibliotek ani migracji. Użytkownik zlecił etap 11, opisany powyżej.
 
 **Ukończony wcześniej etap 9 — filtry i dopracowanie kalendarza.**
 Wspólne filtry pracownika i statusu zawężają kalendarz oraz listę kolejnych dwóch
@@ -124,7 +143,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/etap-10-obsluga-zespolu
+git switch codex/etap-11-testy-systemu
 make init
 make verify
 make db-validate
@@ -132,7 +151,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 10, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–10 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 11, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–11 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 
@@ -320,6 +339,19 @@ Faktyczne wyniki i ograniczenia środowiska opisano w [planie testów](docs/TEST
 Przed kolejnym etapem przeczytaj `AGENTS.md`, dokumentację i aktualny stan TASKS. Dla frontendu obowiązuje także `frontend/AGENTS.md` i dokumentacja zainstalowanej wersji Next.js.
 
 Konfiguracja produkcyjna, HTTPS/VPN, polityka backupów oraz próba odtworzenia będą odbierane w etapie 12. Nie używaj konfiguracji developerskiej ani przykładowych haseł na produkcji. Kod, dokumentacja i dane demonstracyjne mogą być publiczne; rzeczywiste dane pracowników, sekrety i kopie bazy pozostają poza repozytorium.
+
+## Odbiór licznika i pełnego procesu — etap 11
+
+Po zalogowaniu otwórz „Złóż wniosek” i wybierz daty. Pod nimi automatycznie pojawi
+się liczba dni i godzin, także bez wystarczającego salda. Dla 10–16 listopada 2026 r.,
+bez dodatkowych firmowych dni wolnych, wynik to **4 dni (32 h)**; dla samego weekendu
+14–15 listopada — **0 dni (0 h)**. Sprawdź też tryb części dnia i widok telefonu.
+Licznik jest informacją; pełna walidacja i podgląd wpływu nadal poprzedzają zapis.
+
+Pełny ręczny obieg i wyniki CI są w [TEST_PLAN](docs/TEST_PLAN.md), mapa kryteriów
+w [STAGE11_COVERAGE](docs/STAGE11_COVERAGE.md), czasy i granice pomiarów w
+[STAGE11_PERFORMANCE](docs/STAGE11_PERFORMANCE.md). Kwestie przed produkcją
+pozostają zakresem etapu 12, w tym backup/restore i pytanie Q7.
 
 ## Odbiór widoków przełożonego — etap 10
 

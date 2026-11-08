@@ -50,6 +50,30 @@ final class RequestInput
         AdminInput::only($data, $editing
             ? ['operationKey', 'expectedVersion', 'absenceTypeId', 'startDate', 'endDate', 'mode', 'hours']
             : ['operationKey', 'absenceTypeId', 'startDate', 'endDate', 'mode', 'hours']);
+        $period = self::period($data);
+        $result = ['operationKey' => self::key($data), 'absenceTypeId' => AdminInput::int($data, 'absenceTypeId')] + $period;
+        if ($editing) { $result['expectedVersion'] = AdminInput::int($data, 'expectedVersion'); }
+        return $result;
+    }
+
+    /** @param array<string, mixed> $data
+     * @return array{startDate: string, endDate: string, mode: string, hours?: int}
+     */
+    public static function duration(array $data): array
+    {
+        AdminInput::only($data, ['startDate', 'endDate', 'mode', 'hours']);
+        if (!array_key_exists('mode', $data)) {
+            throw new CredentialsException('VALIDATION_FAILED', 'Wybierz tryb pełnych dni albo godzin.');
+        }
+        return self::period($data);
+    }
+
+    /** Shared date/hour validation for a duration read and an actual application.
+     * @param array<string, mixed> $data
+     * @return array{startDate: string, endDate: string, mode: string, hours?: int}
+     */
+    private static function period(array $data): array
+    {
         $start = AdminInput::date($data, 'startDate');
         $end = AdminInput::date($data, 'endDate');
         WorkingCalendar::assertYear((int) $start->format('Y'));
@@ -59,8 +83,7 @@ final class RequestInput
         if (null === $mode || $start > $end) {
             throw new CredentialsException('VALIDATION_FAILED', 'Podaj prawidłowy tryb i uporządkowany zakres dat.');
         }
-        $result = ['operationKey' => self::key($data), 'absenceTypeId' => AdminInput::int($data, 'absenceTypeId'),
-            'startDate' => $start->format('Y-m-d'), 'endDate' => $end->format('Y-m-d'), 'mode' => $mode->value];
+        $result = ['startDate' => $start->format('Y-m-d'), 'endDate' => $end->format('Y-m-d'), 'mode' => $mode->value];
         if (RequestMode::HOURLY === $mode) {
             $hours = $data['hours'] ?? null;
             if ($start != $end || !\is_int($hours) || $hours < 1 || $hours > 7) {
@@ -70,7 +93,6 @@ final class RequestInput
         } elseif (array_key_exists('hours', $data)) {
             throw new CredentialsException('VALIDATION_FAILED', 'Zakres pełnych dni nie przyjmuje osobnego pola hours.');
         }
-        if ($editing) { $result['expectedVersion'] = AdminInput::int($data, 'expectedVersion'); }
         return $result;
     }
 

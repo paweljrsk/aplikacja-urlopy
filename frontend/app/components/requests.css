@@ -105,6 +105,12 @@
 .requests-dialog .button-secondary { color: #343946; border-color: #d5dae3; }
 .requests-dialog :is(input, select, button, summary, h2):focus-visible, .requests-list-panel :is(button, select):focus-visible, .requests-detail :is(button, summary, h2):focus-visible { outline: 3px solid #158478; outline-offset: 3px; }
 .requests-dialog input[type=date] { color-scheme: light; }
+.requests-duration { margin-top: 16px; padding: 16px 18px; border: 1px solid #ead5df; border-radius: 10px; background: #fcf4f8; }
+.requests-duration > span { display: block; margin-bottom: 5px; color: #69717f; font-size: 12px; }
+.requests-duration > strong { display: block; color: #9f1e53; font-size: 23px; line-height: 1.35; }
+.requests-duration > strong > small { font-size: 14px; font-weight: 500; }
+.requests-duration > p { margin: 5px 0 0; color: #69717f; font-size: 12px; line-height: 1.5; }
+.requests-duration .text-button { margin-top: 8px; }
 .requests-scope-note { margin: 16px 0 0; padding: 12px 14px; background: #f3f5f8; border-radius: 8px; font-size: 13px; line-height: 1.5; color: #5f6876; }
 .calendar-request-dialog-content .requests-revisions { grid-template-columns: minmax(0, 1fr); }
 .calendar-request-person { display: flex; flex-direction: column; gap: 5px; margin-bottom: 18px; overflow-wrap: anywhere; }

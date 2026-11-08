@@ -154,6 +154,34 @@ final class RequestApiTest extends WebTestCase
         self::assertStringContainsString('Synthetic paid', $serialized);
     }
 
+    public function testForgedIdentityHeadersAndSecurityFieldsCannotGrantAnotherPersonsAccess(): void
+    {
+        $this->opening('employee');
+        $this->opening('other');
+        $this->login('other');
+        $foreign = $this->create('2026-11-10');
+        $this->login('employee');
+        $headers = ['HTTP_X_USER_ID' => (string) $this->ids['admin'], 'HTTP_X_ROLE' => 'ROLE_ADMIN',
+            'HTTP_X_TEAM_ID' => (string) $this->ids['beta'], 'HTTP_X_FORWARDED_USER' => $this->users['admin']['email']];
+        foreach (['/api/admin/users', '/api/requests/'.$foreign['id'], '/api/balances/users/'.$this->ids['other'].'/2026'] as $path) {
+            $this->client->request('GET', $path, [], [], $headers);
+            $this->assertError(403, 'FORBIDDEN');
+            self::assertStringNotContainsString($this->users['other']['email'], $this->content());
+            self::assertStringNotContainsString('availableHours', $this->content());
+        }
+        $before = $this->requestCount();
+        foreach (['userId', 'ownerId', 'teamId', 'actorId', 'isAdministrator', 'roles', 'user', 'assignment'] as $field) {
+            $this->send('/api/requests', $this->body('2026-11-12') + [$field => ['id' => $this->ids['other'], 'role' => 'ROLE_ADMIN']]);
+            $this->assertError(422, 'VALIDATION_FAILED');
+        }
+        self::assertSame($before, $this->requestCount());
+        self::assertSame(80, $this->balance('employee')['availableHours']);
+        $this->client->request('GET', '/api/auth/me');
+        $identity = $this->success()['user'];
+        self::assertSame($this->ids['employee'], $identity['id']);
+        self::assertFalse($identity['isAdministrator']);
+    }
+
     public function testSubmissionApprovalAndElapsedDatesDeductOnlyOnce(): void
     {
         $this->opening('employee', 80);
