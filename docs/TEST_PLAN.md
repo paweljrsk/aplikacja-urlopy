@@ -1,5 +1,9 @@
 # Plan testów i odbioru
 
+## Górny pasek B38
+
+Lint, build i kontrola produkcyjnego HTML kalendarza i logowania przeszły. Ręczny odbiór polega na sprawdzeniu górnego paska po zalogowaniu i przejścia do kalendarza po kliknięciu logo.
+
 ## Pełny miesiąc w kalendarzu B37 — odbiór zakończony (8 listopada 2026 r.)
 
 Baza: `e7165f265bed6063b110a04a3152805eb0926a93`, ukończona zmiana UX B36.

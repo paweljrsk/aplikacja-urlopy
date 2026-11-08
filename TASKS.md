@@ -1,5 +1,7 @@
 # Zadania aplikacji urlopowej
 
+- [x] B38: usunąć napis „Urlopy” i separator obok logo w górnym pasku. Lint, build i kontrola HTML przeszły.
+
 **Bieżąca zmiana B37 — widok pełnego miesiąca w kalendarzu — ukończona.** CI #45 SUCCESS.
 - [x] Dodać przełącznik miesiąca, nawigację miesiącami i powrót do bieżącego miesiąca; zachować filtry, szczegóły i listę nadchodzących nieobecności.
 - [x] Sprawdzić długości miesięcy, przełom roku, rok przestępny i układ desktop/mobile; zapisać odbiór.

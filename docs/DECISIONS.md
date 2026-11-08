@@ -167,6 +167,10 @@ test Chrome; ponownie przeszły wszystkie przewodniki, w tym wygaśnięcie sesji
 445 testów backendu i pełna regresja HTTP/E2E PASS. Zrzuty desktop/mobile sprawdzono.
 Szczegółowy raport i ograniczenia są w TEST_PLAN; etap 12 pozostaje wstrzymany.
 
+### B38 — górny pasek, 8 listopada 2026 r.
+
+Na prośbę użytkownika usunięto napis „Urlopy” i separator obok logo w nagłówku. Kliknięcie logo prowadzi do kalendarza zespołu.
+
 ### Zasady wspólne
 
 | ID | Zasada | Status |

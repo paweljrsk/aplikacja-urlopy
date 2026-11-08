@@ -2,6 +2,8 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
+Logo Notus w górnym pasku prowadzi do kalendarza zespołu.
+
 **Ukończona zmiana B37 — pełny miesiąc w kalendarzu.**
 Gałąź `codex/kalendarz-widok-miesiaca` bazuje na ukończonej zmianie modułu zarządzania.
 Przełącznik „Miesiąc” pokazuje cały miesiąc kalendarzowy; strzałki zmieniają miesiące,
