@@ -67,7 +67,7 @@ async function main() {
       return page.waitForResponse(response => new URL(response.url()).pathname === path && response.request().method() === 'POST');
     }
     async function open(page, id) {
-      await page.goto(`/management?id=${id}`);
+      await page.goto(`/management/requests?id=${id}`);
       await page.getByRole('heading', { name: 'Obsługa wniosków', exact: true }).waitFor();
       await page.getByRole('heading', { name: 'Szczegóły wniosku', exact: true }).waitFor();
     }

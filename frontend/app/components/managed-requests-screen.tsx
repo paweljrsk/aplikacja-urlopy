@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, redirectForAuthError, type CurrentUser } from "@/lib/auth-api";
 import { canManageRequests, getManagedRequests, type DecisionAction, type ManagedStatus } from "@/lib/managed-requests-api";
 import { getRequest, requestError, requestRange, requestStatusLabel, type RequestDetail, type RequestStatus, type RequestsPage } from "@/lib/request-api";
-import { AppShell, useWorkspaceUser } from "./app-shell";
+import { useWorkspaceUser } from "./app-shell";
+import { ManagementShell } from "./management-shell";
 import { RequestHistory, RequestRevisionDetails, RequestStatusBadge } from "./request-details";
 import { RequestDecisionDialog } from "./request-decision-dialog";
 import { RequestCorrectionDialog } from "./request-correction-dialog";
@@ -99,11 +100,11 @@ function ManagedWorkspace({ user }: { user: CurrentUser }) {
   }
   function open(id: number) {
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setNotice(""); window.history.replaceState(null, "", `/management?id=${id}`); void readDetail(id);
+    setNotice(""); window.history.replaceState(null, "", `/management/requests?id=${id}`); void readDetail(id);
   }
   function close() {
     ++detailSequence.current; setSelected(null); setDetail(null); setDetailLoading(false); setDetailError("");
-    window.history.replaceState(null, "", "/management");
+    window.history.replaceState(null, "", "/management/requests");
     if (trigger.current?.isConnected) trigger.current.focus();
   }
   function refreshDetail() {
@@ -113,8 +114,8 @@ function ManagedWorkspace({ user }: { user: CurrentUser }) {
   function saved(message: string) { setNotice(message); refreshDetail(); }
   const visible = (page?.requests ?? []).filter(row => status !== "awaiting" || row.actions.approve || row.actions.reject);
 
-  return <AppShell user={user} active="management">
-    <div className="requests-page-heading managed-page-heading"><div><span className="requests-eyebrow">Wspólne plany, jasne decyzje</span><h1>Obsługa wniosków</h1><p>{user.isAdministrator ? "Wnioski ze wszystkich dostępnych zespołów." : "Wnioski Twojego zespołu i dostępna historia."}</p></div><Link href="/balances?view=team" prefetch={false} className="button button-secondary">Salda zespołu <span aria-hidden="true">↗</span></Link></div>
+  return <ManagementShell user={user} active="requests">
+    <div className="requests-page-heading managed-page-heading"><div><span className="requests-eyebrow">Wspólne plany, jasne decyzje</span><h1>Obsługa wniosków</h1><p>{user.isAdministrator ? "Wnioski ze wszystkich dostępnych zespołów." : "Wnioski Twojego zespołu i dostępna historia."}</p></div><Link href="/management/balances" prefetch={false} className="button button-secondary">Salda zespołu <span aria-hidden="true">↗</span></Link></div>
     {notice && <div className="message message-success" role="status">{notice}</div>}
     {detailLoading && <p className="requests-loading" role="status">Wczytywanie szczegółów wniosku…</p>}
     {detailError && <section className="requests-detail"><p className="message message-error" role="alert">{detailError}</p><div className="requests-inline-actions"><button className="button button-secondary" onClick={() => { if (selected !== null) void readDetail(selected); }}>Wczytaj aktualne dane</button><button className="button button-secondary" onClick={close}>Zamknij szczegóły</button></div></section>}
@@ -131,7 +132,7 @@ function ManagedWorkspace({ user }: { user: CurrentUser }) {
       </div> : <p className="requests-scope-note">{detail.user.id === user.id && user.role === "deputy" && !user.isAdministrator ? "Decyzję o Twoim wniosku podejmuje kierownik lub administrator." : "Ten wniosek jest dostępny do podglądu. Nie ma obecnie operacji do wykonania w Twoim zakresie uprawnień."}</p>}
       <RequestHistory request={detail} />
     </section>}
-    <section className="requests-list-panel managed-list-panel" aria-label="Lista obsługiwanych wniosków">
+    <section className="requests-list-panel managed-list-panel" aria-label="Lista obsługiwanych wniosków" data-tour="managed-requests">
       <div className="requests-list-toolbar"><h2>{status === "awaiting" ? "Do Twojej decyzji" : "Wnioski i historia"}</h2><div className="field"><label htmlFor="managed-status">Pokaż wnioski</label><select id="managed-status" value={status} disabled={moreBusy} onChange={event => { setStatus(event.target.value as ManagedStatus); setNotice(""); }}><option value="awaiting">Do decyzji</option><option value="">Wszystkie i historia</option>{(["pending", "change_pending", "cancellation_pending", "approved", "rejected", "withdrawn", "cancelled"] as RequestStatus[]).map(value => <option key={value} value={value}>{requestStatusLabel(value)}</option>)}</select></div></div>
       {loading ? <p className="requests-loading" role="status">Wczytywanie wniosków…</p> : visible.length ? <ul className="requests-list managed-list">{visible.map(row => <li key={row.id} data-request-id={row.id} className={selected === row.id ? "is-selected" : ""}>
         <div className="managed-request-person"><strong>{row.user.firstName} {row.user.lastName}</strong>{row.user.id === user.id && <small>Twój wniosek</small>}<span>Wniosek #{row.id}</span></div>
@@ -144,12 +145,12 @@ function ManagedWorkspace({ user }: { user: CurrentUser }) {
     </section>
     {action && modalRequest && <RequestDecisionDialog key={`${modalRequest.id}:${modalRequest.version}:${action}`} request={modalRequest} action={action} onClose={refreshDetail} onRefresh={refreshDetail} onSaved={() => saved(action === "approve" ? "Akceptacja została zapisana. Wniosek i saldo są aktualne." : "Odrzucenie i uzasadnienie zostały zapisane.")} />}
     {correction && modalRequest && <RequestCorrectionDialog key={`${modalRequest.id}:${modalRequest.version}`} request={modalRequest} user={user} onClose={refreshDetail} onSaved={() => saved("Korekta została zapisana wraz z uzasadnieniem i historią.")} />}
-  </AppShell>;
+  </ManagementShell>;
 }
 
 export function ManagedRequestsScreen() {
   const { user, loading, error, reload } = useWorkspaceUser();
-  if (!user) return <AppShell user={null} active="management"><section className="dashboard-state"><h1>Obsługa wniosków</h1>{loading ? <p role="status">Wczytywanie konta…</p> : <><div className="message message-error" role="alert">{error}</div><button className="button button-secondary" onClick={() => void reload()}>Spróbuj ponownie</button></>}</section></AppShell>;
-  if (!canManageRequests(user)) return <AppShell user={user} active="management"><section className="dashboard-state"><h1>Brak dostępu do obsługi wniosków</h1><p>Ten widok jest dostępny dla kierownika, zastępcy i administratora.</p><Link href="/" className="button button-secondary">Wróć do kalendarza</Link></section></AppShell>;
+  if (!user) return <ManagementShell user={null} active="requests"><section className="dashboard-state"><h1>Obsługa wniosków</h1>{loading ? <p role="status">Wczytywanie konta…</p> : <><div className="message message-error" role="alert">{error}</div><button className="button button-secondary" onClick={() => void reload()}>Spróbuj ponownie</button></>}</section></ManagementShell>;
+  if (!canManageRequests(user)) return <ManagementShell user={user} active="requests"><section className="dashboard-state"><h1>Brak dostępu do obsługi wniosków</h1><p>Ten widok jest dostępny dla kierownika, zastępcy i administratora.</p><Link href="/" className="button button-secondary">Wróć do kalendarza</Link></section></ManagementShell>;
   return <ManagedWorkspace key={`${user.id}:${user.team?.id}:${user.role}:${user.isAdministrator}`} user={user} />;
 }

@@ -12,6 +12,14 @@ Aktualizacja: 8 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 10 — obsługa zespołu, salda i historia — ukończony.** CI #37 SUCCESS.
 **Etap 11 — testy całego systemu i usunięcie problemów — ukończony.** CI #39 SUCCESS.
 Automatyczny licznik dni roboczych w formularzu (B35) wdrożono i sprawdzono.
+**Dodatkowa zmiana UX — oddzielny moduł zarządzania i przewodniki ról — w trakcie.**
+Polecenie z 8 listopada po etapie 11. Etap 12 pozostaje nierozpoczęty.
+
+- [-] Wydzielić zarządzanie i administrację do modułu z osobną nawigacją; pozostawić własne saldo tylko do odczytu.
+- [-] Dodać dobrowolne przewodniki pracownika, kierownika/zastępcy i administratora z obsługą klawiatury oraz telefonu.
+- [ ] Zweryfikować nawigację, stare adresy, dostęp ról, brak zapisów podczas tutorialu i regresje dotychczasowych procesów.
+- [ ] Zapisać wyniki, instrukcję odbioru i ograniczenia bez rozpoczynania etapu 12.
+
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -394,3 +402,12 @@ bazuje na niescalonym PR #10. Bez nowych bibliotek ani migracji.
 Punkt wznowienia: odbiór użytkownika, następnie **etap 12 — przygotowanie produkcji
 i pilotażu**, wyłącznie po osobnym poleceniu. Przed konfiguracją rozstrzygnąć Q7;
 uwzględnić S11-SEC-01, backup/restore i pomiar docelowego środowiska. Nie scalać PR automatycznie.
+
+### Bieżący punkt wznowienia — dodatkowa zmiana UX B36
+
+Użytkownik zlecił osobny moduł zarządzania i przewodniki po rolach oraz jawnie
+wstrzymał etap 12. Gałąź `codex/modul-zarzadzania-przewodniki` bazuje na końcowym
+etapie 11 `4882ba6751bbbd2846bf3be8a01acf87d5187db8`, CI #40 SUCCESS.
+Wydzielono podstrony modułu, własne saldo tylko do odczytu i tutoriale bez zapisów.
+Trwa odbiór przeglądarkowy/CI. Po nim zapisać faktyczne wyniki i zakończyć B36.
+Nie rozpoczynać etapu 12 ani nie scalać PR automatycznie.

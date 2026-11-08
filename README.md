@@ -2,6 +2,35 @@
 
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
+**Bieżąca zmiana UX — moduł zarządzania i przewodniki ról — w weryfikacji.**
+Gałąź `codex/modul-zarzadzania-przewodniki` bazuje na końcowym etapie 11
+`4882ba6751bbbd2846bf3be8a01acf87d5187db8` ([CI #40 SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42488853313)).
+„Moje saldo” jest własnym podglądem bez administracji i edycji. Osobny moduł
+„Zarządzanie” zawiera obsługę wniosków, salda i limity oraz funkcje administratora.
+Przycisk „Przewodnik” rozpoczyna dobrowolny tutorial właściwy dla roli.
+Etap 12 nie jest częścią tej zmiany. Aktualny raport poniżej zastępuje wcześniejsze
+opisy rozmieszczenia ekranów; historia wykonanych etapów pozostaje zachowana.
+
+| Miejsce | Adres i dostęp |
+|---|---|
+| Codzienna praca | `/`, `/requests`, `/balances`, `/account` — własne wnioski, saldo i konto; kalendarz według dotychczasowych uprawnień |
+| Zarządzanie | `/management` — start dla kierownika, zastępcy i administratora |
+| Decyzje i korekty wniosków | `/management/requests` — dotychczasowy zakres obsługi wniosków |
+| Salda i limity zespołu | `/management/balances` — przełożeni; zastępca tylko odczyt, własny limit kierownika zmienia administrator |
+| Użytkownicy i ustawienia | `/management/admin` — administrator: konta, zespoły, słowniki, historia i reset hasła |
+| Firmowe dni wolne | `/management/calendar` — administrator |
+
+Dawne `/admin`, `/calendar-settings` oraz `/management?id=…` przekierowują do nowych
+miejsc. `/balances?view=team` pokazuje teraz własne saldo; zestawienie zespołu otwieraj
+w module zarządzania. Wszelkie zapisy nadal sprawdza to samo API.
+
+Przewodnik podświetla elementy rzeczywistego ekranu i ma przyciski „Dalej”, „Wstecz”
+oraz zamknięcie klawiszem Escape. Dostępne są ścieżki pracownika, kierownika,
+zastępcy i administratora zgodnie z aktualnymi uprawnieniami. Postęp pozostaje
+w pamięci przeglądarki do zamknięcia przewodnika, bez storage, analityki i zapisów danych
+biznesowych. Przed rozpoczęciem zakończ edycję formularza; tutorial zmienia ekrany.
+Bez nowych bibliotek i migracji. Rzeczywiste wyniki kontroli są w TEST_PLAN.
+
 **Ukończony etap 11 — automatyczny licznik dni i weryfikacja całego systemu.**
 Formularz pokazuje pod datami liczbę dni roboczych i godzin. Wynik pochodzi z kalendarza
 aplikacji, pomija weekendy, święta i firmowe dni wolne oraz jest niezależny od salda.
@@ -143,7 +172,7 @@ Nie trzeba instalować PHP ani Node na komputerze — standardowym środowiskiem
 ```bash
 git clone https://github.com/paweljrsk/aplikacja-urlopy.git
 cd aplikacja-urlopy
-git switch codex/etap-11-testy-systemu
+git switch codex/modul-zarzadzania-przewodniki
 make init
 make verify
 make db-validate
@@ -151,7 +180,7 @@ make db-validate
 
 `make init` przygotowuje lokalną konfigurację bez nadpisywania istniejącej, buduje i uruchamia usługi, czeka na ich gotowość oraz wykonuje inicjalizację bazy i migracje Doctrine. Migracja etapu 2 dodaje tabele aplikacji i odmawia nadpisania kolidującego schematu. Błąd startu lub migracji przerywa polecenie. Start i migracje nie resetują danych ani nie ładują zestawu demonstracyjnego.
 
-Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź etapu 11, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–11 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
+Przy aktualizacji istniejącego projektu najpierw wykonaj `make stop`, pobierz i wybierz gałąź `codex/modul-zarzadzania-przewodniki`, następnie wykonaj `make init`, `make verify` i `make db-validate`. Zatrzymanie przed aktualizacją zapobiega instalowaniu pakietów w katalogu używanym jednocześnie przez działającą aplikację. Migracje zachowują istniejące konta; nie nadają im automatycznie haseł. Etap 5 dodaje jawny stan konfiguracji rocznego limitu, projekcję zajętości wniosku i kontekst zasad zatrudnienia obejmujący również pierwotnie wolne dni. Etapy 6–11 wykorzystują ten schemat bez nowej migracji ani przepisywania istniejących wniosków. Istniejące limity, dane początkowe, księgowania, słowniki i historia pozostają zachowane. Zachowaj dotychczasowy `.env` oraz wolumeny. Nie usuwaj bazy, aby rozwiązać błąd migracji; MySQL DDL nie gwarantuje wycofania częściowo wykonanej zmiany. Szczegóły i celowo zablokowane cofnięcie migracji opisano w [modelu danych](docs/DATA_MODEL.md#migracja-i-dane-demonstracyjne).
 
 Po uruchomieniu:
 

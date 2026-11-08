@@ -129,7 +129,7 @@ function CalendarWorkspace({ user }: { user: CurrentUser }) {
       </div>
       <p className="calendar-filter-hint">Filtry dotyczą kalendarza i listy poniżej.{status === "approved" && " Zatwierdzony urlop obowiązuje także podczas oczekiwania na zmianę lub anulowanie."}{status === "pending" && " Oczekujące to nowe wnioski; propozycje zmian znajdziesz w „Zmiany i anulowania”."}</p>
     </section>
-    <section className="team-calendar-panel" aria-label="Kalendarz nieobecności">
+    <section className="team-calendar-panel" aria-label="Kalendarz nieobecności" data-tour="team-calendar">
       <div className="calendar-toolbar">
         <div className="calendar-period-heading"><span className="calendar-icon" aria-hidden="true">▦</span><div><h2>{from ? dateLabel(from, { month: "long", year: "numeric" }) : "Kalendarz"}</h2><p>{from && `${shortDate(from)} – ${shortDate(to)}`}</p></div></div>
         <div className="calendar-controls">
@@ -159,7 +159,7 @@ function CalendarWorkspace({ user }: { user: CurrentUser }) {
         <div className="calendar-legend"><span><i className="legend-approved" aria-hidden="true" />✓ Zatwierdzony</span><span><i className="legend-pending" aria-hidden="true" />◷ Oczekuje</span><span><i className="legend-change" aria-hidden="true" />↗ Proponowana zmiana</span><span className="legend-hint">Godziny to wymiar nieobecności.</span>{hasChanges && <p className="calendar-change-hint">Do decyzji o zmianie lub anulowaniu obowiązuje zatwierdzony termin. Propozycja zmiany dotyczy tego samego urlopu; godzin obu wersji nie sumujemy.</p>}</div>
       </>}
     </section>
-    <section className="upcoming-section" aria-labelledby="upcoming-heading">
+    <section className="upcoming-section" aria-labelledby="upcoming-heading" data-tour="upcoming-absences">
       <div className="upcoming-heading"><div><span className="eyebrow">Spójrz trochę dalej</span><h2 id="upcoming-heading">Nadchodzące nieobecności</h2><p>Najbliższe 2 miesiące{today ? ` · ${shortDate(today)} – ${shortDate(shiftDate(twoMonthsAfter(today), -1))}` : ""}</p></div><Link href="/requests" prefetch={false} className="text-link">Moje wnioski <span aria-hidden="true">→</span></Link></div>
       {upcomingError ? <div className="message message-error" role="alert">{upcomingError}<button type="button" className="text-button" onClick={retry}>Spróbuj ponownie</button></div> : !upcoming ? <div className="upcoming-empty" role="status">Wczytywanie najbliższych planów…</div> : !upcomingGroups.length ? <div className="upcoming-empty" role="status"><span aria-hidden="true">☀</span><h3>{filtered ? "Brak nadchodzących nieobecności dla wybranych filtrów" : "Przed Wami otwarty kalendarz"}</h3><p>{filtered ? "W kolejnych dwóch miesiącach nie ma pasujących wpisów. Możesz zmienić lub wyczyścić filtry." : "W najbliższych dwóch miesiącach nie ma zgłoszonych nieobecności."}</p></div> : <><ul className="upcoming-list">{visibleUpcoming.map(group => <UpcomingRequest key={group.requestId} group={group} person={upcoming.people.find(item => item.id === group.userId)} actorId={user.id} onOpen={setDetailId} />)}</ul>{upcomingGroups.length > 8 && <button type="button" className="button button-secondary upcoming-more" onClick={() => setAllUpcoming(!allUpcoming)}>{allUpcoming ? "Pokaż mniej" : `Pokaż wszystkie (${upcomingGroups.length})`}</button>}</>}
     </section>

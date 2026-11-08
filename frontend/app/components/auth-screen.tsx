@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { AppShell, NotusBrand } from "./app-shell";
 import {
   ApiError,
   errorMessage,
-  getAdminUsers,
   getCurrentUser,
   postApi,
   redirectForAuthError,
@@ -153,10 +152,8 @@ export function AuthScreen({ screen }: { screen: Screen }) {
         <div className="profile-heading"><div className="avatar" aria-hidden="true">{user.firstName.slice(0, 1)}{user.lastName.slice(0, 1)}</div><div><h2 id="profile-title">{user.firstName} {user.lastName}</h2><p>Twoje konto</p></div><Link className="button button-secondary" href="/change-password" prefetch={false}>Zmień hasło</Link></div>
         <dl className="profile-details"><div><dt>Adres e-mail</dt><dd>{user.email}</dd></div><div><dt>Zespół</dt><dd>{user.team?.name ?? "Brak bieżącego przypisania"}</dd></div><div><dt>Rola</dt><dd>{roleLabel(user)}</dd></div></dl>
       </section>
-      <section className="admin-setup"><div><h2>Limity i saldo godzinowe</h2><p>Sprawdź dostępne godziny oraz historię rozliczeń.</p></div><Link href="/balances" className="button button-primary" prefetch={false}>Przejdź do salda</Link></section>
+      <section className="admin-setup"><div><h2>Moje saldo urlopu</h2><p>Sprawdź dostępne godziny oraz historię rozliczeń.</p></div><Link href="/balances" className="button button-primary" prefetch={false}>Przejdź do salda</Link></section>
       <section className="admin-setup"><div><h2>Plany Twojego zespołu</h2><p>Sprawdź nadchodzące nieobecności lub złóż nowy wniosek.</p></div><Link href="/" className="button button-secondary" prefetch={false}>Przejdź do kalendarza</Link></section>
-      {user.isAdministrator && <section className="admin-setup"><div><h2>Zarządzanie aplikacją</h2><p>Dodawaj użytkowników, zarządzaj zespołami i rodzajami nieobecności.</p></div><Link href="/admin" className="button button-primary" prefetch={false}>Przejdź do administracji</Link></section>}
-      {user.isAdministrator && <AdminPasswords currentUser={user} />}
   </AppShell>;
 }
 
@@ -235,112 +232,4 @@ function PasswordChangeForm({ user }: { user: CurrentUser }) {
       <button className="button button-primary button-wide" type="submit" disabled={busy}>{busy ? "Zapisywanie…" : "Zapisz nowe hasło"}<span aria-hidden="true">→</span></button>
     </form>
   </>;
-}
-
-function AdminPasswords({ currentUser }: { currentUser: CurrentUser }) {
-  const [users, setUsers] = useState<CurrentUser[] | null>(null);
-  const [loadError, setLoadError] = useState("");
-  const [attempt, setAttempt] = useState(0);
-  const [selected, setSelected] = useState<CurrentUser | null>(null);
-  const [adminPassword, setAdminPassword] = useState("");
-  const [temporary, setTemporary] = useState<{ temporaryPassword: string; expiresAt: string } | null>(null);
-  const [visible, setVisible] = useState(false);
-  const [copied, setCopied] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const heading = useRef<HTMLHeadingElement>(null);
-  const trigger = useRef<HTMLButtonElement | null>(null);
-  const activeRequest = useRef({ value: 0 });
-
-  useEffect(() => {
-    let disposed = false;
-    getAdminUsers().then(result => {
-      if (!disposed) { setUsers(result.users); setLoadError(""); }
-    }).catch(error => {
-      if (!disposed && !redirectForAuthError(error)) setLoadError(errorMessage(error));
-    });
-    return () => { disposed = true; };
-  }, [attempt]);
-
-  useEffect(() => {
-    if (selected) heading.current?.focus();
-  }, [selected, temporary]);
-
-  useEffect(() => {
-    const counter = activeRequest.current;
-    const clearSensitive = () => {
-      ++activeRequest.current.value;
-      setTemporary(null); setAdminPassword(""); setSelected(null); setBusy(false); setError(""); setCopied(""); setVisible(false);
-    };
-    const onVisibility = () => { if (document.hidden) clearSensitive(); };
-    document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("pagehide", clearSensitive);
-    return () => {
-      ++counter.value;
-      document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("pagehide", clearSensitive);
-    };
-  }, []);
-
-  function close() {
-    ++activeRequest.current.value;
-    setSelected(null); setTemporary(null); setAdminPassword(""); setError(""); setCopied(""); setVisible(false);
-    trigger.current?.focus();
-  }
-
-  async function reset(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selected || busy) return;
-    const requestNumber = ++activeRequest.current.value;
-    setBusy(true); setError("");
-    try {
-      const result = await postApi<{ temporaryPassword: string; expiresAt: string }>(`/api/admin/users/${selected.id}/reset-password`, { adminPassword });
-      if (requestNumber !== activeRequest.current.value) return;
-      setAdminPassword(""); setTemporary(result);
-      setUsers(current => current?.map(user => user.id === selected.id ? { ...user, mustChangePassword: true } : user) ?? null);
-    } catch (error) {
-      if (requestNumber !== activeRequest.current.value) return;
-      setAdminPassword("");
-      if (!redirectForAuthError(error)) setError(errorMessage(error));
-    } finally {
-      if (requestNumber === activeRequest.current.value) setBusy(false);
-    }
-  }
-
-  async function copyPassword() {
-    if (!temporary) return;
-    try { await navigator.clipboard.writeText(temporary.temporaryPassword); setCopied("Hasło skopiowane."); }
-    catch { setCopied("Nie udało się skopiować. Pokaż hasło i skopiuj je ręcznie."); }
-  }
-
-  return <section className="admin-section" aria-labelledby="admin-title">
-    <div className="section-heading"><div><span className="eyebrow">Administracja</span><h2 id="admin-title">Dostęp do kont</h2><p>Ustaw nowe hasło tymczasowe dla osoby, która potrzebuje odzyskać dostęp.</p></div></div>
-    {loadError && <><Message>{loadError}</Message><button className="button button-secondary" onClick={() => setAttempt(attempt + 1)}>Spróbuj ponownie</button></>}
-    {!users && !loadError && <p role="status">Wczytywanie kont…</p>}
-    {users && <ul className="user-list">{users.map(user => <li key={user.id}>
-      <div className="user-summary"><strong>{user.firstName} {user.lastName}{user.id === currentUser.id && <span className="you-label">Ty</span>}</strong><span>{user.email}</span><small>{user.team?.name ?? "Bez przypisania do zespołu"} · {roleLabel(user)}</small></div>
-      <div className="user-action"><span className={`password-status${user.mustChangePassword ? " pending" : ""}`}>{user.mustChangePassword ? "Wymagana zmiana hasła" : "Hasło własne"}</span>{user.id !== currentUser.id && <button className="button button-secondary button-small" disabled={busy} onClick={event => {
-        trigger.current = event.currentTarget;
-        ++activeRequest.current.value;
-        setSelected(user); setAdminPassword(""); setTemporary(null); setVisible(false); setCopied(""); setError("");
-      }} aria-label={`Ustaw hasło tymczasowe: ${user.firstName} ${user.lastName}`}>Ustaw hasło tymczasowe</button>}</div>
-    </li>)}</ul>}
-    {selected && <div className="reset-panel">
-      <div className="reset-heading"><h3 ref={heading} tabIndex={-1}>{temporary ? "Hasło tymczasowe gotowe" : "Ustaw hasło tymczasowe"}</h3><button className="text-button" disabled={busy} onClick={close}>Zamknij</button></div>
-      <p className="reset-person">{selected.firstName} {selected.lastName} <span>{selected.email}</span></p>
-      {error && <Message>{error}</Message>}
-      {temporary ? <div className="temporary-result">
-        <Message kind="success">Dotychczasowe hasło i sesje tej osoby zostały unieważnione.</Message>
-        <label htmlFor="temporary-password">Nowe hasło tymczasowe</label>
-        <div className="temporary-copy"><input id="temporary-password" type={visible ? "text" : "password"} readOnly value={temporary.temporaryPassword} autoComplete="off" /><button type="button" className="button button-secondary" aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? "Ukryj" : "Pokaż"}</button><button type="button" className="button button-primary" onClick={() => void copyPassword()}>Kopiuj</button></div>
-        {copied && <p className="field-hint" role="status">{copied}</p>}
-        <p>Ważne do <strong>{new Intl.DateTimeFormat("pl-PL", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Warsaw" }).format(new Date(temporary.expiresAt))}</strong> (czas polski).</p>
-        <p className="field-hint">Przekaż je bezpiecznie właściwej osobie. Hasło zniknie po zamknięciu panelu lub przejściu do innej karty. Przy logowaniu trzeba ustawić własne hasło.</p>
-      </div> : <form className="reset-form" onSubmit={event => void reset(event)} aria-busy={busy}>
-        <p>Ta operacja unieważni obecne hasło i wszystkie sesje wybranej osoby. Nowe hasło będzie ważne przez 24 godziny.</p>
-        <PasswordField id="admin-password" label="Twoje hasło administratora" value={adminPassword} onChange={setAdminPassword} disabled={busy} />
-        <button className="button button-primary" type="submit" disabled={busy}>{busy ? "Tworzenie hasła…" : "Potwierdź i utwórz hasło"}</button>
-      </form>}
-    </div>}
-  </section>;
 }

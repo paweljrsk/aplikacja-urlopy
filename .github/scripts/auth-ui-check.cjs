@@ -14,7 +14,7 @@ mkdirSync(screenshotDir, { recursive: true });
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH || '/usr/bin/google-chrome',args:['--no-sandbox','--disable-dev-shm-usage']});
  try {
  const context=await browser.newContext({viewport:{width:1366,height:1000}});
- let session=null; const mutations=[]; const pageErrors=[];
+ let session=null; let adminReads=0; const mutations=[]; const pageErrors=[];
  const employee={id:2,firstName:'Anna',lastName:'Testowa',email:'anna@example.test',isAdministrator:false,mustChangePassword:false,team:{id:1,code:'it',name:'Rozwój aplikacji'},role:'employee'};
  const admin={id:1,firstName:'Paweł',lastName:'Testowy',email:'admin@example.test',isAdministrator:true,mustChangePassword:false,team:null,role:null};
  await context.route('**/api/**', async route=>{
@@ -37,7 +37,7 @@ mkdirSync(screenshotDir, { recursive: true });
   if(path==='/api/auth/logout'){session=null;return reply(200,{status:'logged_out'});}
   if(path==='/api/auth/change-password'){session=null;return reply(200,{status:'password_changed'});}
   if(session.mustChangePassword) return error(403,'PASSWORD_CHANGE_REQUIRED');
-  if(path==='/api/admin/users') return reply(200,{users:[admin,employee]});
+  if(path==='/api/admin/users') { adminReads++; return reply(200,{users:[admin,employee]}); }
   if(path==='/api/admin/users/2/reset-password') {
    if(request.postDataJSON().adminPassword==='wrong') return error(422,'INVALID_CURRENT_PASSWORD');
    return reply(200,{temporaryPassword:'SyntheticTemporaryPassword12345',expiresAt:'2026-11-07T20:00:00+00:00'});
@@ -81,32 +81,23 @@ mkdirSync(screenshotDir, { recursive: true });
  // retain their own regression coverage at the dedicated account route.
  await page.goto(`${baseUrl}/account`);
  await page.getByRole('heading',{name:'Cześć, Paweł.'}).waitFor();
- await page.getByRole('heading',{name:'Dostęp do kont'}).waitFor();
- assert.equal(await page.getByRole('button',{name:'Ustaw hasło tymczasowe: Paweł Testowy'}).count(),0);
- await page.getByRole('button',{name:'Ustaw hasło tymczasowe: Anna Testowa'}).click();
- await page.getByLabel('Twoje hasło administratora',{exact:true}).fill('wrong');
- await page.getByRole('button',{name:'Potwierdź i utwórz hasło'}).click();
- await page.getByRole('alert').filter({hasText:'Podane aktualne hasło jest nieprawidłowe'}).waitFor();
- assert.equal(await page.getByLabel('Twoje hasło administratora',{exact:true}).inputValue(),'');
- await page.getByLabel('Twoje hasło administratora',{exact:true}).fill('admin accepted');
- await page.getByRole('button',{name:'Potwierdź i utwórz hasło'}).click();
- await page.getByRole('heading',{name:'Hasło tymczasowe gotowe'}).waitFor();
- const secret=page.getByLabel('Nowe hasło tymczasowe',{exact:true});
- assert.equal(await secret.getAttribute('type'),'password');
- assert.ok(await secret.inputValue() === 'SyntheticTemporaryPassword12345', 'The one-time credential was not rendered.');
+ // Administrative credential reset moved to /management/admin; its wrong-password,
+ // successful reset, masked secret and cleanup checks live in admin-ui-check.cjs.
+ assert.equal(await page.getByRole('heading',{name:'Dostęp do kont'}).count(),0);
+ assert.equal(await page.getByRole('button',{name:/Ustaw hasło tymczasowe/}).count(),0);
+ assert.equal(await page.locator('input[type="password"]').count(),0);
+ assert.equal(adminReads,0,'Personal account does not load the administrative user directory.');
+ await page.screenshot({path:join(screenshotDir, 'account-mobile.png'),fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
- await page.screenshot({path:join(screenshotDir, 'stage3-admin-mobile.png'),fullPage:true});
- await page.getByRole('button',{name:'Zamknij',exact:true}).click();
- assert.equal(await page.getByLabel('Nowe hasło tymczasowe',{exact:true}).count(),0);
  await page.setViewportSize({width:1366,height:1000});
- await page.screenshot({path:join(screenshotDir, 'stage3-admin-desktop.png'),fullPage:true});
+ await page.screenshot({path:join(screenshotDir, 'account-desktop.png'),fullPage:true});
  assert.equal(await page.evaluate(()=>localStorage.length+sessionStorage.length),0);
  await page.getByLabel('Menu konta',{exact:true}).click();
  await page.getByRole('button',{name:'Wyloguj się',exact:true}).click();
  await page.waitForURL(atPath('/login'));
  await page.getByRole('heading',{name:'Zaloguj się'}).waitFor();
  assert.equal(pageErrors.length,0,'Browser reported a JavaScript exception.');
- console.log('PASS: anonymous guard, login failure/password clearing, forced change, mismatch validation, successful change/logout, admin self-reset hidden, reset confirmation failure/success, one-time secret cleanup, CSRF headers, empty browser storage, desktop/mobile overflow, no page errors.');
+ console.log('PASS: anonymous guard, login failure/password clearing, forced change, mismatch validation, successful change/logout, personal account without administrative reset controls, CSRF headers, empty browser storage, desktop/mobile overflow, no page errors.');
  } finally {
   await browser.close();
  }

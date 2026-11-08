@@ -12,14 +12,15 @@ type Editor = "opening" | "limit" | "correction" | null;
 type SaveResult = "saved" | "uncertain" | "failed";
 type Save = (path: string, body: Record<string, unknown>, message: string) => Promise<SaveResult>;
 
-export function BalanceScreen() {
-  return <AccountingGate screen="balances">{actor => <BalanceWorkspace actor={actor} />}</AccountingGate>;
+export function BalanceScreen({ mode = "personal" }: { mode?: "personal" | "management" }) {
+  return <AccountingGate screen={mode === "management" ? "team-balances" : "balances"}>{actor => <BalanceWorkspace actor={actor} mode={mode} />}</AccountingGate>;
 }
 
-function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
+function BalanceWorkspace({ actor, mode }: { actor: CurrentUser; mode: "personal" | "management" }) {
   const [people, setPeople] = useState<BalancePerson[]>([]);
   const [view, setView] = useState<"person" | "team">("person");
-  const canViewTeam = actor.isAdministrator || actor.role === "manager" || actor.role === "deputy";
+  const management = mode === "management";
+  const canViewTeam = management && (actor.isAdministrator || actor.role === "manager" || actor.role === "deputy");
   const [personId, setPersonId] = useState(actor.id);
   const [year, setYear] = useState("");
   const [today, setToday] = useState("");
@@ -47,10 +48,11 @@ function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
       try {
         const list = await getApi<PeopleResponse>("/api/balances/people");
         if (sequence.current !== request) return;
-        setPeople(list.people); setToday(list.today); setYear(String(list.currentYear));
-        if (canViewTeam && new URLSearchParams(window.location.search).get("view") === "team") setView("team");
-        const selected = list.people.find(item => item.id === actor.id) ?? list.people[0];
-        if (!selected) { setLoading(false); return; }
+        const available = management ? list.people : list.people.filter(item => item.id === actor.id);
+        setPeople(available); setToday(list.today); setYear(String(list.currentYear));
+        if (canViewTeam && new URLSearchParams(window.location.search).get("view") !== "person") setView("team");
+        const selected = available.find(item => item.id === actor.id) ?? (management ? available[0] : undefined);
+        if (!selected) { setError("Nie ma danych salda do wyświetlenia. Sprawdź przypisanie do zespołu z administratorem."); setLoading(false); return; }
         setPersonId(selected.id);
         const result = await getApi<{ balance: Balance }>(`/api/balances/users/${selected.id}/${list.currentYear}`);
         if (sequence.current === request) setBalance(result.balance);
@@ -63,10 +65,11 @@ function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
     }
     void start();
     return () => { sequence.current = -1; };
-  }, [actor.id, canViewTeam]);
+  }, [actor.id, canViewTeam, management]);
 
   async function load(id = personId, requestedYear = year) {
     if (pending.current) return;
+    if (!management) id = actor.id;
     let selectedYear: number;
     try { selectedYear = wholeNumber(requestedYear, 2025, 2100); } catch (failure) { setError(balanceError(failure)); return; }
     const request = ++sequence.current;
@@ -79,7 +82,7 @@ function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
   }
 
   async function openCorrection() {
-    if (!balance?.opening || pending.current) return;
+    if (!management || !person?.canManage || !balance?.opening || pending.current) return;
     const openingYear = Number(balance.opening.effectiveDate.slice(0, 4));
     if (openingYear !== balance.year) {
       const result = await load(personId, String(openingYear));
@@ -89,7 +92,7 @@ function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
   }
 
   const save: Save = async (path, body, message) => {
-    if (pending.current || !balance) return "failed";
+    if (!management || !person?.canManage || pending.current || !balance) return "failed";
     pending.current = true; setBusy(true); setError(""); setNotice("");
     const request = sequence.current;
     const payload = { ...body, expectedVersion: balance.version };
@@ -107,22 +110,22 @@ function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
   function changeView(next: "person" | "team") {
     if (busy) return;
     setView(next); setEditor(null); setError(""); setNotice("");
-    window.history.replaceState(null, "", next === "team" ? "/balances?view=team" : "/balances");
+    window.history.replaceState(null, "", next === "team" ? "/management/balances" : "/management/balances?view=person");
   }
 
   return <>
     {canViewTeam && <div className="balance-view-tabs" role="group" aria-label="Widok sald"><button type="button" className="button button-secondary" disabled={busy} aria-pressed={view === "person"} onClick={() => changeView("person")}>Saldo osoby</button><button type="button" className="button button-secondary" disabled={busy} aria-pressed={view === "team"} onClick={() => changeView("team")}>Salda zespołu</button></div>}
-    {view === "team" && canViewTeam ? (today ? <TeamBalancesPanel initialYear={String(balance?.year ?? Number(today.slice(0, 4)))} onSelect={(selected, selectedYear) => { setPeople(previous => [...previous.filter(item => item.id !== selected.id), selected]); changeView("person"); void load(selected.id, selectedYear); }} /> : error ? <AccountingNotice>{error}<button type="button" className="text-button" onClick={() => window.location.reload()}>Spróbuj ponownie</button></AccountingNotice> : <p role="status">Wczytywanie zestawienia…</p>) : <>
+    {view === "team" && canViewTeam ? (today ? <div data-tour="team-balances"><TeamBalancesPanel initialYear={String(balance?.year ?? Number(today.slice(0, 4)))} onSelect={(selected, selectedYear) => { setPeople(previous => [...previous.filter(item => item.id !== selected.id), selected]); changeView("person"); void load(selected.id, selectedYear); }} /></div> : error ? <AccountingNotice>{error}<button type="button" className="text-button" onClick={() => window.location.reload()}>Spróbuj ponownie</button></AccountingNotice> : <p role="status">Wczytywanie zestawienia…</p>) : <>
     {error && <AccountingNotice>{error}<div className="notice-actions"><button className="text-button" disabled={busy || loading} onClick={() => void load()}>Wczytaj aktualne dane</button></div></AccountingNotice>}
     {notice && <AccountingNotice kind="success">{notice}</AccountingNotice>}
     {people.length > 0 && <form className="balance-filters" onSubmit={event => { event.preventDefault(); void load(); }}><fieldset disabled={busy || loading} className="admin-fieldset balance-filter-fields">
-      <div className="field"><label htmlFor="balance-person">Osoba</label><select id="balance-person" value={personId} onChange={event => void load(Number(event.target.value))}>{people.map(item => <option key={item.id} value={item.id}>{item.firstName} {item.lastName}{item.id === actor.id ? " (Ty)" : ""}{item.active ? "" : " — konto nieaktywne"}</option>)}</select></div>
+      {management && <div className="field"><label htmlFor="balance-person">Osoba</label><select id="balance-person" value={personId} onChange={event => void load(Number(event.target.value))}>{people.map(item => <option key={item.id} value={item.id}>{item.firstName} {item.lastName}{item.id === actor.id ? " (Ty)" : ""}{item.active ? "" : " — konto nieaktywne"}</option>)}</select></div>}
       <AccountingField id="balance-year" label="Rok salda" type="number" min={2025} max={2100} value={year} onChange={setYear} />
       <button className="button button-secondary" type="submit">Pokaż saldo</button>
     </fieldset></form>}
     {loading && <p role="status">Wczytywanie salda…</p>}
     {balance && person && <>
-      <section aria-labelledby="balance-person-title" className="balance-overview">
+      <section aria-labelledby="balance-person-title" className="balance-overview" data-tour={management ? undefined : "own-balance"}>
         <div className="admin-section-heading"><div><h2 id="balance-person-title">{person.firstName} {person.lastName} · {balance.year}</h2><p className="field-hint">{person.team?.name ?? "Brak zespołu"} · {person.employmentType?.name ?? "Brak formy zatrudnienia"}</p></div><span className={`admin-status ${balance.configured ? "is-active" : "is-inactive"}`}>{balance.configured ? "Limit ustawiony" : "Brak limitu"}</span></div>
         {!balance.configured && <AccountingNotice kind="info">Limit na rok {balance.year} nie został jeszcze ustawiony. Brak limitu nie oznacza limitu 0 godzin.</AccountingNotice>}
         {balance.deficitHours > 0 && <AccountingNotice>Niedobór: {hoursLabel(balance.deficitHours)}. Zatwierdzone urlopy pozostają ważne. Nowe obciążenia zwiększające niedobór są zablokowane.</AccountingNotice>}
@@ -135,11 +138,11 @@ function BalanceWorkspace({ actor }: { actor: CurrentUser }) {
         <p className="field-hint">Dzień = 8 godzin. Oczekujące wnioski już rezerwują saldo; akceptacja nie potrąca go drugi raz.</p>
         <p className="field-hint">{person.employmentType?.carriesUnusedHours ? "Niewykorzystane godziny przechodzą od początku nowego roku. Wcześniej przyszły urlop korzysta wyłącznie z wpisanego limitu przyszłego roku. W pierwszej kolejności zużywana jest najstarsza dostępna pula." : "Niewykorzystane godziny nie przechodzą na kolejny rok. Limit każdego roku jest ustawiany osobno."}</p>
       </section>
-      {person.canManage ? <div className="balance-management"><div className="admin-actions">
+      {management && person.canManage ? <div className="balance-management"><div className="admin-actions">
         {!balance.opening && <button className="button button-primary" disabled={busy} onClick={() => setEditor("opening")}>Ustaw dane początkowe</button>}
         {balance.opening && <><button className="button button-primary" disabled={busy} onClick={() => setEditor("limit")}>{balance.configured ? "Zmień limit roczny" : "Ustaw limit roczny"}</button><button className="button button-secondary" disabled={busy} onClick={() => void openCorrection()}>Koryguj dane początkowe</button><button className="button button-secondary" disabled={busy || balance.year > Number(today.slice(0, 4))} onClick={() => void save(`/api/balances/users/${personId}/${balance.year}/settle`, {}, "Rozliczenie roku jest aktualne. Powtórzenie nie dodaje godzin drugi raz.")}>Rozlicz rok {balance.year}</button></>}
       </div><p className="field-hint">Zmiany zapisują autora, czas i poprzednie wartości. Korekta może wykazać niedobór; nie anuluje urlopów.</p></div> : <p className="field-hint">{actor.role === "manager" && actor.id === personId && !actor.isAdministrator ? "Twój limit i dane początkowe zmienia administrator." : "Masz dostęp do odczytu. Limity ustawia kierownik lub administrator."}</p>}
-      {editor && person.canManage && <BalanceEditor key={`${personId}:${balance.year}:${balance.version}:${editor}`} kind={editor} balance={balance} person={person} busy={busy} today={today} save={save} onAccessError={fail} close={() => setEditor(null)} />}
+      {management && editor && person.canManage && <BalanceEditor key={`${personId}:${balance.year}:${balance.version}:${editor}`} kind={editor} balance={balance} person={person} busy={busy} today={today} save={save} onAccessError={fail} close={() => setEditor(null)} />}
       {balance.opening && <section className="balance-section" aria-labelledby="opening-title"><h2 id="opening-title">Dane początkowe</h2><p className="field-hint">Bieżące wartości po korektach. Wcześniejsze wersje pozostają w historii.</p><dl className="balance-breakdown"><div><dt>Początek ewidencji</dt><dd>{displayDate(balance.opening.effectiveDate)}</dd></div><div><dt>Limit roku rozpoczęcia</dt><dd>{hoursLabel(balance.opening.annualHours)}</dd></div><div><dt>Wykorzystane z bieżącej puli przed startem</dt><dd>{balance.opening.currentYearUsedHours} h</dd></div>{balance.opening.carries.map(carry => <div key={carry.originYear}><dt>Pozostałość z {carry.originYear} na dzień startu</dt><dd>{carry.remainingHours} h</dd></div>)}</dl></section>}
       {balance.pools.length > 0 && <section className="balance-section" aria-labelledby="pools-title"><h2 id="pools-title">Pule godzin według pochodzenia</h2><div className="accounting-table-scroll"><table className="accounting-table"><thead><tr><th scope="col">Rok puli</th><th scope="col">Przydział</th><th scope="col">Rezerwacje</th><th scope="col">Obciążenia</th><th scope="col">Pozostało</th><th scope="col">Dostępność w {balance.year}</th></tr></thead><tbody>{balance.pools.map(pool => <tr key={pool.originYear}><th scope="row">{pool.originYear}</th><td>{pool.allocatedHours} h</td><td>{pool.reservedHours} h</td><td>{pool.chargedHours} h</td><td>{pool.availableHours} h</td><td>{pool.eligible ? "Dostępna" : "Niedostępna w tym roku"}</td></tr>)}</tbody></table></div><p className="field-hint">Ta sama pula jest wspólna dla lat korzystających z zaległości. Nie sumuj jej ponownie między latami.</p></section>}
       <section className="balance-section" aria-labelledby="history-title"><h2 id="history-title">Historia rozliczeń</h2>{balance.history.length === 0 ? <p className="field-hint">Brak zapisanych operacji.</p> : <ol className="balance-history">{balance.history.map(item => <li key={item.id}><div><strong>{actionLabel(item.action)}</strong><span>{new Intl.DateTimeFormat("pl-PL", { timeZone: "Europe/Warsaw", dateStyle: "short", timeStyle: "short" }).format(new Date(item.occurredAt))} · {item.actorName ?? "System"}</span></div>{item.reason && <p>{item.reason}</p>}<HistoryValues before={item.before} after={item.after} /></li>)}</ol>}</section>

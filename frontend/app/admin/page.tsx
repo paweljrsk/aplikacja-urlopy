@@ -1,5 +1,5 @@
-import { AdminScreen } from "../components/admin-screen";
+import { redirect } from "next/navigation";
 
 export default function AdminPage() {
-  return <AdminScreen />;
+  redirect("/management/admin");
 }

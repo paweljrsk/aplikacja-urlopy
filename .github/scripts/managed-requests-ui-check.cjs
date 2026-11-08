@@ -193,7 +193,7 @@ let step = 'launch';
     await page.clock.setFixedTime(new Date('2026-11-09T10:00:00Z'));
 
     async function open(id) {
-      await page.goto(`${baseUrl}/management?id=${id}`);
+      await page.goto(`${baseUrl}/management/requests?id=${id}`);
       await page.getByRole('heading', { name: 'Obsługa wniosków', exact: true }).waitFor();
       await page.getByRole('heading', { name: 'Szczegóły wniosku', exact: true }).waitFor();
     }
@@ -437,7 +437,7 @@ let step = 'launch';
     await page.screenshot({ path: join(screenshotDir, 'managed-requests-mobile.png'), fullPage: true });
 
     step = 'an empty page with a cursor remains reachable';
-    paginate = true; await page.goto(`${baseUrl}/management`);
+    paginate = true; await page.goto(`${baseUrl}/management/requests`);
     await page.getByRole('heading', { name: 'Obsługa wniosków', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Pokaż kolejne wnioski', exact: true }).click();
     await page.locator('[data-request-id="103"]').waitFor();

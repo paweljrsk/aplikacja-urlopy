@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AdminHistoryPanel } from "./admin-history-panel";
-import { AppHeader } from "./app-shell";
+import { ManagementShell } from "./management-shell";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, errorMessage, getApi, getCurrentUser, mutateApi, postApi, redirectForAuthError, roleLabel, type CurrentUser, type TeamRole } from "@/lib/auth-api";
 import { displayDate, warsawToday, type AbsenceType, type AdminUser, type Catalog, type DictionaryItem, type EmploymentType, type TemporaryCredential } from "@/lib/admin-api";
@@ -160,17 +160,15 @@ export function AdminScreen() {
   const dictionaries = !catalog ? [] : section === "teams" ? catalog.teams : section === "employment-types" ? catalog.employmentTypes : catalog.absenceTypes;
   const filteredDictionaries = dictionaries.filter(item => filtered(item, `${item.name} ${item.code}`) && (!employmentFilter || section !== "absence-types" || (item as AbsenceType).employmentTypeIds.includes(Number(employmentFilter))));
 
-  return <div className="workspace admin-workspace">
-    <a className="skip-link" href="#main">Przejdź do treści</a>
-    <AppHeader user={actor} active="admin" onLogout={() => void logout()} logoutBusy={busy} />
-    <main id="main" className="workspace-main admin-main">
+  return <ManagementShell user={actor} active="admin" onLogout={() => void logout()} logoutBusy={busy}>
+    <div className="admin-main">
       <div className="workspace-heading"><div><span className="eyebrow">Ustawienia aplikacji</span><h1>Administracja</h1><p>Użytkownicy, struktura zespołów i rodzaje nieobecności.</p></div>{actor && <span className="account-badge">Administrator</span>}</div>
       {loading ? <p role="status">Wczytywanie administracji…</p> : forbidden ? <section className="profile-card"><h2>Brak dostępu</h2><p>Ten obszar jest dostępny wyłącznie dla administratora.</p><Link href="/" prefetch={false}>Wróć do konta</Link></section> : <>
         {error && <Notice error>{error}{actor && <div className="notice-actions"><button className="text-button" disabled={busy} onClick={() => void refresh()}>Wczytaj aktualne dane</button></div>}</Notice>}
         {notice && <Notice>{notice}</Notice>}
         {!catalog && !error && <Notice error>Nie udało się wczytać danych.</Notice>}
         {catalog && actor && <>
-          <nav className="admin-nav" aria-label="Obszary administracji">{sections.map(item => <button key={item.value} className={section === item.value ? "is-selected" : ""} aria-current={section === item.value ? "page" : undefined} disabled={busy} onClick={() => changeSection(item.value)}>{item.label}</button>)}</nav>
+          <nav className="admin-nav" aria-label="Obszary administracji" data-tour="admin-navigation">{sections.map(item => <button key={item.value} data-tour={`admin-tab-${item.value}`} className={section === item.value ? "is-selected" : ""} aria-current={section === item.value ? "page" : undefined} disabled={busy} onClick={() => changeSection(item.value)}>{item.label}</button>)}</nav>
           {section === "history" ? <AdminHistoryPanel onAccessError={handleError} /> : <>
           {temporary && <TemporaryPassword key={`${temporary.recipient}-${temporary.expiresAt}`} credential={temporary} onClose={() => setTemporary(null)} />}
           {catalog.employmentTypes.length === 0 || catalog.absenceTypes.length === 0 ? <section className="admin-setup"><div><h2>Przygotuj słowniki startowe</h2><p>Dodaj UoP, B2B oraz trzy podstawowe rodzaje nieobecności. Istniejące pozycje pozostaną zachowane.</p></div><button className="button button-secondary" disabled={busy} onClick={() => void save("/api/admin/catalog/initialize", "POST", {}, "Słowniki startowe są gotowe.")}>Dodaj słowniki startowe</button></section> : null}
@@ -187,9 +185,8 @@ export function AdminScreen() {
           </>}
         </>}
       </>}
-    </main>
-    <footer className="workspace-footer">Urlopy zespołu<span>Administracja</span></footer>
-  </div>;
+    </div>
+  </ManagementShell>;
 }
 
 function TemporaryPassword({ credential, onClose }: { credential: TemporaryCredential & { recipient: string }; onClose: () => void }) {

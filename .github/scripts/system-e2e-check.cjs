@@ -73,7 +73,7 @@ async function main() {
       await page.getByRole('heading', { name: 'Szczegóły wniosku', exact: true }).waitFor();
     }
     async function approveUI(actor, id, status = 'approved') {
-      await actor.page.goto(`/management?id=${id}`);
+      await actor.page.goto(`/management/requests?id=${id}`);
       await actor.page.getByRole('heading', { name: 'Szczegóły wniosku', exact: true }).waitFor();
       await actor.page.getByRole('button', { name: 'Akceptuj', exact: true }).click();
       const dialog = actor.page.getByRole('dialog', { name: 'Akceptacja wniosku', exact: true });
@@ -182,7 +182,7 @@ async function main() {
     check((await get(manager.client, `/api/balances/users/${fixture.transferred.id}/${fixture.pastYear}`, 403)).error.code === 'FORBIDDEN', 'Old manager must not read transferred employee balance');
     const historicalBefore = await balance(admin.client, fixture.transferred.id, fixture.pastYear);
     await manager.page.setViewportSize({ width: 390, height: 844 });
-    await manager.page.goto(`/management?id=${fixture.historicalRequestId}`);
+    await manager.page.goto(`/management/requests?id=${fixture.historicalRequestId}`);
     await manager.page.getByRole('button', { name: 'Skoryguj przeszły wniosek', exact: true }).click();
     dialog = manager.page.getByRole('dialog', { name: 'Korekta nieobecności', exact: true });
     await dialog.getByLabel('Liczba godzin', { exact: true }).selectOption('3');

@@ -1,5 +1,23 @@
 # Plan testów i odbioru
 
+## Moduł zarządzania i przewodniki — weryfikacja w toku
+
+Dodatkowe polecenie po etapie 11, B36; etap 12 pozostaje poza zakresem.
+Baza `4882ba6751bbbd2846bf3be8a01acf87d5187db8`, CI #40 SUCCESS.
+Sprawdzamy osobne adresy zarządzania, własne saldo bez edycji dla wszystkich ról,
+kompatybilność dawnych adresów oraz zachowanie kontroli API. Nowy
+`module-tour-ui-check.cjs` obejmuje role, tutoriale, klawiaturę, telefon, utratę
+uprawnień/sesji i brak zapisów. Istniejące testy operacji kierujemy na nowe adresy;
+test resetu cudzego hasła jest w panelu administratora, nie w osobistym koncie.
+Wyniki zostaną dopisane po wykonaniu kontroli.
+
+Lokalnie: pełny ESLint, TypeScript i produkcyjny build (16 tras) — PASS; składnia
+skryptów Node, workflow YAML i diff — PASS. Brak lokalnego PHP/MySQL; lokalny
+Chromium zatrzymuje się na systemowym `socket() EPERM`, więc wyników Chrome
+nie deklarujemy przed wykonaniem w CI. Początkowy build wymagał objęcia odczytu
+legacy `searchParams` w `/management` przez Suspense zgodnie z konfiguracją Next;
+po poprawce build zakończył się powodzeniem.
+
 ## Etap 11 — odbiór zakończony (8 listopada 2026 r.)
 
 Punkt wyjścia: końcowy etap 10 `4191f2ca26ebd205e36c4d5c7fcb606cb91bb1a4`,

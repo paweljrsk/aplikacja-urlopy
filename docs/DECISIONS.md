@@ -105,6 +105,26 @@ To decyzje realizacyjne w udzielonym zakresie, nie dodatkowe odpowiedzi biznesow
 |---|---|---|
 | B35 | Po wybraniu dni urlopu modal ma od razu pokazywać obliczoną liczbę dni, bez weekendów i świąt. Następnie rozpocząć etap 11. | Automatyczny licznik przy datach używa istniejącego kalendarza backendu, w tym firmowych dni wolnych. Działa niezależnie od salda; nie zastępuje podglądu i walidacji zapisu. |
 
+## Dodatkowa zmiana UX po etapie 11 — 8 listopada 2026 r.
+
+| ID | Polecenie użytkownika | Zakres |
+|---|---|---|
+| B36 | Wynieść panel administratora i części zarządcze frontendu do oddzielnego modułu oraz dodać przewodniki w stylu JS Tour dla administratora, kierownika i pracownika. Nie rozpoczynać etapu 12. | Moduł zarządzania z odrębną nawigacją; własne saldo służy odczytowi. Dotychczasowe role, procesy i API pozostają bez zmian. Tutorial jest dobrowolny i nie wykonuje operacji za użytkownika. |
+
+Decyzje wykonawcze B36: `/management` jest stroną startową modułu, a podstrony
+`requests`, `balances`, `admin`, `calendar` grupują odpowiednie procesy. Stare
+`/admin`, `/calendar-settings` i `/management?id=…` kierują do nowych miejsc.
+`/balances` zawsze pokazuje własne dane, także przy dawnym `?view=team`; wszystkie
+bieżące odnośniki do zespołu prowadzą do modułu. Reset cudzego hasła pozostaje
+w kartotece administratora i znika z osobistego konta.
+
+Przewodniki używają istniejącego React i natywnego dialogu, bez dodatkowego pakietu,
+skryptu zewnętrznego i analityki. Postęp pozostaje w pamięci bieżącej strony,
+bez localStorage/sessionStorage. Dostępne role wynikają z aktualnej sesji;
+wariant zastępcy wyjaśnia jego ograniczenia. Przyciski „Dalej” i „Wstecz” zmieniają
+wyłącznie krok/ekran; formularzy i decyzji tutorial nie wysyła. Szczegóły odbioru
+zapisujemy w TEST_PLAN po wykonaniu testów.
+
 Realizacja: lekki odczyt wymiaru nie tworzy wniosku, rezerwacji ani audytu.
 Zakres bez dni roboczych pokazuje zero. Wariant godzinowy zachowuje pełne godziny.
 Odpowiedź starszego wyboru dat nie może zastąpić aktualnego wyniku.

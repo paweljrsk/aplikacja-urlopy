@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { errorMessage, getCurrentUser, postApi, redirectForAuthError, roleLabel, type CurrentUser } from "@/lib/auth-api";
+import { GuideLauncher } from "./guided-tour";
 
 export function NotusBrand() {
   return <Link href="/" prefetch={false} className="notus-brand" aria-label="Notus Urlopy — kalendarz zespołu">
@@ -45,7 +46,7 @@ export function useWorkspaceUser() {
   return { user, loading, error, reload };
 }
 
-export function AppHeader({ user, active, onNewRequest, onLogout, logoutBusy = false }: { user: CurrentUser | null; active: string; onNewRequest?: () => void; onLogout?: () => void; logoutBusy?: boolean }) {
+export function AppHeader({ user, active, onNewRequest, onLogout, logoutBusy = false, mode = "employee" }: { user: CurrentUser | null; active: string; onNewRequest?: () => void; onLogout?: () => void; logoutBusy?: boolean; mode?: "employee" | "management" }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const pending = useRef(false);
@@ -57,25 +58,26 @@ export function AppHeader({ user, active, onNewRequest, onLogout, logoutBusy = f
     finally { pending.current = false; setBusy(false); }
   }
   return <>
-    <header className="app-header">
+    <header className={`app-header${mode === "management" ? " management-header" : ""}`}>
       <div className="app-header-inner">
         <NotusBrand />
         {user && <>
-          <nav className={`app-navigation${user.isAdministrator || user.role === "manager" || user.role === "deputy" ? " has-management" : ""}`} aria-label="Nawigacja główna">
+          {mode === "employee" ? <nav className="app-navigation" aria-label="Nawigacja główna" data-tour="employee-navigation">
             <Link href="/" prefetch={false} aria-current={active === "calendar" ? "page" : undefined}>Kalendarz</Link>
             <Link href="/requests" prefetch={false} aria-current={active === "requests" ? "page" : undefined}>Moje wnioski</Link>
             <Link href="/balances" prefetch={false} aria-current={active === "balances" ? "page" : undefined}>Moje saldo</Link>
-            {(user.isAdministrator || user.role === "manager" || user.role === "deputy") && <Link href="/management" prefetch={false} aria-current={active === "management" ? "page" : undefined}>Obsługa wniosków</Link>}
-          </nav>
+          </nav> : <div className="management-header-label"><span className="management-mode-dot" aria-hidden="true" />Panel zarządzania</div>}
           <div className="app-header-actions">
-            {onNewRequest ? <button type="button" className="button button-primary new-request-button" onClick={onNewRequest}><span aria-hidden="true">+</span>Złóż wniosek</button> : <Link href="/requests?new=1" prefetch={false} className="button button-primary new-request-button"><span aria-hidden="true">+</span>Złóż wniosek</Link>}
+            <GuideLauncher user={user} />
+            {mode === "management" ? <Link href="/" prefetch={false} className="button button-secondary back-to-workspace">Wróć do kalendarza</Link> : <>
+              {(user.isAdministrator || user.role === "manager" || user.role === "deputy") && <Link href="/management" prefetch={false} className="management-entry" data-tour="management-entry">Zarządzanie<span aria-hidden="true">↗</span></Link>}
+              {onNewRequest ? <button type="button" className="button button-primary new-request-button" data-tour="new-request" onClick={onNewRequest}><span aria-hidden="true">+</span>Złóż wniosek</button> : <Link href="/requests?new=1" prefetch={false} className="button button-primary new-request-button" data-tour="new-request"><span aria-hidden="true">+</span>Złóż wniosek</Link>}
+            </>}
             <details className="account-menu">
               <summary aria-label="Menu konta"><span className="account-initials" aria-hidden="true">{user.firstName.slice(0, 1)}{user.lastName.slice(0, 1)}</span><span className="account-menu-name">{user.firstName}<span aria-hidden="true">⌄</span></span></summary>
               <div className="account-menu-panel">
                 <strong>{user.firstName} {user.lastName}</strong><small>{roleLabel(user)}</small>
                 <Link href="/account" prefetch={false}>Moje konto</Link>
-                {(user.isAdministrator || user.role === "manager" || user.role === "deputy") && <Link href="/balances?view=team" prefetch={false}>Salda zespołu</Link>}
-                {user.isAdministrator && <><Link href="/admin" prefetch={false}>Administracja</Link><Link href="/calendar-settings" prefetch={false}>Firmowe dni wolne</Link></>}
                 <button type="button" onClick={onLogout ?? (() => void logout())} disabled={busy || logoutBusy}>{busy || logoutBusy ? "Wylogowywanie…" : "Wyloguj się"}</button>
               </div>
             </details>
