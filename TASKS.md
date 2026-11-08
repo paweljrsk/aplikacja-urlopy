@@ -1,5 +1,7 @@
 # Zadania aplikacji urlopowej
 
+- [x] B39: otwierać kalendarz w widoku bieżącego miesiąca na komputerze i telefonie. Lokalny lint, build i kontrola renderu przeszły.
+
 - [x] B38: usunąć napis „Urlopy” i separator obok logo w górnym pasku. Lint, build i kontrola HTML przeszły.
 
 **Bieżąca zmiana B37 — widok pełnego miesiąca w kalendarzu — ukończona.** CI #45 SUCCESS.

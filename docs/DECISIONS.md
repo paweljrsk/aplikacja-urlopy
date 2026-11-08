@@ -171,6 +171,11 @@ Szczegółowy raport i ograniczenia są w TEST_PLAN; etap 12 pozostaje wstrzyman
 
 Na prośbę użytkownika usunięto napis „Urlopy” i separator obok logo w nagłówku. Kliknięcie logo prowadzi do kalendarza zespołu.
 
+### B39 — domyślny miesiąc w kalendarzu, 8 listopada 2026 r.
+
+Na prośbę użytkownika kalendarz otwiera bieżący miesiąc na komputerze i telefonie.
+Użytkownik może wybrać tydzień lub dwa tygodnie.
+
 ### Zasady wspólne
 
 | ID | Zasada | Status |

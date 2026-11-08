@@ -1,5 +1,14 @@
 # Plan testów i odbioru
 
+## Domyślny miesiąc B39
+
+Lokalnie lint, build, składnia dwóch skryptów przeglądarkowych i kontrola renderu
+przeszły. Render startowy zaznacza „Miesiąc”, a zakres obejmuje pierwszy i ostatni
+dzień miesiąca. Zaktualizowane regresje Chrome sprawdzają ten wybór i zakres API
+na komputerze i telefonie oraz przełączanie na krótsze okresy. Lokalny Chromium
+zatrzymał się przy starcie na `socket() EPERM`. Ręcznie otwórz kalendarz po
+zalogowaniu i sprawdź, czy „Miesiąc” jest zaznaczony bez dodatkowego kliknięcia.
+
 ## Górny pasek B38
 
 Lint, build i kontrola produkcyjnego HTML kalendarza i logowania przeszły. Ręczny odbiór polega na sprawdzeniu górnego paska po zalogowaniu i przejścia do kalendarza po kliknięciu logo.

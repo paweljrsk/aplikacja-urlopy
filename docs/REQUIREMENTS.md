@@ -205,8 +205,8 @@ B37: przełącznik kalendarza obejmuje „Tydzień”, „2 tygodnie” i „Mie
 pokazuje dni od pierwszego do ostatniego, odpowiednio 28–31 dni. Strzałki przechodzą
 między miesiącami, a „Dzisiaj” wraca do bieżącego miesiąca. Wybór miesiąca zachowuje
 filtry osoby/statusu/zespołu i dostęp do szczegółów. Lista nadchodzących nieobecności
-nadal obejmuje około dwa miesiące od dzisiaj. Domyślnie pozostają dwa tygodnie na
-komputerze i tydzień na telefonie; telefon pokazuje miesiąc jako listę dni.
+nadal obejmuje około dwa miesiące od dzisiaj. Od B39 domyślnym widokiem na komputerze
+i telefonie jest bieżący miesiąc. Telefon pokazuje miesiąc jako listę dni.
 
 ## 9. Granice MVP i późniejszy rozwój
 

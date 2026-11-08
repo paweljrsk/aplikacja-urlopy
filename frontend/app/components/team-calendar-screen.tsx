@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { getApi, redirectForAuthError, type CurrentUser } from "@/lib/auth-api";
 import { balanceError, type Balance } from "@/lib/balance-api";
 import { CALENDAR_MAX_DATE, CALENDAR_MIN_DATE, calendarRange, entryLabel, filterCalendarEntries, groupCalendarEntries, shiftDate, shiftMonth, shortDate, twoMonthsAfter, type CalendarEntry, type CalendarGroup, type CalendarPeriod, type CalendarPerson, type CalendarStatusFilter, type TeamCalendar } from "@/lib/team-calendar-api";
@@ -9,13 +9,6 @@ import { AppShell, useWorkspaceUser } from "./app-shell";
 import { RequestDialog } from "./request-dialog";
 import { CalendarRequestDialog } from "./calendar-request-dialog";
 
-function subscribeMobile(callback: () => void) {
-  const query = window.matchMedia("(max-width: 760px)");
-  query.addEventListener("change", callback);
-  return () => query.removeEventListener("change", callback);
-}
-function mobileSnapshot() { return window.matchMedia("(max-width: 760px)").matches; }
-function serverMobileSnapshot() { return false; }
 function dateLabel(date: string, options: Intl.DateTimeFormatOptions) { return new Intl.DateTimeFormat("pl-PL", { ...options, timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`)); }
 function availableLabel(hours: number) {
   if (hours < 0) return `${Math.abs(hours)} h niedoboru`;
@@ -30,9 +23,7 @@ export function TeamCalendarScreen() {
 }
 
 function CalendarWorkspace({ user }: { user: CurrentUser }) {
-  const mobile = useSyncExternalStore(subscribeMobile, mobileSnapshot, serverMobileSnapshot);
-  const [chosenPeriod, setChosenPeriod] = useState<CalendarPeriod | null>(null);
-  const period = chosenPeriod ?? (mobile ? 7 : 14);
+  const [period, setPeriod] = useState<CalendarPeriod>("month");
   const [today, setToday] = useState("");
   const [anchor, setAnchor] = useState("");
   const [team, setTeam] = useState("");
@@ -106,8 +97,8 @@ function CalendarWorkspace({ user }: { user: CurrentUser }) {
   const loadedPeriod = calendar?.from === from && calendar?.to === to;
   const holidays = new Map(calendar?.holidays.map(day => [day.date, day.name]));
   function changePeriod(value: CalendarPeriod) {
-    setChosenPeriod(value);
     if (value === period) return;
+    setPeriod(value);
     const range = calendarRange(anchor, value);
     if (range.from !== from || range.to !== to) { setCalendar(null); setError(""); }
   }
