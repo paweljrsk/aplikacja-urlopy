@@ -157,6 +157,8 @@ Historia obejmuje autora operacji, czas, zmienione wartości, decyzję i powiąz
 
 ### 1.8. Interfejs
 
+Przycisk „Złóż wniosek” w nagłówku ma tło `rgb(21, 132, 120)` (B38).
+
 Głównym ekranem jest kalendarz zespołu. Wygląd powinien korzystać ze stylistyki https://notus.pl i https://notus.pl/banki/ oraz zapewniać prostą, czytelną obsługę. Widok ma rozróżniać oczekujące i zaakceptowane nieobecności, także bez polegania wyłącznie na kolorze.
 
 Już w etapie 8 ekran po zalogowaniu pokazuje kalendarz nieobecności pracowników,

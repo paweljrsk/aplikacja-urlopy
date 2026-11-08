@@ -1,5 +1,7 @@
 # Zadania aplikacji urlopowej
 
+- [x] B38: ustawić kolor tła przycisku „Złóż wniosek” w nagłówku na `rgb(21, 132, 120)`. Lint, build i kontrola CSS produkcyjnego przeszły.
+
 **Bieżąca zmiana B37 — widok pełnego miesiąca w kalendarzu — ukończona.** CI #45 SUCCESS.
 - [x] Dodać przełącznik miesiąca, nawigację miesiącami i powrót do bieżącego miesiąca; zachować filtry, szczegóły i listę nadchodzących nieobecności.
 - [x] Sprawdzić długości miesięcy, przełom roku, rok przestępny i układ desktop/mobile; zapisać odbiór.
