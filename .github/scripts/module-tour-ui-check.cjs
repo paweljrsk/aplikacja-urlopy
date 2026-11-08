@@ -179,7 +179,7 @@ let step = 'launch';
     const authStarted = new Promise(resolve => { startedAuth = resolve; });
     authGate = { started: startedAuth, wait: new Promise(resolve => { releaseAuth = resolve; }) };
     await launch().click(); await authStarted;
-    await page.getByRole('link', { name: 'Moje wnioski', exact: true }).click();
+    await page.getByRole('navigation', { name: 'Nawigacja główna', exact: true }).getByRole('link', { name: 'Moje wnioski', exact: true }).click();
     await page.waitForURL(url => url.pathname === '/requests');
     await page.locator('[data-tour="my-requests"]').waitFor();
     releaseAuth();
