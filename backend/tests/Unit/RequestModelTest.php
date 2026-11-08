@@ -51,6 +51,31 @@ final class RequestModelTest extends TestCase
         self::assertSame('2026-12-15', $revision->getStartDate()->format('Y-m-d'));
     }
 
+    public function testLargeSnapshotPreservesEveryDateAndStillRejectsADistantDuplicate(): void
+    {
+        $days = [];
+        $end = $this->date('2100-12-31');
+        for ($date = $this->date('2026-01-01'); $date <= $end; $date = $date->modify('+1 day')) {
+            if ((int) $date->format('N') <= 5) {
+                $days[] = [$date->format('Y-m-d'), 8];
+            }
+        }
+        $seed = $this->seed();
+        $revision = $this->revision($seed, '2026-01-01', '2100-12-31', $days);
+        self::assertCount(count($days), $revision->getDays());
+        self::assertSame(count($days) * 8, $revision->getTotalHours());
+        self::assertSame(array_column($days, 0), array_map(static fn (RequestDay $day): string => $day->getDate()->format('Y-m-d'), $revision->getDays()));
+
+        $invalid = $this->seed();
+        $days[] = $days[0];
+        try {
+            $this->revision($invalid, '2026-01-01', '2100-12-31', $days);
+            self::fail('A distant duplicate must not be accepted.');
+        } catch (\InvalidArgumentException) {
+            self::assertSame([], $invalid['request']->getRevisions());
+        }
+    }
+
     /** @return iterable<string, array{RequestMode, string, string, list<array{string, int}>}> */
     public static function invalidRequestShapes(): iterable
     {

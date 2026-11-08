@@ -14,6 +14,30 @@ mkdirSync(screenshotDir, { recursive: true });
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH || '/usr/bin/google-chrome',args:['--no-sandbox','--disable-dev-shm-usage']});
  try {
  const context=await browser.newContext({viewport:{width:1366,height:1000}});
+ // Inspect real HTML responses before mocking the application API.
+ for (const path of ['/login', '/', '/management/admin']) {
+  const response=await context.request.get(`${baseUrl}${path}`);
+  assert.equal(response.status(),200,`HTML route ${path} must be available.`);
+  const headers=response.headers();
+  assert.equal(headers['x-frame-options'],'DENY');
+  assert.match(headers['content-security-policy'],/frame-ancestors 'none'/);
+  assert.match(headers['content-security-policy'],/object-src 'none'/);
+  assert.match(headers['content-security-policy'],/base-uri 'self'/);
+  assert.equal(headers['x-content-type-options'],'nosniff');
+  assert.equal(headers['referrer-policy'],'strict-origin-when-cross-origin');
+  assert.match(headers['permissions-policy'],/camera=\(\)/);
+  assert.equal(headers['x-powered-by'],undefined);
+ }
+ // A different origin is served entirely by the test. No external host is used.
+ const attackerUrl='http://clickjack.example.test/';
+ await context.route(attackerUrl,route=>route.fulfill({contentType:'text/html',body:`<!doctype html><title>Synthetic framing probe</title><iframe src="${baseUrl}/login"></iframe>`}));
+ const attacker=await context.newPage();
+ const blocked=attacker.waitForEvent('console',{predicate:message=>/frame-ancestors|X-Frame-Options/i.test(message.text()),timeout:15000});
+ await attacker.goto(attackerUrl);
+ await blocked;
+ assert.equal(await attacker.frameLocator('iframe').locator('input[type="password"]').count(),0,'Login must not render in the attacker frame.');
+ await attacker.close();
+ await context.unroute(attackerUrl);
  let session=null; let adminReads=0; const mutations=[]; const pageErrors=[];
  const employee={id:2,firstName:'Anna',lastName:'Testowa',email:'anna@example.test',isAdministrator:false,mustChangePassword:false,team:{id:1,code:'it',name:'Rozwój aplikacji'},role:'employee'};
  const admin={id:1,firstName:'Paweł',lastName:'Testowy',email:'admin@example.test',isAdministrator:true,mustChangePassword:false,team:null,role:null};
@@ -97,7 +121,7 @@ mkdirSync(screenshotDir, { recursive: true });
  await page.waitForURL(atPath('/login'));
  await page.getByRole('heading',{name:'Zaloguj się'}).waitFor();
  assert.equal(pageErrors.length,0,'Browser reported a JavaScript exception.');
- console.log('PASS: anonymous guard, login failure/password clearing, forced change, mismatch validation, successful change/logout, personal account without administrative reset controls, CSRF headers, empty browser storage, desktop/mobile overflow, no page errors.');
+ console.log('PASS: HTML security headers, cross-origin framing blocked, anonymous guard, login failure/password clearing, forced change, mismatch validation, successful change/logout, personal account without administrative reset controls, CSRF headers, empty browser storage, desktop/mobile overflow, no page errors.');
  } finally {
   await browser.close();
  }

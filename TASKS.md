@@ -1,5 +1,13 @@
 # Zadania aplikacji urlopowej
 
+## Dodatkowe pentesty przed etapem 12 — w trakcie
+
+- [-] Wykonać przegląd white-box, negatywne testy HTTP/ról/sesji i skany zależności/źródeł.
+- [-] Naprawić potwierdzone problemy i uruchomić regresję na odizolowanych danych.
+- [ ] Zapisać raport dowodów, ryzyk pozostałych i zakresu dla działu bezpieczeństwa.
+
+Gałąź `codex/pentesty-przed-etapem-12` bazuje na `5b927f2b0409cbb0e5499733f713423eec63acbb` (CI #50 SUCCESS). Badanie nie obejmuje firmowego serwera; etap 12 pozostaje nierozpoczęty.
+
 - [x] B39: otwierać kalendarz w widoku bieżącego miesiąca na komputerze i telefonie. Lokalny lint, build i kontrola renderu przeszły.
 
 - [x] B38: usunąć napis „Urlopy” i separator obok logo w górnym pasku. Lint, build i kontrola HTML przeszły.

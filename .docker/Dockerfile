@@ -1,5 +1,5 @@
 # Refresh pinned runtime digests deliberately, together with smoke tests.
-FROM node:22.13-slim@sha256:83fdfa2a4de32d7f8d79829ea259bd6a4821f8b2d123204ac467fbe3966450fc AS frontend-dev
+FROM node:22.23.4-bookworm-slim@sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d AS frontend-dev
 WORKDIR /var/www/html/frontend
 RUN chown node:node /var/www/html/frontend
 ENV NEXT_TELEMETRY_DISABLED=1 NPM_CONFIG_CACHE=/tmp/npm-cache

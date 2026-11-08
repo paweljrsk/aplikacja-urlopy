@@ -1,5 +1,9 @@
 # Aplikacja urlopowa zespołu
 
+**Dodatkowe badanie bezpieczeństwa przed etapem 12 — w toku.**
+Poprawki, zakres i pozostałe blokady produkcji opisuje [raport pentestów](docs/PENTEST_PRE_STAGE12.md).
+Gałąź `codex/pentesty-przed-etapem-12`; etap 12 pozostaje nierozpoczęty.
+
 Wewnętrzna aplikacja do wniosków i kalendarza nieobecności. Docelowo obejmuje wszystkie formy zatrudnienia, rozliczenia w pełnych godzinach oraz role pracownika, kierownika, zastępcy i administratora. Formalne rozliczenia UoP pozostają w kadrach.
 
 Logo Notus w górnym pasku prowadzi do kalendarza zespołu.

@@ -528,3 +528,16 @@ a oba pozostałe terminy zachowują zajętość do decyzji.
 Każdy wpis zawiera datę, identyfikator, decyzję lub problem, uzasadnienie, zakres
 wpływu, wynik weryfikacji i ewentualne pytanie. Odpowiedzi użytkownika należy
 powiązać z identyfikatorem Q z OPEN_QUESTIONS i odpowiednią zmianą REQUIREMENTS.
+
+## Dodatkowe pentesty przed etapem 12 — 8 listopada 2026 r.
+
+Użytkownik zlecił badanie bezpieczeństwa istniejącej aplikacji. Prace prowadzone
+na gałęzi `codex/pentesty-przed-etapem-12`, od kodu `5b927f2b0409cbb0e5499733f713423eec63acbb`
+(CI #50 SUCCESS), na odizolowanych danych. Raport: [PENTEST_PRE_STAGE12](PENTEST_PRE_STAGE12.md).
+Poprawki dotyczą kosztu nieudanych logowań, nagłówków ochronnych, duplikatów dni,
+limitu body Nginx, developerskiego minimatch i poprawki Node w linii 22.
+Wąski override sprawdzono parserem i porównaniem wzorców; pełny audit npm
+ma być blokowany od poziomu low. ZAP i Trivy zachowują pełne wyniki; wykonanie
+skanera bez błędu nie jest równoznaczne z brakiem zgłoszeń.
+Nie zmieniono zakresu ról ani długości dopuszczalnego wniosku bez ustalenia.
+Migracja przestarzałego MySQL wymaga próby zachowania danych w zakresie etapu12.

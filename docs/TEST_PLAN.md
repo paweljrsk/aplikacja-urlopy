@@ -984,3 +984,12 @@ zapisy przez API i MySQL. To odbiór etapu 10; pełny audyt systemu jest zakrese
 osobno zlecanego etapu 11, konfiguracja produkcji etapu 12.
 
 Ręczny odbiór jest opisany w README, sekcja etapu 10. PR #10 pozostaje niescalony.
+
+## Dodatkowe pentesty przed etapem 12 — w toku
+
+Raport ustaleń i dowodów: [PENTEST_PRE_STAGE12](PENTEST_PRE_STAGE12.md).
+Nowe testy obejmują koszt odrzuconego loginu, nagłówki, duży snapshot z odległym
+duplikatem, obcy iframe i negatywny rzeczywisty HTTP z kontrolą braku zapisów.
+Do CI dołączono pasywny ZAP oraz skan faktycznie uruchomionych obrazów Trivy.
+Wyniki końcowe zostaną powiązane z dokładnym commitem; brak lokalnego PHP/Dockera
+i blokada Chromium oznaczają brak lokalnego zaliczenia tych kontroli.

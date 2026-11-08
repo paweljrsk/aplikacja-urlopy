@@ -213,3 +213,12 @@ i telefonie jest bieżący miesiąc. Telefon pokazuje miesiąc jako listę dni.
 Po MVP można dodać logowanie M365, powiadomienia Slack, PWA, indywidualne grafiki, integrację kadrową i dodatkowe rodzaje z osobnymi limitami. Te funkcje nie należą do obecnych promptów. Rozbudowę poprzedza analiza aktualnych wymagań i migracji danych.
 
 W MVP formalna obsługa kadrowa pozostaje poza aplikacją; bezpieczeństwo i zgodność z firmowymi wymaganiami podlegają sprawdzeniu przed uruchomieniem. Godziny są ilością nieobecności w dniu, a nie harmonogramem godzin zegarowych.
+
+## 10. Dodatkowe badanie bezpieczeństwa przed etapem 12
+
+Użytkownik zlecił pentesty przed odbiorem działu bezpieczeństwa. Zakres obejmuje
+przegląd kodu, negatywne scenariusze ataku, zależności i konfigurację, poprawki
+potwierdzonych problemów oraz raport faktycznie wykonanych testów i ograniczeń.
+Nie oznacza to rozpoczęcia etapu 12 ani zezwolenia na operacje na firmowym serwerze.
+Raport [PENTEST_PRE_STAGE12](PENTEST_PRE_STAGE12.md) rozróżnia poprawki kodu,
+wyniki skanerów i nierozwiązane warunki przed produkcją.

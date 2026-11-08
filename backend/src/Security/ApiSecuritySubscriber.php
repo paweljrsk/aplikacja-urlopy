@@ -59,6 +59,10 @@ final class ApiSecuritySubscriber implements EventSubscriberInterface
         if (str_starts_with($event->getRequest()->getPathInfo(), '/api/')) {
             $event->getResponse()->headers->set('Cache-Control', 'no-store, private');
             $event->getResponse()->headers->set('X-Content-Type-Options', 'nosniff');
+            $event->getResponse()->headers->set('X-Frame-Options', 'DENY');
+            $event->getResponse()->headers->set('Content-Security-Policy', "frame-ancestors 'none'; object-src 'none'; base-uri 'self'");
+            $event->getResponse()->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+            $event->getResponse()->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         }
     }
 }
