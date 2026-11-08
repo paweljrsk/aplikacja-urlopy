@@ -99,9 +99,17 @@ let step = 'launch';
       await launch().click(); await dialog().waitFor();
       await dialog().getByRole('button', { name: choice, exact: true }).click();
     }
+    async function waitForLauncherFocus() {
+      // The dialog unmounts before the next animation frame restores focus.
+      // Wait for the user-visible outcome, not merely removal of the overlay.
+      await page.waitForFunction(() => document.activeElement instanceof HTMLButtonElement
+        && document.activeElement.getAttribute('data-guide-launcher') === 'true'
+        && !document.activeElement.disabled, undefined, { timeout: 5000 });
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-guide-launcher')), 'true', 'Closing restores focus to an available guide launcher.');
+    }
     async function closeGuide() {
       await page.keyboard.press('Escape'); await dialog().waitFor({ state: 'hidden' });
-      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-guide-launcher')), 'true', 'Closing restores focus to an available guide launcher.');
+      await waitForLauncherFocus();
       assert.equal(await page.locator('[data-guide-highlight="true"]').count(), 0);
     }
     async function assertFits() {
@@ -194,7 +202,7 @@ let step = 'launch';
     for (let index = 2; index <= 6; index++) { await next(); await waitStep('employee', index); }
     await dialog().getByRole('button', { name: 'Zakończ', exact: true }).click();
     await dialog().waitFor({ state: 'hidden' });
-    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-guide-launcher')), 'true');
+    await waitForLauncherFocus();
     await page.setViewportSize({ width: 390, height: 844 });
     await openChoice('Pracownik'); await waitStep('employee', 1); await next(); await waitStep('employee', 2); await assertFits();
     await page.screenshot({ path: join(screenshotDir, 'guide-employee-mobile.png'), fullPage: true });
@@ -207,6 +215,7 @@ let step = 'launch';
       if (actor.isAdministrator) await page.screenshot({ path: join(screenshotDir, 'guide-admin-desktop.png'), fullPage: true });
       for (let index = 2; index <= count; index++) { await next(); await waitStep(kind, index); }
       await dialog().getByRole('button', { name: 'Zakończ', exact: true }).click(); await dialog().waitFor({ state: 'hidden' });
+      await waitForLauncherFocus();
     }
 
     step = 'missing target fallback and dismissal';

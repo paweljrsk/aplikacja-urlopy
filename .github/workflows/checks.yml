@@ -92,7 +92,6 @@ jobs:
         run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/managed-requests-ui-check.cjs
       - name: Browser management module and role guides with synthetic API responses
         id: module_tours
-        continue-on-error: true
         run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/module-tour-ui-check.cjs
       - name: Write synthetic persistence marker outside the application schema
         run: |
@@ -168,7 +167,7 @@ jobs:
               raise SystemExit('Workers failed to become stable: ' + repr(previous))
           PY
       - name: Require managed request browser checks to pass
-        if: always() && (steps.managed_ui.outcome == 'failure' || steps.module_tours.outcome == 'failure')
+        if: always() && steps.managed_ui.outcome == 'failure'
         run: |
           echo 'Managed request browser checks failed; independent E2E results do not override this failure.'
           exit 1
