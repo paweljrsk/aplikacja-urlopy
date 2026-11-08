@@ -28,14 +28,33 @@ mkdirSync(screenshotDir, { recursive: true });
   assert.match(headers['permissions-policy'],/camera=\(\)/);
   assert.equal(headers['x-powered-by'],undefined);
  }
- // A different origin is served entirely by the test. No external host is used.
- const attackerUrl='http://clickjack.example.test/';
+ // Use another loopback origin so Chrome's local-network protection cannot
+ // block the request before the application's frame policy is evaluated.
+ // The probe document is intercepted; only its iframe reaches the app.
+ const attackerAddress=new URL(baseUrl);
+ attackerAddress.hostname=attackerAddress.hostname==='127.0.0.1'?'localhost':'127.0.0.1';
+ attackerAddress.pathname='/__synthetic_framing_probe__';
+ const attackerUrl=attackerAddress.href;
+ assert.notEqual(attackerAddress.origin,expectedOrigin);
  await context.route(attackerUrl,route=>route.fulfill({contentType:'text/html',body:`<!doctype html><title>Synthetic framing probe</title><iframe src="${baseUrl}/login"></iframe>`}));
  const attacker=await context.newPage();
- const blocked=attacker.waitForEvent('console',{predicate:message=>/frame-ancestors|X-Frame-Options/i.test(message.text()),timeout:15000});
- await attacker.goto(attackerUrl);
- await blocked;
+ // Browser policy violations are CDP Log entries, not necessarily console API
+ // messages exposed by Playwright's page.on('console'). Require the actual
+ // framing-policy violation, rather than inferring protection from an empty frame.
+ const devtools=await context.newCDPSession(attacker);
+ await devtools.send('Log.enable');
+ const blocked=new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>{devtools.off('Log.entryAdded',onEntry);reject(new Error('Chrome did not report a framing-policy violation.'));},15000);
+  function onEntry({entry}) {
+   if(entry.source==='security' && /frame-ancestors|X-Frame-Options/i.test(entry.text)) {
+    clearTimeout(timer); devtools.off('Log.entryAdded',onEntry); resolve();
+   }
+  }
+  devtools.on('Log.entryAdded',onEntry);
+ });
+ await Promise.all([blocked,attacker.goto(attackerUrl)]);
  assert.equal(await attacker.frameLocator('iframe').locator('input[type="password"]').count(),0,'Login must not render in the attacker frame.');
+ await devtools.detach();
  await attacker.close();
  await context.unroute(attackerUrl);
  let session=null; let adminReads=0; const mutations=[]; const pageErrors=[];

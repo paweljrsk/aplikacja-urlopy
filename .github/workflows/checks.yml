@@ -75,6 +75,8 @@ jobs:
       - name: Production frontend build
         run: docker compose exec -T node npm run build
       - name: Browser auth screens with synthetic API responses
+        id: auth_ui
+        continue-on-error: true
         run: |
           npm install --prefix /tmp/urlopy-ui --no-package-lock --ignore-scripts playwright-core@1.62.1
           NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/auth-ui-check.cjs
@@ -129,7 +131,9 @@ jobs:
       - name: Measure representative API and rendered views
         id: performance
         continue-on-error: true
-        run: NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/performance-check.cjs
+        run: |
+          docker compose exec -T php php bin/console cache:pool:clear cache.app
+          NODE_PATH=/tmp/urlopy-ui/node_modules BASE_URL=http://localhost:8080 CHROME_PATH="$(command -v google-chrome)" node .github/scripts/performance-check.cjs
       - name: Audit locked dependency advisories
         id: dependency_audit
         continue-on-error: true
@@ -188,7 +192,7 @@ jobs:
           echo 'Managed request browser checks failed; independent E2E results do not override this failure.'
           exit 1
       - name: Require system, performance and dependency checks to pass
-        if: always() && (steps.system_e2e.outcome == 'failure' || steps.performance.outcome == 'failure' || steps.dependency_audit.outcome == 'failure' || steps.pentest_http.outcome == 'failure' || steps.container_security.outcome == 'failure' || steps.zap_baseline.outcome == 'failure')
+        if: always() && (steps.system_e2e.outcome == 'failure' || steps.performance.outcome == 'failure' || steps.dependency_audit.outcome == 'failure' || steps.pentest_http.outcome == 'failure' || steps.container_security.outcome == 'failure' || steps.zap_baseline.outcome == 'failure' || steps.auth_ui.outcome == 'failure')
         run: exit 1
       - name: Save performance and dependency reports
         if: always()
