@@ -1,5 +1,5 @@
-import { CompanyCalendarScreen } from "../components/company-calendar-screen";
+import { redirect } from "next/navigation";
 
 export default function CalendarSettingsPage() {
-  return <CompanyCalendarScreen />;
+  redirect("/management/calendar");
 }

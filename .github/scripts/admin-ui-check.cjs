@@ -111,7 +111,11 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
         user.role = data.role; user.version++;
         return reply(200, { user });
       }
-      if (path === '/api/admin/users/2/reset-password') return reply(200, { temporaryPassword: 'SyntheticResetTemporaryPassword', expiresAt: '2030-01-01T12:00:00+00:00' });
+      if (path === '/api/admin/users/2/reset-password') {
+        if (data.adminPassword === 'wrong') return error(422, 'INVALID_ADMIN_PASSWORD');
+        assert.equal(data.adminPassword, 'Synthetic administrator password');
+        return reply(200, { temporaryPassword: 'SyntheticResetTemporaryPassword', expiresAt: '2030-01-01T12:00:00+00:00' });
+      }
       if (path === '/api/admin/absence-types/1' && method === 'PATCH') {
         assert.equal(data.deductsBalance, false);
         assert.deepEqual(data.namesByEmploymentType, { '1': 'Urlop wypoczynkowy', '2': 'Płatna przerwa B2B' });
@@ -122,21 +126,21 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
     });
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto(`${baseUrl}/admin`);
+    await page.goto(`${baseUrl}/management/admin`);
     await page.waitForURL(url => url.pathname === '/login');
     // A committed URL does not mean the redirected screen's session check is done.
     await page.getByRole('heading', { name: 'Zaloguj się', exact: true }).waitFor();
     session = { ...admin, isAdministrator: false };
     const beforeDenied = adminReads;
-    await page.goto(`${baseUrl}/admin`);
+    await page.goto(`${baseUrl}/management/admin`);
     await page.getByRole('heading', { name: 'Brak dostępu' }).waitFor();
     assert.equal(adminReads, beforeDenied, 'A non-administrator should not load admin datasets.');
     session = { ...admin, mustChangePassword: true };
-    await page.goto(`${baseUrl}/admin`);
+    await page.goto(`${baseUrl}/management/admin`);
     await page.waitForURL(url => url.pathname === '/change-password');
     await page.getByRole('heading', { name: 'Ustaw własne hasło', exact: true }).waitFor();
     session = admin;
-    await page.goto(`${baseUrl}/admin`);
+    await page.goto(`${baseUrl}/management/admin`);
     await page.getByRole('button', { name: 'Dodaj słowniki startowe' }).click();
     await page.getByRole('status').filter({ hasText: 'Słowniki startowe są gotowe' }).waitFor();
     await page.getByRole('button', { name: 'Zespoły', exact: true }).click();
@@ -146,6 +150,8 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
     await page.getByRole('button', { name: 'Dodaj pozycję', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Dodano pozycję' }).waitFor();
     await page.getByRole('button', { name: 'Użytkownicy', exact: true }).click();
+    await page.getByRole('button', { name: 'Edytuj: Paweł Testowy', exact: true }).click();
+    assert.equal(await page.getByRole('button', { name: 'Reset hasła', exact: true }).count(), 0, 'An administrator uses their personal change-password flow instead of resetting themselves.');
     await page.getByRole('button', { name: 'Dodaj użytkownika', exact: true }).click();
     await page.getByLabel('Imię', { exact: true }).fill('Anna');
     await page.getByLabel('Nazwisko', { exact: true }).fill('Demonstracyjna');
@@ -198,9 +204,17 @@ const admin = { id: 1, firstName: 'Paweł', lastName: 'Testowy', email: 'admin@e
     await page.screenshot({ path: join(screenshotDir, 'stage4-users-desktop.png'), fullPage: true });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.getByRole('button', { name: 'Reset hasła', exact: true }).click();
+    await page.getByLabel('Twoje hasło administratora').fill('wrong');
+    await page.getByRole('button', { name: 'Utwórz nowe hasło tymczasowe' }).click();
+    await page.getByRole('alert').filter({ hasText: 'Hasło administratora jest nieprawidłowe.' }).waitFor();
+    assert.equal(await page.getByLabel('Twoje hasło administratora').inputValue(), '', 'Failed confirmation clears the administrator password.');
+    assert.equal(await page.getByLabel('Nowe hasło tymczasowe').count(), 0);
     await page.getByLabel('Twoje hasło administratora').fill('Synthetic administrator password');
     await page.getByRole('button', { name: 'Utwórz nowe hasło tymczasowe' }).click();
     await page.getByRole('heading', { name: 'Hasło tymczasowe gotowe' }).waitFor();
+    const resetSecret = page.getByLabel('Nowe hasło tymczasowe', { exact: true });
+    assert.equal(await resetSecret.getAttribute('type'), 'password');
+    assert.equal(await resetSecret.inputValue(), 'SyntheticResetTemporaryPassword');
     await page.getByRole('button', { name: 'Rodzaje nieobecności', exact: true }).click();
     assert.equal(await page.getByLabel('Nowe hasło tymczasowe').count(), 0);
     await page.getByLabel('Forma zatrudnienia', { exact: true }).selectOption('2');

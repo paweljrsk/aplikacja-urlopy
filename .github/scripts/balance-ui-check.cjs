@@ -161,7 +161,7 @@ function recordHistory(action, before, after, reason) {
     // screen can redirect to the home page while the next navigation is starting.
     await page.getByRole('heading', { name: 'Zaloguj się', exact: true }).waitFor();
     session = admin;
-    await page.goto(`${baseUrl}/balances`);
+    await page.goto(`${baseUrl}/management/balances?view=person`);
     await page.getByLabel('Osoba', { exact: true }).selectOption('2');
     await page.getByRole('button', { name: 'Ustaw dane początkowe', exact: true }).click();
     await page.getByLabel('Jednostka limitu').selectOption('days');
@@ -279,11 +279,11 @@ function recordHistory(action, before, after, reason) {
     await page.getByRole('heading', { name: `Anna Testowa · ${year + 1}`, exact: true }).waitFor();
     assert.equal(await page.getByLabel('Osoba', { exact: true }).inputValue(), '2');
     session = manager;
-    await page.goto(`${baseUrl}/balances`);
+    await page.goto(`${baseUrl}/management/balances?view=person`);
     await page.getByText('Twój limit i dane początkowe zmienia administrator.').waitFor();
     assert.equal(await page.getByRole('button', { name: 'Ustaw dane początkowe', exact: true }).count(), 0);
     session = { ...manager, role: 'deputy' };
-    await page.goto(`${baseUrl}/balances`);
+    await page.goto(`${baseUrl}/management/balances?view=person`);
     await page.getByLabel('Osoba', { exact: true }).selectOption('2');
     await page.getByText('Masz dostęp do odczytu. Limity ustawia kierownik lub administrator.').waitFor();
     assert.equal(await page.getByRole('button', { name: 'Zmień limit roczny' }).count(), 0);
@@ -291,11 +291,11 @@ function recordHistory(action, before, after, reason) {
     await page.getByRole('button', { name: 'Saldo: Anna Testowa', exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Zmień limit roczny' }).count(), 0, 'Deputy team overview does not grant limit editing.');
     const beforeDenied = calendarReads;
-    await page.goto(`${baseUrl}/calendar-settings`);
+    await page.goto(`${baseUrl}/management/calendar`);
     await page.getByRole('heading', { name: 'Brak dostępu', exact: true }).waitFor();
     assert.equal(calendarReads, beforeDenied, 'Non-admin must not load company calendar management.');
     session = admin;
-    await page.goto(`${baseUrl}/calendar-settings`);
+    await page.goto(`${baseUrl}/management/calendar`);
     await page.getByLabel('Data dnia firmowego').fill(`${year + 1}-01-14`);
     await page.getByLabel('Nazwa dnia firmowego').fill('Dzień zespołu');
     await page.getByRole('button', { name: 'Sprawdź wpływ zmiany' }).click();
@@ -328,7 +328,7 @@ function recordHistory(action, before, after, reason) {
     await page.goto(`${baseUrl}/balances?view=team`);
     await page.getByRole('heading', { name: `Anna Testowa · ${year}`, exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Salda zespołu', exact: true }).count(), 0, 'Employee cannot activate the team view via URL.');
-    assert.equal(await page.getByLabel('Osoba', { exact: true }).locator('option').count(), 1);
+    assert.equal(await page.getByLabel('Osoba', { exact: true }).count(), 0, 'Own balance has no person selector, even with a team query.');
     assert.equal(await page.locator('.team-balances-table').count(), 0);
     assert.deepEqual(errors, [], 'No unhandled browser errors.');
     assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);

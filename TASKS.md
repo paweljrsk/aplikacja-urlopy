@@ -12,6 +12,14 @@ Aktualizacja: 8 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacj
 **Etap 10 — obsługa zespołu, salda i historia — ukończony.** CI #37 SUCCESS.
 **Etap 11 — testy całego systemu i usunięcie problemów — ukończony.** CI #39 SUCCESS.
 Automatyczny licznik dni roboczych w formularzu (B35) wdrożono i sprawdzono.
+**Dodatkowa zmiana UX — oddzielny moduł zarządzania i przewodniki ról — ukończona.** CI #43 SUCCESS.
+Polecenie z 8 listopada po etapie 11. Etap 12 pozostaje nierozpoczęty.
+
+- [x] Wydzielić zarządzanie i administrację do modułu z osobną nawigacją; pozostawić własne saldo tylko do odczytu.
+- [x] Dodać dobrowolne przewodniki pracownika, kierownika/zastępcy i administratora z obsługą klawiatury oraz telefonu.
+- [x] Zweryfikować nawigację, stare adresy, dostęp ról, brak zapisów podczas tutorialu i regresje dotychczasowych procesów.
+- [x] Zapisać wyniki, instrukcję odbioru i ograniczenia bez rozpoczynania etapu 12.
+
 Użytkownik zatwierdził Q3, Q4, Q6, pozostałą część Q8 i Q9; zapisano B25–B29.
 Odpowiedzi potrzebne do rozpoczęcia modelu (Q1, podstawy Q5 i Q8) zatwierdzono i zapisano.
 
@@ -376,7 +384,7 @@ DT54–DT58 opisują nowe widoki i podglądy; E15–E18 naprawione wyścigi i uk
 Bez nowych bibliotek, migracji ani zmian B22–B33. README zawiera kroki odbioru.
 Następny punkt: odbiór użytkownika, następnie etap 11 wyłącznie na jego polecenie.
 
-### Bieżący punkt wznowienia — etap 11
+### Historyczny punkt wznowienia — etap 11
 
 8 listopada użytkownik zlecił licznik dni roboczych w modalu, następnie etap 11.
 Gałąź `codex/etap-11-testy-systemu` bazuje na `4191f2ca26ebd205e36c4d5c7fcb606cb91bb1a4`.
@@ -394,3 +402,18 @@ bazuje na niescalonym PR #10. Bez nowych bibliotek ani migracji.
 Punkt wznowienia: odbiór użytkownika, następnie **etap 12 — przygotowanie produkcji
 i pilotażu**, wyłącznie po osobnym poleceniu. Przed konfiguracją rozstrzygnąć Q7;
 uwzględnić S11-SEC-01, backup/restore i pomiar docelowego środowiska. Nie scalać PR automatycznie.
+
+### Bieżący punkt wznowienia — dodatkowa zmiana UX B36
+
+Użytkownik zlecił osobny moduł zarządzania i przewodniki po rolach oraz jawnie
+wstrzymał etap 12. Gałąź `codex/modul-zarzadzania-przewodniki` bazuje na końcowym
+etapie 11 `4882ba6751bbbd2846bf3be8a01acf87d5187db8`, CI #40 SUCCESS.
+Wydzielono podstrony modułu, własne saldo tylko do odczytu i tutoriale bez zapisów.
+Kod `23dba5d7067b5bbace72581e9a9d070d717b3714` przeszedł pełny
+[CI #43 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42510298991):
+445 testów / 21 607 asercji, statyczne/build, Chrome wszystkich czterech przewodników,
+regresje UI i rzeczywiste HTTP/E2E, restart, workery oraz bramki pomiarów/auditów.
+Sprawdzono zrzuty modułu i tutoriali desktop/mobile. Raport i ręczny odbiór są w TEST_PLAN.
+[PR #12 — zmiana UX](https://github.com/paweljrsk/aplikacja-urlopy/pull/12) bazuje na
+niescalonym PR #11. Bez nowych bibliotek ani migracji.
+Punkt wznowienia: odbiór użytkownika. Etap 12 nadal wstrzymany; nie scalać PR automatycznie.

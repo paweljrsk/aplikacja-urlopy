@@ -1,6 +1,6 @@
 # Wymagania aplikacji urlopowej
 
-Wersja 1.9 • stan uzgodnień z 8 listopada 2026 r., licznik dni i etap 11.
+Wersja 1.10 • stan uzgodnień z 8 listopada 2026 r., wydzielenie zarządzania i przewodniki.
 
 Ten plik jest źródłem uzgodnionych wymagań biznesowych. Uzupełnia go rejestr
 [decyzji](DECISIONS.md) i [otwartych pytań](OPEN_QUESTIONS.md). Propozycje przy otwartych
@@ -185,6 +185,19 @@ Po wybraniu dat formularz automatycznie pokazuje obliczony wymiar urlopu w dniac
 i godzinach (B35). Pomija weekendy, święta oraz firmowe dni wolne według istniejącego
 kalendarza. Wynik jest widoczny pod datami także przy braku dostępnego salda;
 nie zastępuje walidacji podglądu i zapisu. Zmiana dat usuwa nieaktualny wynik.
+
+Po etapie 11 użytkownik zlecił wydzielenie administracji i części zarządczych
+do oddzielnego modułu frontendu (B36). Codzienna część aplikacji obejmuje kalendarz,
+własne wnioski, własne saldo tylko do odczytu i konto. Moduł „Zarządzanie” grupuje
+obsługę wniosków, salda i limity zespołu, a dla administratora także użytkowników,
+zespoły, słowniki, historię oraz firmowe dni wolne. Zakres ról i walidacje API
+pozostają zgodne z dotychczasowymi ustaleniami; zmienia się organizacja ekranów.
+
+Interaktywne przewodniki w stylu JS Tour prowadzą pracownika, kierownika i administratora
+przez odpowiednie miejsca aplikacji. Wariant zastępcy uwzględnia ograniczenie własnych
+decyzji i brak edycji limitów. Przewodnik można uruchomić ponownie, cofnąć krok lub
+zamknąć; tutorial nie zapisuje danych biznesowych. Musi działać klawiaturą i na
+telefonie. Ten zakres jest dodatkową zmianą UX; etap 12 pozostaje nierozpoczęty.
 
 ## 9. Granice MVP i późniejszy rozwój
 

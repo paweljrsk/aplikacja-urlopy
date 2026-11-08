@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { AppHeader } from "./app-shell";
+import { AppShell } from "./app-shell";
+import { ManagementShell } from "./management-shell";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { getCurrentUser, redirectForAuthError, type CurrentUser } from "@/lib/auth-api";
 import { balanceError } from "@/lib/balance-api";
@@ -25,7 +25,7 @@ export function useOperationKey() {
   };
 }
 
-export function AccountingGate({ screen, children }: { screen: "balances" | "calendar"; children: (actor: CurrentUser) => ReactNode }) {
+export function AccountingGate({ screen, children }: { screen: "balances" | "team-balances" | "calendar"; children: (actor: CurrentUser) => ReactNode }) {
   const [actor, setActor] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,6 +40,7 @@ export function AccountingGate({ screen, children }: { screen: "balances" | "cal
         if (!alive || sequence !== request) return;
         if (result.user.mustChangePassword) { setActor(null); window.location.replace("/change-password"); return; }
         if (screen === "calendar" && !result.user.isAdministrator) { setActor(null); setForbidden(true); return; }
+        if (screen === "team-balances" && !result.user.isAdministrator && result.user.role !== "manager" && result.user.role !== "deputy") { setActor(null); setForbidden(true); return; }
         setActor(result.user); setForbidden(false); setError("");
       } catch (failure) {
         if (!alive || sequence !== request) return;
@@ -53,14 +54,9 @@ export function AccountingGate({ screen, children }: { screen: "balances" | "cal
     window.addEventListener("focus", onFocus); window.addEventListener("pageshow", onPageShow);
     return () => { alive = false; ++sequence; window.removeEventListener("focus", onFocus); window.removeEventListener("pageshow", onPageShow); };
   }, [screen]);
-  return <div className="workspace admin-workspace accounting-workspace">
-    <a className="skip-link" href="#main">Przejdź do treści</a>
-    <AppHeader user={actor} active={screen === "balances" ? "balances" : "calendar-settings"} />
-    <main id="main" className="workspace-main accounting-main">
-      <div className="workspace-heading"><div><span className="eyebrow">Rozliczenia nieobecności</span><h1>{screen === "balances" ? "Limity i saldo" : "Firmowe dni wolne"}</h1><p>{screen === "balances" ? "Godziny dostępne, zaplanowane i wykorzystane — z historią zmian." : "Zaplanuj dni wolne i sprawdź ich wpływ na złożone wnioski."}</p></div></div>
-      {actor && <nav className="accounting-nav" aria-label="Rozliczenia"><Link href="/balances" prefetch={false} aria-current={screen === "balances" ? "page" : undefined}>Limity i saldo</Link>{actor.isAdministrator && <><Link href="/calendar-settings" prefetch={false} aria-current={screen === "calendar" ? "page" : undefined}>Firmowe dni wolne</Link><Link href="/admin" prefetch={false}>Administracja</Link></>}</nav>}
-      {loading ? <p role="status">Wczytywanie konta…</p> : forbidden ? <section className="admin-empty"><h2>Brak dostępu</h2><p>Firmowymi dniami wolnymi zarządza administrator.</p></section> : error ? <><AccountingNotice>{error}</AccountingNotice><button className="button button-secondary" onClick={() => window.location.reload()}>Spróbuj ponownie</button></> : actor ? <div key={`${actor.id}:${actor.isAdministrator}:${actor.role}:${actor.team?.id}`}>{children(actor)}</div> : null}
-    </main>
-    <footer className="workspace-footer">Urlopy zespołu<span>Rozliczenia w pełnych godzinach</span></footer>
+  const content = <div className="accounting-main">
+    <div className="workspace-heading"><div><span className="eyebrow">{screen === "balances" ? "Twój urlop w liczbach" : "Rozliczenia nieobecności"}</span><h1>{screen === "balances" ? "Moje saldo" : screen === "team-balances" ? "Salda i limity zespołu" : "Firmowe dni wolne"}</h1><p>{screen === "balances" ? "Twoje dostępne, zaplanowane i wykorzystane godziny — z historią zmian." : screen === "team-balances" ? "Sprawdź salda pracowników i zarządzaj limitami w swoim zakresie uprawnień." : "Zaplanuj dni wolne i sprawdź ich wpływ na złożone wnioski."}</p></div></div>
+    {loading ? <p role="status">Wczytywanie konta…</p> : forbidden ? <section className="admin-empty"><h2>Brak dostępu</h2><p>{screen === "calendar" ? "Firmowymi dniami wolnymi zarządza administrator." : "Salda zespołu są dostępne dla kierownika, zastępcy i administratora."}</p></section> : error ? <><AccountingNotice>{error}</AccountingNotice><button className="button button-secondary" onClick={() => window.location.reload()}>Spróbuj ponownie</button></> : actor ? <div key={`${actor.id}:${actor.isAdministrator}:${actor.role}:${actor.team?.id}`} data-tour={screen === "calendar" ? "company-calendar" : undefined}>{children(actor)}</div> : null}
   </div>;
+  return screen === "balances" ? <AppShell user={actor} active="balances">{content}</AppShell> : <ManagementShell user={actor} active={screen === "calendar" ? "calendar" : "balances"}>{content}</ManagementShell>;
 }

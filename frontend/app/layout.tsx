@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./notus.css";
+import "./components/management-shell.css";
+import { GuidedTourProvider } from "./components/guided-tour";
 
 export const metadata: Metadata = {
   title: "Urlopy zespołu",
@@ -11,7 +13,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pl">
-      <body>{children}</body>
+      <body><GuidedTourProvider>{children}</GuidedTourProvider></body>
     </html>
   );
 }

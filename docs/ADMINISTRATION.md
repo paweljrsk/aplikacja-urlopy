@@ -1,6 +1,6 @@
 # Administracja — etap 4
 
-Panel `/admin` służy administratorowi do zarządzania kontami, zespołami, przypisaniami
+Panel `/management/admin` w module „Zarządzanie” służy administratorowi do zarządzania kontami, zespołami, przypisaniami
 oraz słownikami. Dostęp wymaga ukończonej zmiany hasła tymczasowego. Kontrola dostępu,
 walidacja i audyt działają w API. Układ jest funkcjonalny i tymczasowy; docelowa
 stylistyka Notus dla wszystkich ekranów pozostaje zakresem etapu 8.

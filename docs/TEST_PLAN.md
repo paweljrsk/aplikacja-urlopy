@@ -1,5 +1,68 @@
 # Plan testów i odbioru
 
+## Moduł zarządzania i przewodniki — odbiór zakończony (8 listopada 2026 r.)
+
+Dodatkowe polecenie po etapie 11, B36; etap 12 pozostaje poza zakresem.
+Baza `4882ba6751bbbd2846bf3be8a01acf87d5187db8`, CI #40 SUCCESS.
+Sprawdzono osobne adresy zarządzania, własne saldo bez edycji dla wszystkich ról,
+kompatybilność dawnych adresów oraz zachowanie kontroli API. Nowy
+`module-tour-ui-check.cjs` obejmuje role, tutoriale, klawiaturę, telefon, utratę
+uprawnień/sesji i brak zapisów. Istniejące testy operacji skierowano na nowe adresy;
+test resetu cudzego hasła jest w panelu administratora, nie w osobistym koncie.
+Kod `23dba5d7067b5bbace72581e9a9d070d717b3714` przeszedł pełny
+[CI #43 — SUCCESS](https://github.com/paweljrsk/aplikacja-urlopy/actions/runs/42510298991).
+[PR #12 — zmiana UX](https://github.com/paweljrsk/aplikacja-urlopy/pull/12) pozostaje
+niescalony i bazuje na PR #11; numer PR nie oznacza rozpoczęcia etapu 12.
+Środowisko: kontenery projektu, PHP 8.3.36, MySQL 8.0.32, Node 22.23.4, Chrome 156,
+wyłącznie dane syntetyczne.
+
+| Kontrola | Faktyczny wynik |
+|---|---|
+| Inicjalizacja, migracje i schemat | PASS; bez nowych migracji ani resetowania istniejących danych |
+| Backend | PASS: **445 testów / 21 607 asercji**, w tym rozliczenia, role i współbieżność MySQL |
+| Statyczne i build | PASS: Symfony, PHPStan, ESLint, TypeScript oraz produkcyjny Next.js, 16 tras |
+| Nowy moduł i tutoriale w Chrome | PASS: własne saldo bez edycji dla wszystkich ról; odmowa dostępu pracownika bez pobierania danych zarządczych; menu zgodne z rolą; stare adresy; pełne ścieżki pracownika, kierownika, zastępcy i administratora; Dalej/Wstecz, zakończenie/Escape, pułapka i powrót fokusu, telefon, brak celu podświetlenia, opóźnione otwarcie po nawigacji, utrata roli/sesji, zero zapisów i storage |
+| Dotychczasowe UI | PASS: logowanie, konto, administracja i reset hasła, salda, firmowe dni wolne, kalendarz, formularz i decyzje; syntetyczne odpowiedzi API |
+| Rzeczywiste HTTP i E2E | PASS przez Chrome/Nginx/PHP-FPM: sesje/CSRF, zapis pracownika, decyzje kierownika/zastępcy/administratora, korekty, pełny obieg zmiany/anulowania, licznik dni, transfer i podział roku |
+| Restart i workery | PASS: zachowanie danych po stop/start, stabilne procesy async i scheduler; bez testu restore |
+| Skan i audity zależności | Ograniczony skan źródeł/historii — PASS. Composer i produkcyjny npm: 0 zgłoszeń. Pełny npm: nadal 8 wpisów moderate z developerskiego minimatch, bez high/critical; S11-SEC-01 pozostaje otwarte |
+| Pomiary | 100 osób / 5 zespołów / 2000 wniosków, wszystkie 14 przypadków w proponowanych budżetach diagnostycznych; najwyższe p95 API 284,8 ms, widoków 1467,5 ms |
+| Zrzuty | Przejrzano osobny moduł desktop/mobile, własne saldo administratora, panel administracji i tutoriale pracownika desktop/mobile oraz administratora desktop; czytelne podświetlenie i treść kart. Test sprawdza też rozmiar karty w rzeczywistym viewportcie |
+
+Artefakty CI zawierają `synthetic-ui-screenshots` oraz `stage11-check-reports`
+z bieżącymi raportami auditów i pomiarów. CI #41 i #42 nie stanowią odbioru:
+nowy test wymagał oczekiwania na przywrócenie fokusu przez requestAnimationFrame
+oraz wskazania linku „Moje wnioski” w głównej nawigacji. Zachowano wszystkie asercje;
+CI #43 potwierdza ich wykonanie po poprawkach.
+
+Lokalnie: pełny ESLint, TypeScript i produkcyjny build (16 tras) — PASS; składnia
+skryptów Node, workflow YAML i diff — PASS. Brak lokalnego PHP/MySQL; lokalny
+Chromium zatrzymuje się na systemowym `socket() EPERM`, więc testy backendu/Chrome
+wykonano w powyższym CI. Początkowy build wymagał objęcia odczytu
+legacy `searchParams` w `/management` przez Suspense zgodnie z konfiguracją Next;
+po poprawce build zakończył się powodzeniem.
+
+Ograniczenia: telefon to emulowany viewport Chrome; pomiary są krótką sekwencyjną
+próbą na stosie developerskim, bez produkcyjnego SLA. Nie wdrażano na serwer
+firmowy i nie wykonywano backup/restore. Q7 i S11-SEC-01 pozostają zapisane
+w dokumentacji etapu 11. Bez nowych bibliotek, zmian rozliczeń i reguł API.
+Etap 12 pozostaje nierozpoczęty.
+
+### Ręczny odbiór B36
+
+1. Po aktualizacji bieżącej gałęzi otwórz `http://localhost:8080/`. Jako administrator
+   wejdź w „Moje saldo”: widzisz własne godziny i historię, bez wyboru osoby i edycji.
+2. Wybierz „Zarządzanie”. Sprawdź osobną nawigację, kolejkę decyzji, salda i limity,
+   administrację oraz firmowe dni wolne. Reset hasła innej osoby jest przy jej koncie
+   w administracji; „Moje konto” zawiera tylko własne sprawy.
+3. Jako kierownik lub zastępca sprawdź, że moduł pokazuje wyłącznie dozwolone funkcje.
+   Zastępca nie edytuje limitów, kierownik nie edytuje własnego limitu.
+4. Wybierz „Przewodnik” i odpowiednią ścieżkę. Sprawdź podświetlenie, przejścia,
+   „Wstecz”, „Dalej”, zakończenie i Escape; po zamknięciu fokus wraca do przycisku.
+   Przewodnik można uruchomić ponownie. Nie wysyła wniosku ani decyzji.
+5. Powtórz na telefonie oraz używając Tab/Shift+Tab. Stare `/admin`,
+   `/calendar-settings` i `/management?id=…` powinny kierować do nowych adresów.
+
 ## Etap 11 — odbiór zakończony (8 listopada 2026 r.)
 
 Punkt wyjścia: końcowy etap 10 `4191f2ca26ebd205e36c4d5c7fcb606cb91bb1a4`,

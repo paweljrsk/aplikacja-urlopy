@@ -100,7 +100,7 @@ async function main() {
     report.browserApiResponsesPerSample = {};
     for (const viewport of [{ name: 'desktop', width: 1440, height: 1050 }, { name: 'mobile', width: 390, height: 844 }]) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      for (const [name, path] of [['calendar', '/'], ['requests', '/requests'], ['management', '/management'], ['team_balances', '/balances?view=team']]) {
+      for (const [name, path] of [['calendar', '/'], ['requests', '/requests'], ['management', '/management/requests'], ['team_balances', '/management/balances']]) {
         const label = `${name}_${viewport.name}`;
         const counts = [];
         await measure(label, 'browser', async () => {
