@@ -141,6 +141,27 @@ etap 12 nie został rozpoczęty.
 
 ## Ustalony sposób realizacji
 
+### B37 — pełny miesiąc w kalendarzu, 8 listopada 2026 r.
+
+Użytkownik odłożył temat asystenta AI i zlecił dodanie pełnego miesiąca obok tygodnia
+i dwóch tygodni. Jest to rozszerzenie kalendarza, bez rozpoczynania etapu 12.
+Zakres wyznacza miesiąc kalendarzowy, nie ruchome 30 dni. Strzałki zmieniają miesiąc,
+„Dzisiaj” wraca do bieżącego; filtry i szczegóły pozostają zachowane. Początkową
+datą odniesienia jest dzień zwrócony przez API, więc początek tygodnia w poprzednim
+miesiącu nie przenosi pierwszego widoku miesiąca do poprzedniego miesiąca.
+Desktop zachowuje tabelę pracownik–dni z węższymi kolumnami i stałą kolumną nazwisk
+podczas poziomego przewijania; telefon używa dotychczasowej czytelnej listy dni.
+API i rozliczenia bez zmian. Skrajne tygodnie są przycinane do lat API 2025–2100;
+pełne miesiące zawsze mieszczą się w tym zakresie. Brak nowych bibliotek/migracji.
+
+Przy tej zmianie uzupełniono test wygaśnięcia sesji tutorialu: CI #44 po samym
+uzupełnieniu dokumentacji B36 ujawnił przerwane oczekiwanie Playwright na pojedynczą
+nawigację, gdy dwie odpowiedzi 401 równolegle kierują na logowanie. Test czeka teraz
+na końcowy adres i widoczny ekran logowania, tak jak istniejący test kalendarza;
+kontrola usunięcia przewodnika pozostaje. Faktyczny odbiór B37 zapisujemy w TEST_PLAN.
+
+### Zasady wspólne
+
 | ID | Zasada | Status |
 |---|---|---|
 | P01 | Realizacja kolejnych etapów w istniejącym repozytorium i standardzie stacku | Obowiązuje |

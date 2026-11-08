@@ -108,6 +108,11 @@ odświeżanie roli, ścisłe wejście, puste przypisanie i brak cichego obcinani
 
 ## Prezentacja w etapie 9
 
+Późniejsze rozszerzenie B37 dodaje „Miesiąc” do widoków 7/14 dni. Używa tego samego
+endpointu z pierwszym i ostatnim dniem miesiąca; nie zmienia DTO ani zakresu danych.
+Przejścia miesięczne uwzględniają długość miesiąca i rok przestępny. Lista przyszłych
+nieobecności nadal pobiera osobny przedział dwóch miesięcy od daty dzisiejszej.
+
 Kontrakt i reguły backendu pozostają bez zmian. Interfejs zawęża autoryzowane
 odpowiedzi filtrami osoby i statusu wspólnymi dla kalendarza oraz listy dwóch
 miesięcy. Status „Zatwierdzone” oznacza `kind=effective` także podczas zmiany

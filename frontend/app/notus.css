@@ -76,6 +76,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .calendar-pagination button:hover:not(:disabled) { background: #f6f7fa; }
 .calendar-scroll { overflow-x: auto; }
 .team-calendar-table { border-collapse: collapse; table-layout: fixed; width: 100%; min-width: calc(195px + var(--calendar-days) * 43px); }
+.team-calendar-table.is-month { min-width: calc(195px + var(--calendar-days) * 32px); }
+.team-calendar-table.is-month tr > th:first-child { position: sticky; left: 0; z-index: 1; box-shadow: 1px 0 var(--line); }
+.team-calendar-table.is-month td { padding-inline: 1px; }
+.team-calendar-table.is-month .calendar-entry { flex-direction: column; gap: 0; padding: 2px 0; line-height: 1.2; min-height: 34px; }
 .team-calendar-table th, .team-calendar-table td { border-bottom: 1px solid #edf0f4; border-right: 1px solid #f0f2f6; }
 .team-calendar-table tr > :last-child { border-right: 0; }
 .team-calendar-table thead th { background: #fafbfc; height: 62px; text-align: center; font-weight: 400; padding: 8px 2px; }

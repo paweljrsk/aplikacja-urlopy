@@ -1,5 +1,10 @@
 # Zadania aplikacji urlopowej
 
+**Bieżąca zmiana B37 — widok pełnego miesiąca w kalendarzu — w trakcie.**
+- [-] Dodać przełącznik miesiąca, nawigację miesiącami i powrót do bieżącego miesiąca; zachować filtry, szczegóły i listę nadchodzących nieobecności.
+- [ ] Sprawdzić długości miesięcy, przełom roku, rok przestępny i układ desktop/mobile; zapisać odbiór.
+Temat asystenta AI odłożony. Etap 12 pozostaje nierozpoczęty.
+
 Aktualizacja: 8 listopada 2026 r. Etap **1 — audyt, uruchomienie i dokumentacja — zakończony**.
 **Etap 2 — model danych i migracje — zakończony**.
 **Etap 3 — logowanie lokalne i kontrola dostępu — zakończony**.

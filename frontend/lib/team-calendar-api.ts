@@ -38,6 +38,29 @@ export function groupCalendarEntries(entries: CalendarEntry[]): CalendarGroup[] 
 }
 
 // These helpers arrange calendar dates only. Hours and balances always come from the API.
+export type CalendarPeriod = 7 | 14 | "month";
+export const CALENDAR_MIN_DATE = "2025-01-01";
+export const CALENDAR_MAX_DATE = "2100-12-31";
+
+export function shiftMonth(date: string, months: number): string {
+  const result = new Date(`${date.slice(0, 7)}-01T12:00:00Z`);
+  result.setUTCMonth(result.getUTCMonth() + months);
+  return result.toISOString().slice(0, 10);
+}
+
+export function calendarRange(anchor: string, period: CalendarPeriod): { from: string; to: string; days: string[] } {
+  if (!anchor) return { from: "", to: "", days: [] };
+  const start = period === "month" ? `${anchor.slice(0, 7)}-01` : weekStart(anchor);
+  const end = period === "month" ? shiftDate(shiftMonth(start, 1), -1) : shiftDate(start, period - 1);
+  // At the supported year boundaries a week may be partial; never ask the API
+  // for dates outside its calendar. Month views always contain the full month.
+  const from = start < CALENDAR_MIN_DATE ? CALENDAR_MIN_DATE : start;
+  const to = end > CALENDAR_MAX_DATE ? CALENDAR_MAX_DATE : end;
+  const days: string[] = [];
+  for (let date = from; date <= to; date = shiftDate(date, 1)) days.push(date);
+  return { from, to, days };
+}
+
 export function shiftDate(date: string, days: number): string {
   const result = new Date(`${date}T12:00:00Z`);
   result.setUTCDate(result.getUTCDate() + days);

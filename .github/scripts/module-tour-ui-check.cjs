@@ -238,7 +238,15 @@ let step = 'launch';
     assert.equal(await page.locator('[data-guide-highlight="true"]').count(), 0);
     session = employee; await page.goto(baseUrl + '/'); await openChoice('Pracownik'); await waitStep('employee', 1);
     session = null; await page.evaluate(() => window.dispatchEvent(new Event('focus')));
-    await page.waitForURL(url => url.pathname === '/login');
+    // The account and guide reauthorize independently. Concurrent 401 redirects
+    // can supersede one navigation; assert the settled URL and rendered login.
+    const loginDeadline = Date.now() + 12000;
+    while (new URL(page.url()).pathname !== '/login') {
+      if (Date.now() >= loginDeadline) throw new Error('Expired session must reach the login page.');
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    await page.getByRole('heading', { name: 'Zaloguj się', exact: true }).waitFor();
+    assert.equal(new URL(page.url()).pathname, '/login');
     assert.equal(await page.locator('[data-guide-step]').count(), 0);
     assert.deepEqual(writes, [], 'Tours, navigation and personal balance viewing perform no mutations.');
     assert.deepEqual(pageErrors, [], 'No unhandled browser errors.');

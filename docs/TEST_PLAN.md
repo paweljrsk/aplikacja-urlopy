@@ -1,5 +1,22 @@
 # Plan testów i odbioru
 
+## Pełny miesiąc w kalendarzu B37 — weryfikacja w toku
+
+Baza: `e7165f265bed6063b110a04a3152805eb0926a93`, ukończona zmiana UX B36.
+Lokalnie pełne ESLint, TypeScript i produkcyjny build — PASS. Sprawdzenie pomocników
+dat: miesiące 28/29/30/31 dni, rok 2100 nieprzestępny, grudzień/styczeń, tydzień
+zaczynający się w poprzednim miesiącu i granice lat API — PASS.
+Odbiór przeglądarkowy obejmie filtry/szczegóły, prawidłowe zakresy API, nawigację
+miesiącami, powrót do dzisiaj oraz zrzuty desktop/mobile. Wynik zostanie dopisany
+po wykonaniu; lokalny Chromium ma znane ograniczenie `socket() EPERM`.
+
+Ręcznie: wybierz „Miesiąc”, sprawdź pierwszy/ostatni dzień, przejdź przez grudzień
+do stycznia i do lutego, następnie wybierz „Dzisiaj”. Ustaw filtr osoby/statusu,
+otwórz dozwolone szczegóły i zamknij je: miesiąc oraz filtry mają pozostać.
+Na telefonie dostępna jest lista dni całego miesiąca. Ponowne kliknięcie aktywnego
+okresu lub „Dzisiaj” nie może pozostawić pustego ekranu ładowania.
+Etap 12 i asystent AI pozostają poza zakresem.
+
 ## Moduł zarządzania i przewodniki — odbiór zakończony (8 listopada 2026 r.)
 
 Dodatkowe polecenie po etapie 11, B36; etap 12 pozostaje poza zakresem.
